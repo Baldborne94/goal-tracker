@@ -27,7 +27,7 @@ export async function PATCH(
 
   // recalculate progress
   const updated = await prisma.milestone.findMany({ where: { goalId } });
-  const done = updated.filter((m) => m.completed).length;
+  const done = updated.filter((m: { completed: boolean }) => m.completed).length;
   const progress = updated.length > 0 ? Math.round((done / updated.length) * 100) : 0;
 
   await prisma.goal.update({

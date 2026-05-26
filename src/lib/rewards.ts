@@ -55,7 +55,7 @@ export async function checkAndAwardRewards(userId: string) {
   const completedCount = await prisma.goal.count({
     where: { userId, status: "completed" },
   });
-  const earnedIds = new Set(user.userRewards.map((ur) => ur.rewardId));
+  const earnedIds = new Set(user.userRewards.map((ur: { rewardId: string }) => ur.rewardId));
 
   for (const r of REWARDS) {
     if (!r.condition(completedCount, user.points)) continue;
