@@ -56,7 +56,7 @@ export default async function DashboardPage() {
         <div className="mb-6">
           <h2 className="text-base font-semibold text-slate-700 mb-3">Premi recenti</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
-            {user.userRewards.slice(0, 6).map((ur) => (
+            {user.userRewards.slice(0, 6).map((ur: { id: string; reward: { icon: string; name: string } }) => (
               <div
                 key={ur.id}
                 className="flex-shrink-0 bg-white rounded-xl border border-slate-100 px-4 py-3 text-center shadow-sm"
