@@ -26,11 +26,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
+      {/* Header */}
       <div className="mb-6">
         <p className="text-slate-500 text-sm">Ciao,</p>
         <h1 className="text-2xl font-bold text-slate-800">{user?.name || "Utente"} 👋</h1>
       </div>
 
+      {/* Points card */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-5 text-white mb-6">
         <p className="text-indigo-100 text-sm mb-1">I tuoi punti</p>
         <div className="flex items-end gap-2">
@@ -49,6 +51,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Recent rewards */}
       {user?.userRewards && user.userRewards.length > 0 && (
         <div className="mb-6">
           <h2 className="text-base font-semibold text-slate-700 mb-3">Premi recenti</h2>
@@ -68,6 +71,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* Recent goals */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold text-slate-700">Obiettivi recenti</h2>
         <Link href="/goals" className="text-sm text-indigo-600 font-medium">
@@ -88,7 +92,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {goals.map((goal) => {
+          {goals.map((goal: { id: string; title: string; status: string; progress: number; targetDate: Date | null; category: { name: string; color: string } | null; milestones: { completed: boolean }[] }) => {
             const milestonesDone = goal.milestones.filter((m) => m.completed).length;
             const milestonesTotal = goal.milestones.length;
 
@@ -120,6 +124,7 @@ export default async function DashboardPage() {
                   </div>
                 )}
 
+                {/* Progress bar */}
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                     <span>
@@ -154,6 +159,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* FAB */}
       <Link
         href="/goals/new"
         className="fixed bottom-20 right-4 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-indigo-700 active:scale-95 transition-all z-40"
