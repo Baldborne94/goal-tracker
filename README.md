@@ -62,14 +62,24 @@ Apri [http://localhost:3000](http://localhost:3000).
 Il build script è:
 
 ```bash
-prisma generate && prisma db push && next build
+prisma generate && next build
 ```
 
-- `prisma generate` — genera il client TypeScript da `prisma/schema.prisma`
-- `prisma db push` — sincronizza lo schema con il database (crea tabelle mancanti)
+- `prisma generate` — genera il client TypeScript da `prisma/schema.prisma` (non richiede DB)
 - `next build` — compila l'app
 
 Su Vercel il deploy avviene automaticamente ad ogni push su `main`.
+
+### Aggiornare lo schema del database
+
+`prisma db push` va eseguito **manualmente** ogni volta che si modifica `prisma/schema.prisma`. Non fa parte del build automatico perché richiede una connessione diretta (non funziona tramite PgBouncer):
+
+```bash
+npm run db:push
+# equivalente a: npx prisma db push
+```
+
+Eseguire **in locale** con il file `.env` configurato correttamente (con `DIRECT_URL`).
 
 ---
 
@@ -226,5 +236,5 @@ Soluzione: aggiungere `prisma generate` come primo step del build script.
 1. Collegare il repository GitHub a Vercel
 2. Impostare le variabili d'ambiente (DATABASE_URL, DIRECT_URL, NEXTAUTH_SECRET, NEXTAUTH_URL)
 3. Il build command viene letto da `package.json` automaticamente
-4. `prisma db push` nel build crea le tabelle mancanti ad ogni deploy — sicuro per cambiamenti additivi (nuove tabelle/colonne opzionali)
-5. Per cambiamenti distruttivi (rinominare/eliminare colonne) usare invece `prisma migrate deploy` con file di migrazione
+4. Per aggiornare lo schema (nuove tabelle/colonne): eseguire `npm run db:push` **localmente** dopo aver impostato `DIRECT_URL` nel `.env`
+5. Il build Vercel non fa `db push` — lo schema deve essere già allineato prima del deploy
