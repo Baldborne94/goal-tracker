@@ -16,10 +16,12 @@ model User {
   points        Int       @default(0)
   createdAt     DateTime  @default(now())
 
-  accounts    Account[]
-  sessions    Session[]
-  goals       Goal[]
-  userRewards UserReward[]
+  accounts       Account[]
+  sessions       Session[]
+  goals          Goal[]
+  userRewards    UserReward[]
+  monthlyBudgets MonthlyBudget[]
+  expenses       Expense[]
 }
 
 model Account {
@@ -76,9 +78,9 @@ model Goal {
   id          String     @id @default(cuid())
   title       String
   description String?
-  status      String     @default("active")
-  priority    String     @default("medium")
-  progress    Int        @default(0)
+  status      String     @default("active") // active | completed | archived
+  priority    String     @default("medium") // low | medium | high
+  progress    Int        @default(0) // 0-100
   targetDate  DateTime?
   completedAt DateTime?
   points      Int        @default(10)
@@ -121,7 +123,7 @@ model Reward {
   description String
   icon        String
   pointsCost  Int    @default(0)
-  type        String
+  type        String // badge | milestone | streak
 
   userRewards UserReward[]
 }
@@ -136,4 +138,30 @@ model UserReward {
   reward Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
 
   @@unique([userId, rewardId])
+}
+
+model MonthlyBudget {
+  id        String   @id @default(cuid())
+  userId    String
+  month     String   // "2026-05"
+  amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float
+  category    String
+  description String?
+  merchant    String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
