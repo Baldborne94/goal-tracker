@@ -8,16 +8,8 @@ export default async function DashboardPage() {
   const userId = session!.user!.id!;
 
   const [user, goals] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      include: { userRewards: { include: { reward: true } } },
-    }),
-    prisma.goal.findMany({
-      where: { userId },
-      include: { category: true, milestones: true },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
+    prisma.user.findUnique({ where: { id: userId }, include: { userRewards: { include: { reward: true } } } }),
+    prisma.goal.findMany({ where: { userId }, include: { category: true, milestones: true }, orderBy: { createdAt: "desc" }, take: 5 }),
   ]);
 
   const total = await prisma.goal.count({ where: { userId } });
@@ -39,14 +31,8 @@ export default async function DashboardPage() {
           <span className="text-amber-300/60 mb-1">XP</span>
         </div>
         <div className="mt-3 flex gap-4 text-sm">
-          <div>
-            <span className="text-[#9d8ac7]">⚡ Attive: </span>
-            <span className="font-semibold text-[#ede9ff]">{active}</span>
-          </div>
-          <div>
-            <span className="text-[#9d8ac7]">👑 Completate: </span>
-            <span className="font-semibold text-[#ede9ff]">{completed}</span>
-          </div>
+          <div><span className="text-[#9d8ac7]">⚡ Attive: </span><span className="font-semibold text-[#ede9ff]">{active}</span></div>
+          <div><span className="text-[#9d8ac7]">👑 Completate: </span><span className="font-semibold text-[#ede9ff]">{completed}</span></div>
         </div>
       </div>
 
@@ -86,14 +72,10 @@ export default async function DashboardPage() {
                   <h3 className="font-semibold text-[#ede9ff] line-clamp-1">{goal.title}</h3>
                   <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium border ${
                     goal.status === "completed" ? "bg-amber-900/30 text-amber-300 border-amber-700/40" : "bg-violet-900/30 text-violet-300 border-violet-700/40"
-                  }`}>
-                    {goal.status === "completed" ? "👑 Completata" : "⚡ Attiva"}
-                  </span>
+                  }`}>{goal.status === "completed" ? "👑 Completata" : "⚡ Attiva"}</span>
                 </div>
                 {goal.category && (
-                  <div className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mb-2" style={{ backgroundColor: goal.category.color + "25", color: goal.category.color }}>
-                    {goal.category.name}
-                  </div>
+                  <div className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mb-2" style={{ backgroundColor: goal.category.color + "25", color: goal.category.color }}>{goal.category.name}</div>
                 )}
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-xs text-[#6b5a9e] mb-1">
@@ -113,9 +95,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <Link href="/goals/new" className="fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-br from-amber-500 to-yellow-400 text-black rounded-full shadow-lg shadow-amber-900/40 flex items-center justify-center text-2xl hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all z-40 font-bold">
-        +
-      </Link>
+      <Link href="/goals/new" className="fixed bottom-20 right-4 w-14 h-14 bg-gradient-to-br from-amber-500 to-yellow-400 text-black rounded-full shadow-lg shadow-amber-900/40 flex items-center justify-center text-2xl hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all z-40 font-bold">+</Link>
     </div>
   );
 }
