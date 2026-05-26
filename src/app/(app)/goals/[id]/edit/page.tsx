@@ -31,8 +31,8 @@ export default async function EditGoalPage({
     priority: goal.priority,
     targetDate: goal.targetDate ? goal.targetDate.toISOString().split("T")[0] : "",
     categoryId: goal.categoryId || "",
-    tags: goal.tags.map((gt) => gt.tag.name),
-    milestones: goal.milestones.map((m) => m.title),
+    tags: goal.tags.map((gt: { tag: { name: string } }) => gt.tag.name),
+    milestones: goal.milestones.map((m: { title: string }) => m.title),
   };
 
   return (
