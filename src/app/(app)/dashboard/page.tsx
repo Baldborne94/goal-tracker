@@ -92,7 +92,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {goals.map((goal) => {
+          {goals.map((goal: { id: string; title: string; status: string; progress: number; targetDate: Date | null; category: { name: string; color: string } | null; milestones: { completed: boolean }[] }) => {
             const milestonesDone = goal.milestones.filter((m) => m.completed).length;
             const milestonesTotal = goal.milestones.length;
 
