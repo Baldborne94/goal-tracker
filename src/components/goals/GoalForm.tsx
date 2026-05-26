@@ -73,73 +73,71 @@ export default function GoalForm({ categories, initialData }: Props) {
     }
   }
 
+  const inputClass = "w-full px-4 py-3 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a]";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>
+        <div className="bg-red-950/50 text-red-400 text-sm rounded-xl px-4 py-3 border border-red-800/50">{error}</div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Titolo *
-        </label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Titolo *</label>
         <input
           required
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="Cosa vuoi raggiungere?"
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800"
+          className={inputClass}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Descrizione
-        </label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Descrizione</label>
         <textarea
           rows={3}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          placeholder="Descrivi il tuo obiettivo..."
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 resize-none"
+          placeholder="Descrivi la tua missione..."
+          className={`${inputClass} resize-none`}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Priorità</label>
+          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Difficoltà</label>
           <select
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: e.target.value })}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 bg-white"
+            className={inputClass}
           >
-            <option value="low">Bassa</option>
-            <option value="medium">Media</option>
-            <option value="high">Alta</option>
+            <option value="low">🍃 Bassa</option>
+            <option value="medium">⚡ Media</option>
+            <option value="high">🔥 Alta</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Scadenza</label>
+          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🌙 Scadenza</label>
           <input
             type="date"
             value={form.targetDate}
             onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800"
+            className={inputClass}
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-2">Categoria</label>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setForm({ ...form, categoryId: "" })}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
               form.categoryId === ""
-                ? "bg-slate-800 text-white"
-                : "bg-white border border-slate-200 text-slate-600"
+                ? "bg-[#ede9ff] text-[#0c0a1a] border-[#ede9ff]"
+                : "bg-[#16112e] border-[#3b2d6e] text-[#9d8ac7]"
             }`}
           >
             Nessuna
@@ -150,12 +148,12 @@ export default function GoalForm({ categories, initialData }: Props) {
               type="button"
               onClick={() => setForm({ ...form, categoryId: c.id })}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                form.categoryId === c.id ? "text-white" : "bg-white text-slate-600"
+                form.categoryId === c.id ? "text-black" : "bg-[#16112e] text-[#9d8ac7]"
               }`}
               style={
                 form.categoryId === c.id
                   ? { backgroundColor: c.color, borderColor: c.color }
-                  : { borderColor: "#e2e8f0" }
+                  : { borderColor: "#3b2d6e" }
               }
             >
               {c.name}
@@ -166,24 +164,19 @@ export default function GoalForm({ categories, initialData }: Props) {
 
       {/* Tags */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Tag</label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Tag</label>
         <div className="flex gap-2 mb-2">
           <input
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addTag();
-              }
-            }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
             placeholder="Aggiungi tag..."
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 text-sm"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a] text-sm"
           />
           <button
             type="button"
             onClick={addTag}
-            className="px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium"
+            className="px-4 py-2.5 bg-[#1e1740] text-[#c4b5fd] rounded-xl text-sm font-medium border border-[#3b2d6e] hover:border-amber-500/40"
           >
             +
           </button>
@@ -191,18 +184,9 @@ export default function GoalForm({ categories, initialData }: Props) {
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((t) => (
-              <span
-                key={t}
-                className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full"
-              >
+              <span key={t} className="flex items-center gap-1 text-xs bg-[#1e1740] text-[#9d8ac7] px-3 py-1 rounded-full border border-[#3b2d6e]">
                 #{t}
-                <button
-                  type="button"
-                  onClick={() => setTags(tags.filter((x) => x !== t))}
-                  className="ml-0.5 text-indigo-400 hover:text-indigo-600"
-                >
-                  ×
-                </button>
+                <button type="button" onClick={() => setTags(tags.filter((x) => x !== t))} className="ml-0.5 text-[#6b5a9e] hover:text-red-400">×</button>
               </span>
             ))}
           </div>
@@ -212,26 +196,19 @@ export default function GoalForm({ categories, initialData }: Props) {
       {/* Milestones */}
       {!isEditing && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Milestone / Sotto-obiettivi
-          </label>
+          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">⭐ Tappe / Sotto-obiettivi</label>
           <div className="flex gap-2 mb-2">
             <input
               value={milestoneInput}
               onChange={(e) => setMilestoneInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addMilestone();
-                }
-              }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMilestone(); } }}
               placeholder="Aggiungi una tappa..."
-              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 text-sm"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a] text-sm"
             />
             <button
               type="button"
               onClick={addMilestone}
-              className="px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium"
+              className="px-4 py-2.5 bg-[#1e1740] text-[#c4b5fd] rounded-xl text-sm font-medium border border-[#3b2d6e] hover:border-amber-500/40"
             >
               +
             </button>
@@ -239,23 +216,14 @@ export default function GoalForm({ categories, initialData }: Props) {
           {milestones.length > 0 && (
             <div className="space-y-2">
               {milestones.map((m, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-2.5 text-sm text-slate-700"
-                >
+                <div key={i} className="flex items-center justify-between bg-[#0f0d22] border border-[#2a1f50] rounded-xl px-4 py-2.5 text-sm text-[#ede9ff]">
                   <span className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center font-semibold">
+                    <span className="w-5 h-5 rounded-full bg-amber-900/40 text-amber-400 text-xs flex items-center justify-center font-semibold border border-amber-700/40">
                       {i + 1}
                     </span>
                     {m}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setMilestones(milestones.filter((_, j) => j !== i))}
-                    className="text-slate-400 hover:text-red-500"
-                  >
-                    ×
-                  </button>
+                  <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="text-[#6b5a9e] hover:text-red-400">×</button>
                 </div>
               ))}
             </div>
@@ -267,16 +235,16 @@ export default function GoalForm({ categories, initialData }: Props) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex-1 py-3 border border-slate-200 text-slate-700 rounded-xl font-semibold"
+          className="flex-1 py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold hover:bg-[#1e1740] transition-colors"
         >
           Annulla
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold disabled:opacity-60"
+          className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold disabled:opacity-60 shadow-lg shadow-amber-900/30"
         >
-          {loading ? "..." : isEditing ? "Salva" : "Crea obiettivo"}
+          {loading ? "..." : isEditing ? "✨ Salva" : "⚔️ Crea missione"}
         </button>
       </div>
     </form>

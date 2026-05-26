@@ -16,11 +16,11 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 
 const LEVEL_THRESHOLDS = [
-  { level: 1, label: "Principiante", min: 0, max: 49 },
-  { level: 2, label: "Apprendista", min: 50, max: 149 },
-  { level: 3, label: "Esperto", min: 150, max: 349 },
-  { level: 4, label: "Maestro", min: 350, max: 699 },
-  { level: 5, label: "Leggenda", min: 700, max: Infinity },
+  { level: 1, label: "Apprendista", icon: "🌱", min: 0, max: 49 },
+  { level: 2, label: "Avventuriero", icon: "⚔️", min: 50, max: 149 },
+  { level: 3, label: "Guerriero", icon: "🛡️", min: 150, max: 349 },
+  { level: 4, label: "Campione", icon: "🏆", min: 350, max: 699 },
+  { level: 5, label: "Leggenda", icon: "👑", min: 700, max: Infinity },
 ];
 
 function getLevel(points: number) {
@@ -38,76 +38,80 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Profilo</h1>
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">🧙 Profilo Eroe</h1>
 
-      {/* User card */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-5 text-white mb-6">
+      {/* Hero card */}
+      <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "linear-gradient(135deg, #2d1b6e 0%, #1a0f3e 50%, #0f0826 100%)", border: "1px solid #4c3880"}}>
+        <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{background: "radial-gradient(circle, #f59e0b 0%, transparent 70%)"}}/>
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-3xl font-bold">
-            {user.name?.[0]?.toUpperCase() || "U"}
+          <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold" style={{background: "linear-gradient(135deg, #3b2d6e, #1e1535)", border: "2px solid #f59e0b55"}}>
+            {user.name?.[0]?.toUpperCase() || "⚔"}
           </div>
           <div>
-            <h2 className="text-xl font-bold">{user.name}</h2>
-            <p className="text-indigo-200 text-sm">{user.email}</p>
-            <p className="text-indigo-100 text-sm font-medium mt-0.5">
-              Liv. {level.level} — {level.label}
+            <h2 className="text-xl font-bold text-[#ede9ff]">{user.name}</h2>
+            <p className="text-[#9d8ac7] text-sm">{user.email}</p>
+            <p className="text-amber-400 text-sm font-semibold mt-0.5">
+              {level.icon} Liv. {level.level} — {level.label}
             </p>
           </div>
         </div>
 
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-indigo-200">XP: {user.points}</span>
+          <div className="flex justify-between text-sm mb-1.5">
+            <span className="text-amber-300/80">✨ {user.points} XP</span>
             {nextLevel && (
-              <span className="text-indigo-200">Prossimo livello: {nextLevel.min} pts</span>
+              <span className="text-[#9d8ac7] text-xs">Prossimo: {nextLevel.min} XP</span>
             )}
           </div>
-          <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-2.5 rounded-full overflow-hidden" style={{background: "#0f0826"}}>
             <div
-              className="h-full bg-white rounded-full transition-all"
-              style={{ width: `${progressToNext}%` }}
+              className="h-full rounded-full transition-all"
+              style={{ width: `${progressToNext}%`, background: "linear-gradient(90deg, #f59e0b, #fbbf24)" }}
             />
           </div>
+          {nextLevel && (
+            <p className="text-xs text-[#6b5a9e] mt-1">{progressToNext}% verso {nextLevel.label}</p>
+          )}
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: "Totali", value: stats.total, emoji: "📋" },
-          { label: "Attivi", value: stats.active, emoji: "🎯" },
-          { label: "Completati", value: stats.completed, emoji: "✅" },
+          { label: "Totali", value: stats.total, icon: "📜" },
+          { label: "Attive", value: stats.active, icon: "⚡" },
+          { label: "Completate", value: stats.completed, icon: "👑" },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-100 p-4 text-center shadow-sm">
-            <div className="text-2xl mb-1">{s.emoji}</div>
-            <div className="text-2xl font-bold text-slate-800">{s.value}</div>
-            <div className="text-xs text-slate-500">{s.label}</div>
+          <div key={s.label} className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
+            <div className="text-2xl mb-1">{s.icon}</div>
+            <div className="text-2xl font-bold text-amber-400">{s.value}</div>
+            <div className="text-xs text-[#9d8ac7]">{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Rewards */}
       <div className="mb-6">
-        <h2 className="text-base font-semibold text-slate-700 mb-3">
-          Premi ottenuti{" "}
-          <span className="text-slate-400 font-normal">({user.userRewards.length})</span>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">
+          💎 Trofei{" "}
+          <span className="text-[#6b5a9e] font-normal">({user.userRewards.length})</span>
         </h2>
 
         {user.userRewards.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center">
+          <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-6 text-center">
             <div className="text-3xl mb-2">🏆</div>
-            <p className="text-slate-500 text-sm">Completa obiettivi per sbloccare premi</p>
+            <p className="text-[#9d8ac7] text-sm">Completa missioni per sbloccare trofei</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {user.userRewards.map((ur) => (
               <div
                 key={ur.id}
-                className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm"
+                className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4"
               >
                 <div className="text-3xl mb-2">{ur.reward.icon}</div>
-                <div className="font-semibold text-slate-800 text-sm">{ur.reward.name}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{ur.reward.description}</div>
+                <div className="font-semibold text-[#ede9ff] text-sm">{ur.reward.name}</div>
+                <div className="text-xs text-[#9d8ac7] mt-0.5">{ur.reward.description}</div>
               </div>
             ))}
           </div>
@@ -116,9 +120,9 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
 
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}
-        className="w-full py-3 border border-red-200 text-red-500 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+        className="w-full py-3 border border-red-900/50 text-red-400 rounded-xl font-semibold hover:bg-red-950/30 transition-colors"
       >
-        Esci dall&apos;account
+        Abbandona il regno
       </button>
     </div>
   );

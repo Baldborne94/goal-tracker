@@ -40,19 +40,19 @@ export default function GoalsList({ goals, categories }: Props) {
 
   return (
     <>
-      {/* Filters */}
+      {/* Status filters */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
         {(["all", "active", "completed"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
               filter === f
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-slate-600 border border-slate-200"
+                ? "bg-amber-500 text-black border-amber-500 font-bold"
+                : "bg-[#16112e] text-[#9d8ac7] border-[#3b2d6e] hover:border-amber-500/40"
             }`}
           >
-            {f === "all" ? "Tutti" : f === "active" ? "Attivi" : "Completati"}
+            {f === "all" ? "Tutte" : f === "active" ? "⚡ Attive" : "👑 Completate"}
           </button>
         ))}
       </div>
@@ -62,10 +62,10 @@ export default function GoalsList({ goals, categories }: Props) {
         <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
           <button
             onClick={() => setCategoryId("all")}
-            className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
               categoryId === "all"
-                ? "bg-slate-800 text-white"
-                : "bg-white text-slate-600 border border-slate-200"
+                ? "bg-[#ede9ff] text-[#0c0a1a] border-[#ede9ff]"
+                : "bg-[#16112e] text-[#9d8ac7] border-[#3b2d6e]"
             }`}
           >
             Tutte
@@ -75,12 +75,12 @@ export default function GoalsList({ goals, categories }: Props) {
               key={c.id}
               onClick={() => setCategoryId(c.id)}
               className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
-                categoryId === c.id ? "text-white" : "bg-white text-slate-600"
+                categoryId === c.id ? "text-black" : "bg-[#16112e] text-[#9d8ac7]"
               }`}
               style={
                 categoryId === c.id
                   ? { backgroundColor: c.color, borderColor: c.color }
-                  : { borderColor: "#e2e8f0" }
+                  : { borderColor: "#3b2d6e" }
               }
             >
               {c.name}
@@ -90,14 +90,14 @@ export default function GoalsList({ goals, categories }: Props) {
       )}
 
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
-          <div className="text-4xl mb-3">🎯</div>
-          <p className="text-slate-500 text-sm">Nessun obiettivo trovato</p>
+        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-8 text-center">
+          <div className="text-4xl mb-3">🗡️</div>
+          <p className="text-[#9d8ac7] text-sm">Nessuna missione trovata</p>
           <Link
             href="/goals/new"
-            className="inline-block mt-4 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold"
+            className="inline-block mt-4 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold"
           >
-            Crea obiettivo
+            Crea missione
           </Link>
         </div>
       ) : (
@@ -118,19 +118,19 @@ function GoalCard({ goal }: { goal: Goal }) {
   return (
     <Link
       href={`/goals/${goal.id}`}
-      className="block bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:border-indigo-200 transition-colors"
+      className="block bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 hover:border-amber-500/40 transition-colors"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-semibold text-slate-800 line-clamp-2 flex-1">{goal.title}</h3>
+        <h3 className="font-semibold text-[#ede9ff] line-clamp-2 flex-1">{goal.title}</h3>
         <span
-          className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium ${
+          className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium border ${
             goal.status === "completed"
-              ? "bg-green-100 text-green-700"
-              : "bg-indigo-100 text-indigo-700"
+              ? "bg-amber-900/30 text-amber-300 border-amber-700/40"
+              : "bg-violet-900/30 text-violet-300 border-violet-700/40"
           }`}
         >
-          {goal.status === "completed" ? "✓" : "•"}{" "}
-          {goal.status === "completed" ? "Fatto" : "Attivo"}
+          {goal.status === "completed" ? "👑" : "⚡"}{" "}
+          {goal.status === "completed" ? "Fatto" : "Attiva"}
         </span>
       </div>
 
@@ -139,7 +139,7 @@ function GoalCard({ goal }: { goal: Goal }) {
           <span
             className="text-xs px-2 py-0.5 rounded-full font-medium"
             style={{
-              backgroundColor: goal.category.color + "20",
+              backgroundColor: goal.category.color + "25",
               color: goal.category.color,
             }}
           >
@@ -150,27 +150,27 @@ function GoalCard({ goal }: { goal: Goal }) {
           {getPriorityLabel(goal.priority)}
         </span>
         {goal.tags.slice(0, 2).map(({ tag }) => (
-          <span key={tag.id} className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+          <span key={tag.id} className="text-xs px-2 py-0.5 rounded-full bg-[#1e1740] text-[#9d8ac7] border border-[#3b2d6e]">
             #{tag.name}
           </span>
         ))}
       </div>
 
       <div>
-        <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+        <div className="flex items-center justify-between text-xs text-[#6b5a9e] mb-1">
           <span>
-            {milestonesTotal > 0 ? `${milestonesDone}/${milestonesTotal} milestone` : "Progresso"}
+            {milestonesTotal > 0 ? `${milestonesDone}/${milestonesTotal} tappe` : "Progresso"}
           </span>
-          <span>{goal.progress}%</span>
+          <span className="text-amber-400/80">{goal.progress}%</span>
         </div>
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-[#0f0d22] rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
               goal.progress >= 100
-                ? "bg-green-500"
+                ? "bg-amber-400"
                 : goal.progress >= 50
-                ? "bg-indigo-500"
-                : "bg-indigo-400"
+                ? "bg-violet-500"
+                : "bg-violet-700"
             }`}
             style={{ width: `${goal.progress}%` }}
           />
@@ -178,8 +178,8 @@ function GoalCard({ goal }: { goal: Goal }) {
       </div>
 
       {goal.targetDate && (
-        <p className="text-xs text-slate-400 mt-2">
-          📅 {formatDate(goal.targetDate)}
+        <p className="text-xs text-[#6b5a9e] mt-2">
+          🌙 {formatDate(goal.targetDate)}
         </p>
       )}
     </Link>

@@ -84,26 +84,28 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
       {/* Back */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-1.5 text-slate-500 text-sm mb-5 hover:text-slate-700"
+        className="flex items-center gap-1.5 text-[#9d8ac7] text-sm mb-5 hover:text-amber-400 transition-colors"
       >
         ← Indietro
       </button>
 
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-4 shadow-sm">
+      {/* Header card */}
+      <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h1 className="text-xl font-bold text-slate-800 flex-1">{goal.title}</h1>
+          <h1 className="text-xl font-bold text-[#ede9ff] flex-1">{goal.title}</h1>
           <span
-            className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${
-              isCompleted ? "bg-green-100 text-green-700" : "bg-indigo-100 text-indigo-700"
+            className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 border ${
+              isCompleted
+                ? "bg-amber-900/30 text-amber-300 border-amber-700/40"
+                : "bg-violet-900/30 text-violet-300 border-violet-700/40"
             }`}
           >
-            {isCompleted ? "✓ Completato" : "● Attivo"}
+            {isCompleted ? "👑 Completata" : "⚡ Attiva"}
           </span>
         </div>
 
         {goal.description && (
-          <p className="text-slate-600 text-sm mb-4 leading-relaxed">{goal.description}</p>
+          <p className="text-[#9d8ac7] text-sm mb-4 leading-relaxed">{goal.description}</p>
         )}
 
         <div className="flex flex-wrap gap-2 mb-4">
@@ -111,7 +113,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
             <span
               className="text-xs px-2.5 py-1 rounded-full font-medium"
               style={{
-                backgroundColor: goal.category.color + "20",
+                backgroundColor: goal.category.color + "25",
                 color: goal.category.color,
               }}
             >
@@ -122,7 +124,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
             {priorityLabel}
           </span>
           {goal.tags.map(({ tag }) => (
-            <span key={tag.id} className="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+            <span key={tag.id} className="text-xs px-2.5 py-1 rounded-full bg-[#1e1740] text-[#9d8ac7] border border-[#3b2d6e]">
               #{tag.name}
             </span>
           ))}
@@ -131,42 +133,42 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         {/* Progress */}
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-slate-600 font-medium">Progresso</span>
-            <span className="font-bold text-slate-800">{goal.progress}%</span>
+            <span className="text-[#9d8ac7] font-medium">Progresso</span>
+            <span className="font-bold text-amber-400">{goal.progress}%</span>
           </div>
-          <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-3 bg-[#0f0d22] rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 goal.progress >= 100
-                  ? "bg-green-500"
+                  ? "bg-amber-400"
                   : goal.progress >= 50
-                  ? "bg-indigo-500"
-                  : "bg-indigo-400"
+                  ? "bg-violet-500"
+                  : "bg-violet-700"
               }`}
               style={{ width: `${goal.progress}%` }}
             />
           </div>
         </div>
 
-        <div className="flex gap-4 text-sm text-slate-500">
+        <div className="flex gap-4 text-sm text-[#9d8ac7]">
           <div className="flex items-center gap-1">
-            <span>🏆</span>
-            <span>{goal.points} punti</span>
+            <span>✨</span>
+            <span>{goal.points} XP</span>
           </div>
           {formattedDate && (
             <div className="flex items-center gap-1">
-              <span>📅</span>
+              <span>🌙</span>
               <span>{formattedDate}</span>
             </div>
           )}
         </div>
 
         {isCompleted && (
-          <div className="mt-4 p-3 bg-green-50 rounded-xl flex items-center gap-2">
-            <span className="text-2xl">🎉</span>
+          <div className="mt-4 p-3 rounded-xl flex items-center gap-2" style={{background: "linear-gradient(135deg, #78350f33, #92400e22)", border: "1px solid #92400e66"}}>
+            <span className="text-2xl">👑</span>
             <div>
-              <p className="text-green-700 font-semibold text-sm">Obiettivo completato!</p>
-              <p className="text-green-600 text-xs">Hai guadagnato {goal.points} punti</p>
+              <p className="text-amber-300 font-semibold text-sm">Missione completata!</p>
+              <p className="text-amber-400/70 text-xs">Hai guadagnato {goal.points} XP</p>
             </div>
           </div>
         )}
@@ -174,10 +176,10 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
       {/* Milestones */}
       {goal.milestones.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-5 mb-4 shadow-sm">
-          <h2 className="font-semibold text-slate-700 mb-3">
-            Milestone{" "}
-            <span className="text-sm font-normal text-slate-400">
+        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
+          <h2 className="font-semibold text-[#c4b5fd] mb-3">
+            ⭐ Tappe{" "}
+            <span className="text-sm font-normal text-[#6b5a9e]">
               {goal.milestones.filter((m) => m.completed).length}/{goal.milestones.length}
             </span>
           </h2>
@@ -186,32 +188,24 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
               <div
                 key={m.id}
                 className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
-                  m.completed ? "bg-green-50" : "bg-slate-50"
+                  m.completed ? "bg-amber-900/20 border border-amber-700/30" : "bg-[#0f0d22] border border-[#2a1f50]"
                 }`}
                 onClick={() => !isCompleted && toggleMilestone(m.id, !m.completed)}
               >
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors border-2 ${
                     m.completed
-                      ? "bg-green-500 text-white"
-                      : "bg-white border-2 border-slate-300"
+                      ? "bg-amber-500 border-amber-500 text-black"
+                      : "bg-transparent border-[#3b2d6e]"
                   }`}
                 >
                   {m.completed && (
                     <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   )}
                 </div>
-                <span
-                  className={`text-sm flex-1 ${
-                    m.completed ? "line-through text-slate-400" : "text-slate-700"
-                  }`}
-                >
+                <span className={`text-sm flex-1 ${m.completed ? "line-through text-[#6b5a9e]" : "text-[#ede9ff]"}`}>
                   {m.title}
                 </span>
               </div>
@@ -225,13 +219,13 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         <div className="space-y-3 mb-4">
           <button
             onClick={markComplete}
-            className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 active:scale-95 transition-all"
+            className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all shadow-lg shadow-amber-900/30"
           >
-            🎉 Segna come completato
+            👑 Completa missione
           </button>
           <Link
             href={`/goals/${goal.id}/edit`}
-            className="block w-full py-3 border border-indigo-200 text-indigo-600 rounded-xl font-semibold text-center hover:bg-indigo-50"
+            className="block w-full py-3 border border-[#3b2d6e] text-[#c4b5fd] rounded-xl font-semibold text-center hover:border-violet-500/60 hover:bg-[#1e1740] transition-colors"
           >
             ✏️ Modifica
           </Link>
@@ -240,30 +234,30 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
       <button
         onClick={() => setShowDelete(true)}
-        className="w-full py-3 border border-red-200 text-red-500 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+        className="w-full py-3 border border-red-900/50 text-red-400 rounded-xl font-semibold hover:bg-red-950/30 transition-colors"
       >
-        🗑 Elimina obiettivo
+        🗑 Elimina missione
       </button>
 
       {/* Delete modal */}
       {showDelete && (
-        <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Elimina obiettivo</h3>
-            <p className="text-slate-500 text-sm mb-5">
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50 p-4">
+          <div className="bg-[#1a1535] rounded-2xl border border-[#3b2d6e] w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-[#ede9ff] mb-2">Elimina missione</h3>
+            <p className="text-[#9d8ac7] text-sm mb-5">
               Sei sicuro? Questa azione è irreversibile.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDelete(false)}
-                className="flex-1 py-3 border border-slate-200 text-slate-700 rounded-xl font-semibold"
+                className="flex-1 py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold"
               >
                 Annulla
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-semibold disabled:opacity-60"
+                className="flex-1 py-3 bg-red-900 text-red-200 rounded-xl font-semibold disabled:opacity-60 border border-red-800"
               >
                 {deleting ? "..." : "Elimina"}
               </button>
