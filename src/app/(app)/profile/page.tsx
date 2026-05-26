@@ -6,7 +6,7 @@ export default async function ProfilePage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  const [user, goalsStats] = await Promise.all([
+  const [user, completed, active] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -16,17 +16,14 @@ export default async function ProfilePage() {
         },
       },
     }),
-    prisma.goal.groupBy({
-      by: ["status"],
-      where: { userId },
-      _count: true,
-    }),
+    prisma.goal.count({ where: { userId, status: "completed" } }),
+    prisma.goal.count({ where: { userId, status: "active" } }),
   ]);
 
   const stats = {
-    total: goalsStats.reduce((a: number, b) => a + b._count, 0),
-    completed: goalsStats.find((s) => s.status === "completed")?._count || 0,
-    active: goalsStats.find((s) => s.status === "active")?._count || 0,
+    total: completed + active,
+    completed,
+    active,
   };
 
   return (
