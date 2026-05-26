@@ -8,8 +8,16 @@ export default async function DashboardPage() {
   const userId = session!.user!.id!;
 
   const [user, goals] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, include: { userRewards: { include: { reward: true } } } }),
-    prisma.goal.findMany({ where: { userId }, include: { category: true, milestones: true }, orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      include: { userRewards: { include: { reward: true } } },
+    }),
+    prisma.goal.findMany({
+      where: { userId },
+      include: { category: true, milestones: true },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
   ]);
 
   const total = await prisma.goal.count({ where: { userId } });
@@ -30,8 +38,14 @@ export default async function DashboardPage() {
           <span className="text-indigo-200 mb-1">pts</span>
         </div>
         <div className="mt-3 flex gap-4 text-sm">
-          <div><span className="text-indigo-200">Attivi: </span><span className="font-semibold">{active}</span></div>
-          <div><span className="text-indigo-200">Completati: </span><span className="font-semibold">{completed}</span></div>
+          <div>
+            <span className="text-indigo-200">Attivi: </span>
+            <span className="font-semibold">{active}</span>
+          </div>
+          <div>
+            <span className="text-indigo-200">Completati: </span>
+            <span className="font-semibold">{completed}</span>
+          </div>
         </div>
       </div>
 
@@ -39,10 +53,15 @@ export default async function DashboardPage() {
         <div className="mb-6">
           <h2 className="text-base font-semibold text-slate-700 mb-3">Premi recenti</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
-            {user.userRewards.slice(0, 6).map((ur) => (
-              <div key={ur.id} className="flex-shrink-0 bg-white rounded-xl border border-slate-100 px-4 py-3 text-center shadow-sm">
+            {user.userRewards.slice(0, 6).map((ur: { id: string; reward: { icon: string; name: string } }) => (
+              <div
+                key={ur.id}
+                className="flex-shrink-0 bg-white rounded-xl border border-slate-100 px-4 py-3 text-center shadow-sm"
+              >
                 <div className="text-2xl mb-1">{ur.reward.icon}</div>
-                <div className="text-xs font-medium text-slate-700 whitespace-nowrap">{ur.reward.name}</div>
+                <div className="text-xs font-medium text-slate-700 whitespace-nowrap">
+                  {ur.reward.name}
+                </div>
               </div>
             ))}
           </div>
@@ -51,50 +70,96 @@ export default async function DashboardPage() {
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold text-slate-700">Obiettivi recenti</h2>
-        <Link href="/goals" className="text-sm text-indigo-600 font-medium">Vedi tutti</Link>
+        <Link href="/goals" className="text-sm text-indigo-600 font-medium">
+          Vedi tutti
+        </Link>
       </div>
 
       {goals.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
           <div className="text-4xl mb-3">🎯</div>
           <p className="text-slate-500 text-sm mb-4">Nessun obiettivo ancora</p>
-          <Link href="/goals/new" className="inline-block px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold">Crea il primo obiettivo</Link>
+          <Link
+            href="/goals/new"
+            className="inline-block px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold"
+          >
+            Crea il primo obiettivo
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">
           {goals.map((goal) => {
             const milestonesDone = goal.milestones.filter((m) => m.completed).length;
             const milestonesTotal = goal.milestones.length;
+
             return (
-              <Link key={goal.id} href={`/goals/${goal.id}`} className="block bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:border-indigo-200 transition-colors">
+              <Link
+                key={goal.id}
+                href={`/goals/${goal.id}`}
+                className="block bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:border-indigo-200 transition-colors"
+              >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-semibold text-slate-800 line-clamp-1">{goal.title}</h3>
-                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium ${goal.status === "completed" ? "bg-green-100 text-green-700" : "bg-indigo-100 text-indigo-700"}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium ${
+                      goal.status === "completed"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-indigo-100 text-indigo-700"
+                    }`}
+                  >
                     {goal.status === "completed" ? "✓ Completato" : "Attivo"}
                   </span>
                 </div>
+
                 {goal.category && (
-                  <div className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mb-2" style={{ backgroundColor: goal.category.color + "20", color: goal.category.color }}>
+                  <div
+                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mb-2"
+                    style={{ backgroundColor: goal.category.color + "20", color: goal.category.color }}
+                  >
                     {goal.category.name}
                   </div>
                 )}
+
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                    <span>{milestonesTotal > 0 ? `${milestonesDone}/${milestonesTotal} milestone` : "Progresso"}</span>
+                    <span>
+                      {milestonesTotal > 0
+                        ? `${milestonesDone}/${milestonesTotal} milestone`
+                        : "Progresso"}
+                    </span>
                     <span>{goal.progress}%</span>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all ${goal.progress >= 100 ? "bg-green-500" : goal.progress >= 50 ? "bg-indigo-500" : "bg-indigo-400"}`} style={{ width: `${goal.progress}%` }} />
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        goal.progress >= 100
+                          ? "bg-green-500"
+                          : goal.progress >= 50
+                          ? "bg-indigo-500"
+                          : "bg-indigo-400"
+                      }`}
+                      style={{ width: `${goal.progress}%` }}
+                    />
                   </div>
                 </div>
-                {goal.targetDate && <p className="text-xs text-slate-400 mt-2">Scadenza: {formatDate(goal.targetDate)}</p>}
+
+                {goal.targetDate && (
+                  <p className="text-xs text-slate-400 mt-2">
+                    Scadenza: {formatDate(goal.targetDate)}
+                  </p>
+                )}
               </Link>
             );
           })}
         </div>
       )}
 
-      <Link href="/goals/new" className="fixed bottom-20 right-4 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-indigo-700 active:scale-95 transition-all z-40">+</Link>
+      <Link
+        href="/goals/new"
+        className="fixed bottom-20 right-4 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-indigo-700 active:scale-95 transition-all z-40"
+      >
+        +
+      </Link>
     </div>
   );
 }
