@@ -24,7 +24,7 @@ export default async function ProfilePage() {
   ]);
 
   const stats = {
-    total: goalsStats.reduce((a, b) => a + b._count, 0),
+    total: goalsStats.reduce((a: number, b) => a + b._count, 0),
     completed: goalsStats.find((s) => s.status === "completed")?._count || 0,
     active: goalsStats.find((s) => s.status === "active")?._count || 0,
   };
