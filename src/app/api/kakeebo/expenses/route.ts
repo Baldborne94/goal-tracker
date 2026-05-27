@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { checkAndAwardKakeeboRewards } from "@/lib/rewards";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -44,6 +45,9 @@ export async function POST(req: Request) {
       date: date ? new Date(date) : new Date(),
     },
   });
+
+  // Check for "Cacciatore di Spese" badge at 10 expenses
+  await checkAndAwardKakeeboRewards(session.user.id);
 
   return NextResponse.json(expense, { status: 201 });
 }

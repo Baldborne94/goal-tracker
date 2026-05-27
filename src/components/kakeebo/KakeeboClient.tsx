@@ -21,7 +21,7 @@ type Expense = {
   date: string;
 };
 
-type Budget = { id: string; month: string; amount: number } | null;
+type Budget = { id: string; month: string; amount: number; closed?: boolean } | null;
 
 function currentMonthStr() {
   const now = new Date();
@@ -65,6 +65,7 @@ export default function KakeeboClient() {
   const [budgetInput, setBudgetInput] = useState("");
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [closeMsg, setCloseMsg] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -86,6 +87,7 @@ export default function KakeeboClient() {
 
   useEffect(() => {
     fetchData();
+    setCloseMsg(null);
   }, [fetchData]);
 
   const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -123,6 +125,24 @@ export default function KakeeboClient() {
       if (res.ok) {
         setShowExpenseForm(false);
         setForm(emptyForm());
+        fetchData();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function closeMonth() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/kakeebo/close-month", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCloseMsg(`+${data.xpEarned} XP guadagnati! 🎉`);
         fetchData();
       }
     } finally {
@@ -196,6 +216,25 @@ export default function KakeeboClient() {
                   }`}
                   style={{ width: `${pct}%` }}
                 />
+              </div>
+
+              {/* Close month / reward section */}
+              <div className="mt-3 pt-3 border-t border-[#3b2d6e]">
+                {budget.closed ? (
+                  <p className="text-center text-amber-400 text-xs font-medium">✅ Mese completato — premio riscosso!</p>
+                ) : closeMsg ? (
+                  <p className="text-center text-amber-400 text-sm font-bold">{closeMsg}</p>
+                ) : remaining! >= 0 ? (
+                  <button
+                    onClick={closeMonth}
+                    disabled={saving}
+                    className="w-full py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-50"
+                  >
+                    🏆 Riscuoti premio mensile (+25 XP)
+                  </button>
+                ) : (
+                  <p className="text-center text-red-400 text-xs">Hai superato il budget — nessun premio disponibile</p>
+                )}
               </div>
             </>
           ) : (
