@@ -68,14 +68,20 @@ export default function KakeeboClient() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [bRes, eRes] = await Promise.all([
-      fetch(`/api/kakeebo/budget?month=${month}`),
-      fetch(`/api/kakeebo/expenses?month=${month}`),
-    ]);
-    const [bData, eData] = await Promise.all([bRes.json(), eRes.json()]);
-    setBudget(bData ?? null);
-    setExpenses(Array.isArray(eData) ? eData : []);
-    setLoading(false);
+    try {
+      const [bRes, eRes] = await Promise.all([
+        fetch(`/api/kakeebo/budget?month=${month}`),
+        fetch(`/api/kakeebo/expenses?month=${month}`),
+      ]);
+      const [bData, eData] = await Promise.all([bRes.json(), eRes.json()]);
+      setBudget(bData && !bData.error ? bData : null);
+      setExpenses(Array.isArray(eData) ? eData : []);
+    } catch {
+      setBudget(null);
+      setExpenses([]);
+    } finally {
+      setLoading(false);
+    }
   }, [month]);
 
   useEffect(() => {
@@ -89,29 +95,39 @@ export default function KakeeboClient() {
   async function saveBudget() {
     if (!budgetInput) return;
     setSaving(true);
-    await fetch("/api/kakeebo/budget", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ month, amount: budgetInput }),
-    });
-    setSaving(false);
-    setShowBudgetForm(false);
-    setBudgetInput("");
-    fetchData();
+    try {
+      const res = await fetch("/api/kakeebo/budget", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month, amount: budgetInput }),
+      });
+      if (res.ok) {
+        setShowBudgetForm(false);
+        setBudgetInput("");
+        fetchData();
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveExpense() {
     if (!form.amount) return;
     setSaving(true);
-    await fetch("/api/kakeebo/expenses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setSaving(false);
-    setShowExpenseForm(false);
-    setForm(emptyForm());
-    fetchData();
+    try {
+      const res = await fetch("/api/kakeebo/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setShowExpenseForm(false);
+        setForm(emptyForm());
+        fetchData();
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deleteExpense(id: string) {
