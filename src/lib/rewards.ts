@@ -72,6 +72,33 @@ const KAKEEBO_REWARDS = [
   },
 ];
 
+const PESO_REWARDS = [
+  {
+    name: "Prima Pesata",
+    description: "Registra la tua prima misurazione del peso",
+    icon: "⚖️",
+    type: "badge",
+  },
+  {
+    name: "Costante",
+    description: "Registra 10 misurazioni del peso",
+    icon: "📊",
+    type: "badge",
+  },
+  {
+    name: "Meno 5 kg",
+    description: "Perdi 5 kg dal tuo peso iniziale",
+    icon: "🔥",
+    type: "milestone",
+  },
+  {
+    name: "Meno 10 kg",
+    description: "Perdi 10 kg dal tuo peso iniziale",
+    icon: "💪",
+    type: "milestone",
+  },
+];
+
 async function upsertAndAward(
   userId: string,
   earnedNames: Set<string>,
@@ -149,6 +176,43 @@ export async function checkAndAwardKakeeboRewards(userId: string) {
   for (const { condition, name } of checks) {
     if (!condition) continue;
     const def = KAKEEBO_REWARDS.find((r) => r.name === name)!;
+    await upsertAndAward(userId, earnedNames, name, def);
+    earnedNames.add(name);
+  }
+}
+
+export async function checkAndAwardPesoRewards(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { userRewards: { include: { reward: true } } },
+  });
+  if (!user) return;
+
+  const earnedNames = new Set(
+    user.userRewards.map((ur: { reward: { name: string } }) => ur.reward.name)
+  );
+
+  const entries = await prisma.weightEntry.findMany({
+    where: { userId },
+    orderBy: { date: "asc" },
+  });
+
+  const entryCount = entries.length;
+  const firstWeight = entries[0]?.weight ?? null;
+  const lastWeight = entries[entries.length - 1]?.weight ?? null;
+  const weightLoss =
+    firstWeight !== null && lastWeight !== null ? firstWeight - lastWeight : 0;
+
+  const checks = [
+    { condition: entryCount >= 1, name: "Prima Pesata" },
+    { condition: entryCount >= 10, name: "Costante" },
+    { condition: weightLoss >= 5, name: "Meno 5 kg" },
+    { condition: weightLoss >= 10, name: "Meno 10 kg" },
+  ];
+
+  for (const { condition, name } of checks) {
+    if (!condition) continue;
+    const def = PESO_REWARDS.find((r) => r.name === name)!;
     await upsertAndAward(userId, earnedNames, name, def);
     earnedNames.add(name);
   }
