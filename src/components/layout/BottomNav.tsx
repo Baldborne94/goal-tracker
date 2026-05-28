@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", icon: "🏰", label: "Reame" },
   { href: "/goals", icon: "⚔️", label: "Missioni" },
   { href: "/kakeebo", icon: "📒", label: "Oro" },
-  { href: "/peso", icon: "⚖️", label: "Corpo" },
+  { href: "/vita", icon: "🌿", label: "Vita" },
   { href: "/profile", icon: "🧙", label: "Eroe" },
 ];
 

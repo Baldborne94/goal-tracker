@@ -23,6 +23,7 @@ model User {
   monthlyBudgets MonthlyBudget[]
   expenses       Expense[]
   weightEntries  WeightEntry[]
+  habits         Habit[]
 }
 
 model Account {
@@ -176,4 +177,25 @@ model WeightEntry {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Habit {
+  id        String     @id @default(cuid())
+  userId    String
+  name      String
+  icon      String     @default("🔁")
+  createdAt DateTime   @default(now())
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs HabitLog[]
+}
+
+model HabitLog {
+  id      String @id @default(cuid())
+  habitId String
+  date    String // "YYYY-MM-DD"
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
 }

@@ -99,6 +99,49 @@ const PESO_REWARDS = [
   },
 ];
 
+const ROUTINE_REWARDS = [
+  {
+    name: "Prima Abitudine",
+    description: "Crea la tua prima abitudine",
+    icon: "🌱",
+    type: "badge",
+  },
+  {
+    name: "Streak 7",
+    description: "7 giorni consecutivi su un'abitudine",
+    icon: "🔥",
+    type: "milestone",
+  },
+  {
+    name: "Streak 30",
+    description: "30 giorni consecutivi su un'abitudine",
+    icon: "⚡",
+    type: "milestone",
+  },
+  {
+    name: "Giornata Perfetta",
+    description: "Completa tutte le abitudini in un giorno",
+    icon: "✨",
+    type: "badge",
+  },
+];
+
+function calcStreak(dates: string[]): number {
+  if (!dates.length) return 0;
+  const set = new Set(dates);
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const start = set.has(today) ? today : set.has(yesterday) ? yesterday : null;
+  if (!start) return 0;
+  let streak = 0;
+  const d = new Date(start);
+  while (set.has(d.toISOString().slice(0, 10))) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
 async function upsertAndAward(
   userId: string,
   earnedNames: Set<string>,
@@ -213,6 +256,50 @@ export async function checkAndAwardPesoRewards(userId: string) {
   for (const { condition, name } of checks) {
     if (!condition) continue;
     const def = PESO_REWARDS.find((r) => r.name === name)!;
+    await upsertAndAward(userId, earnedNames, name, def);
+    earnedNames.add(name);
+  }
+}
+
+export async function checkAndAwardRoutineRewards(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { userRewards: { include: { reward: true } } },
+  });
+  if (!user) return;
+
+  const earnedNames = new Set(
+    user.userRewards.map((ur: { reward: { name: string } }) => ur.reward.name)
+  );
+
+  const habits = await prisma.habit.findMany({
+    where: { userId },
+    include: { logs: true },
+  });
+
+  const habitCount = habits.length;
+
+  let maxStreak = 0;
+  for (const habit of habits) {
+    const s = calcStreak(habit.logs.map((l: { date: string }) => l.date));
+    if (s > maxStreak) maxStreak = s;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const allDoneToday =
+    habitCount > 0 &&
+    habits.every((h) => h.logs.some((l: { date: string }) => l.date === today));
+
+  const checks = [
+    { condition: habitCount >= 1, name: "Prima Abitudine" },
+    { condition: maxStreak >= 7, name: "Streak 7" },
+    { condition: maxStreak >= 30, name: "Streak 30" },
+    { condition: allDoneToday, name: "Giornata Perfetta" },
+  ];
+
+  for (const { condition, name } of checks) {
+    if (!condition) continue;
+    const def = ROUTINE_REWARDS.find((r) => r.name === name)!;
     await upsertAndAward(userId, earnedNames, name, def);
     earnedNames.add(name);
   }
