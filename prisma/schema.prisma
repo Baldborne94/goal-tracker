@@ -22,6 +22,7 @@ model User {
   userRewards    UserReward[]
   monthlyBudgets MonthlyBudget[]
   expenses       Expense[]
+  weightEntries  WeightEntry[]
 }
 
 model Account {
@@ -162,6 +163,17 @@ model Expense {
   merchant    String?
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  weight    Float
+  note      String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
