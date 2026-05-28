@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", icon: "🏰", label: "Reame" },
   { href: "/goals", icon: "⚔️", label: "Missioni" },
   { href: "/kakeebo", icon: "📒", label: "Oro" },
-  { href: "/peso", icon: "⚖️", label: "Corpo" },
+  { href: "/vita", icon: "🌿", label: "Vita" },
   { href: "/profile", icon: "🧙", label: "Eroe" },
 ];
 
@@ -30,8 +30,7 @@ export default function BottomNav() {
               )}
             >
               <span className={cn("text-2xl transition-transform", active && "scale-110")}>{item.icon}</span>
-              <span className={cn("text-xs font-medium", active ? "text-amber-400" : "text-[#6b5a9e]")}
-              >
+              <span className={cn("text-xs font-medium", active ? "text-amber-400" : "text-[#6b5a9e]")}>
                 {item.label}
               </span>
             </Link>
