@@ -28,11 +28,15 @@ function calcXP(priority: string, milestonesCount: number, hasDescription: boole
   return pts;
 }
 
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 const GUIDE_OPTIONS = [
   { type: null as string | null, icon: "🎯", name: "No Guide", desc: "Track manually", targetLabel: "", targetPlaceholder: "" },
   { type: "finance", icon: "💰", name: "Finance", desc: "Save money", targetLabel: "Savings target (€)", targetPlaceholder: "e.g. 2000" },
   { type: "weight", icon: "⚖️", name: "Weight", desc: "Body goal", targetLabel: "Target weight (kg)", targetPlaceholder: "e.g. 70" },
-  { type: "habits", icon: "🔁", name: "Habits", desc: "Build a streak", targetLabel: "Target days", targetPlaceholder: "e.g. 30" },
+  { type: "habits", icon: "🔁", name: "Habits", desc: "Build a streak", targetLabel: "Duration (days)", targetPlaceholder: "e.g. 30" },
 ];
 
 export default function GoalForm({ categories, initialData }: Props) {
@@ -52,6 +56,8 @@ export default function GoalForm({ categories, initialData }: Props) {
   const [milestoneInput, setMilestoneInput] = useState("");
   const [guideType, setGuideType] = useState<string | null>(null);
   const [guideTarget, setGuideTarget] = useState("");
+  const [habitFreqCount, setHabitFreqCount] = useState(1);
+  const [habitFreqType, setHabitFreqType] = useState<"day" | "week">("day");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,6 +72,62 @@ export default function GoalForm({ categories, initialData }: Props) {
     if (m) setMilestones([...milestones, m]);
     setMilestoneInput("");
   }
+
+  function generateHabitMilestones() {
+    const days = parseInt(guideTarget);
+    if (!days || days <= 0) return;
+    const today = new Date();
+    const generated: string[] = [];
+
+    if (habitFreqType === "day") {
+      for (let i = 0; i < days; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const dateLabel = fmtDate(d);
+        for (let j = 1; j <= habitFreqCount; j++) {
+          generated.push(
+            habitFreqCount > 1
+              ? `Day ${i + 1} · ${dateLabel} · ${j}/${habitFreqCount}`
+              : `Day ${i + 1} · ${dateLabel}`
+          );
+        }
+      }
+    } else {
+      const weeks = Math.ceil(days / 7);
+      for (let i = 0; i < weeks; i++) {
+        const start = new Date(today);
+        start.setDate(start.getDate() + i * 7);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        const weekLabel = `${fmtDate(start)} – ${fmtDate(end)}`;
+        for (let j = 1; j <= habitFreqCount; j++) {
+          generated.push(
+            habitFreqCount > 1
+              ? `Week ${i + 1} · ${weekLabel} · session ${j}/${habitFreqCount}`
+              : `Week ${i + 1} · ${weekLabel}`
+          );
+        }
+      }
+    }
+
+    setMilestones(generated);
+
+    // auto-set deadline if not already set
+    if (!form.targetDate) {
+      const deadline = new Date(today);
+      deadline.setDate(deadline.getDate() + days - 1);
+      const iso = `${deadline.getFullYear()}-${String(deadline.getMonth() + 1).padStart(2, "0")}-${String(deadline.getDate()).padStart(2, "0")}`;
+      setForm((f) => ({ ...f, targetDate: iso }));
+    }
+  }
+
+  const habitTotalMilestones = (() => {
+    const days = parseInt(guideTarget);
+    if (!days || days <= 0) return 0;
+    return habitFreqType === "day"
+      ? habitFreqCount * days
+      : habitFreqCount * Math.ceil(days / 7);
+  })();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -221,7 +283,18 @@ export default function GoalForm({ categories, initialData }: Props) {
 
       {!isEditing && (
         <div>
-          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">⭐ Milestones / Sub-goals</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium text-[#c4b5fd]">⭐ Milestones / Sub-goals</label>
+            {milestones.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMilestones([])}
+                className="text-xs text-[#6b5a9e] hover:text-red-400 transition-colors"
+              >
+                Clear all ({milestones.length})
+              </button>
+            )}
+          </div>
           <div className="flex gap-2 mb-2">
             <input
               value={milestoneInput}
@@ -239,16 +312,16 @@ export default function GoalForm({ categories, initialData }: Props) {
             </button>
           </div>
           {milestones.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
               {milestones.map((m, i) => (
-                <div key={i} className="flex items-center justify-between bg-[#0f0d22] border border-[#2a1f50] rounded-xl px-4 py-2.5 text-sm text-[#ede9ff]">
-                  <span className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-amber-900/40 text-amber-400 text-xs flex items-center justify-center font-semibold border border-amber-700/40">
+                <div key={i} className="flex items-center justify-between bg-[#0f0d22] border border-[#2a1f50] rounded-xl px-3 py-2 text-sm text-[#ede9ff]">
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="w-5 h-5 rounded-full bg-amber-900/40 text-amber-400 text-xs flex items-center justify-center font-semibold border border-amber-700/40 flex-shrink-0">
                       {i + 1}
                     </span>
-                    {m}
+                    <span className="truncate">{m}</span>
                   </span>
-                  <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="text-[#6b5a9e] hover:text-red-400">×</button>
+                  <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="text-[#6b5a9e] hover:text-red-400 ml-2 flex-shrink-0">×</button>
                 </div>
               ))}
             </div>
@@ -293,6 +366,47 @@ export default function GoalForm({ categories, initialData }: Props) {
                 step="0.01"
                 className={inputClass}
               />
+
+              {guideType === "habits" && guideTarget && parseInt(guideTarget) > 0 && (
+                <div className="mt-3 p-4 bg-[#0f0d22] rounded-xl border border-[#2a1f50] space-y-3">
+                  <p className="text-xs font-medium text-[#c4b5fd]">🗓 Auto-generate sub-quests</p>
+                  <p className="text-xs text-[#6b5a9e]">
+                    Specify how often you want to do this — a checkbox will be created for each occurrence.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={habitFreqCount}
+                      onChange={(e) => setHabitFreqCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      min="1"
+                      max="24"
+                      className="w-16 px-2 py-2.5 rounded-xl bg-[#16112e] border border-[#3b2d6e] text-[#ede9ff] text-sm text-center focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                    />
+                    <span className="text-[#9d8ac7] text-sm">times per</span>
+                    <select
+                      value={habitFreqType}
+                      onChange={(e) => setHabitFreqType(e.target.value as "day" | "week")}
+                      className="flex-1 px-3 py-2.5 rounded-xl bg-[#16112e] border border-[#3b2d6e] text-[#ede9ff] text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                    >
+                      <option value="day">day</option>
+                      <option value="week">week</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-[#6b5a9e]">
+                    → {habitTotalMilestones} checkboxes will be generated
+                    {habitFreqType === "day"
+                      ? ` (${habitFreqCount}×/day × ${parseInt(guideTarget)} days)`
+                      : ` (${habitFreqCount}×/week × ${Math.ceil(parseInt(guideTarget) / 7)} weeks)`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={generateHabitMilestones}
+                    className="w-full py-2.5 rounded-xl bg-amber-900/20 border border-amber-700/30 text-amber-300 text-sm font-semibold hover:bg-amber-900/30 transition-colors"
+                  >
+                    ✨ Generate {habitTotalMilestones} sub-quests
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
