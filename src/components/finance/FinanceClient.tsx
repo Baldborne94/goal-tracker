@@ -13,7 +13,7 @@ const CATS: Record<string, { icon: string; color: string; label: string }> = {
   other:     { icon: "📦", color: "#6b7280", label: "Other" },
 };
 
-type Budget = { id: string; month: string; amount: number } | null;
+type Budget = { id: string; month: string; amount: number; closed?: boolean } | null;
 type Expense = {
   id: string;
   amount: number;
@@ -30,6 +30,46 @@ type Props = {
   initialExpenses: Expense[];
   trend: TrendPoint[];
 };
+
+// SVG donut chart — renders category spending as arc slices
+function DonutChart({ breakdown }: { breakdown: { cat: string; pct: number }[] }) {
+  if (breakdown.length === 0) return null;
+  const cx = 50, cy = 50, R = 40, inner = 26;
+
+  if (breakdown.length === 1) {
+    const s = CATS[breakdown[0].cat] ?? CATS.other;
+    return (
+      <svg viewBox="0 0 100 100" className="w-28 h-28 flex-shrink-0">
+        <circle cx={cx} cy={cy} r={R} fill={s.color + "cc"} />
+        <circle cx={cx} cy={cy} r={inner} fill="#16112e" />
+      </svg>
+    );
+  }
+
+  let angle = -Math.PI / 2;
+  const paths = breakdown.map(({ cat, pct }) => {
+    const s = CATS[cat] ?? CATS.other;
+    const sweep = Math.max((pct / 100) * 2 * Math.PI, 0.001);
+    const end = angle + sweep;
+    const x1 = cx + R * Math.cos(angle), y1 = cy + R * Math.sin(angle);
+    const x2 = cx + R * Math.cos(end),   y2 = cy + R * Math.sin(end);
+    const xi1 = cx + inner * Math.cos(end),   yi1 = cy + inner * Math.sin(end);
+    const xi2 = cx + inner * Math.cos(angle), yi2 = cy + inner * Math.sin(angle);
+    const large = sweep > Math.PI ? 1 : 0;
+    const d = `M${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2} L${xi1} ${yi1} A${inner} ${inner} 0 ${large} 0 ${xi2} ${yi2}Z`;
+    angle = end;
+    return { d, color: s.color };
+  });
+
+  return (
+    <svg viewBox="0 0 100 100" className="w-28 h-28 flex-shrink-0">
+      {paths.map((p, i) => (
+        <path key={i} d={p.d} fill={p.color + "cc"} />
+      ))}
+      <circle cx={cx} cy={cy} r={inner} fill="#16112e" />
+    </svg>
+  );
+}
 
 export default function FinanceClient({ initialMonth, initialBudget, initialExpenses, trend }: Props) {
   const [month, setMonth] = useState(initialMonth);
@@ -49,6 +89,9 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [savingBudget, setSavingBudget] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [closingMonth, setClosingMonth] = useState(false);
+  const [closeResult, setCloseResult] = useState<{ success?: boolean; xpEarned?: number; overBudget?: boolean } | null>(null);
 
   const totalSpent = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
   const remaining = budget ? budget.amount - totalSpent : null;
@@ -76,6 +119,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     const d = new Date(y, mo - 1 + delta, 1);
     const newMonth = d.toISOString().slice(0, 7);
     setLoading(true);
+    setCloseResult(null);
     const [bRes, eRes] = await Promise.all([
       fetch(`/api/kakeebo/budget?month=${newMonth}`),
       fetch(`/api/kakeebo/expenses?month=${newMonth}`),
@@ -131,6 +175,21 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     const r = await fetch(`/api/kakeebo/expenses/${id}`, { method: "DELETE" });
     if (r.ok) setExpenses((prev) => prev.filter((e) => e.id !== id));
     setDeletingId(null);
+  }
+
+  async function closeMonth() {
+    setClosingMonth(true);
+    const r = await fetch("/api/kakeebo/close-month", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ month }),
+    });
+    const data = await r.json();
+    setCloseResult(data);
+    if (data.success) {
+      setBudget((prev) => prev ? { ...prev, closed: true } : prev);
+    }
+    setClosingMonth(false);
   }
 
   const monthLabel = new Date(month + "-15").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
@@ -243,6 +302,19 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 {remaining! >= 0 ? `€${remaining!.toFixed(2)} remaining` : `€${Math.abs(remaining!).toFixed(2)} over`}
               </span>
             </div>
+
+            {/* Proximity warning */}
+            {!isOver && pctUsed >= 70 && (
+              <p className={`text-xs mt-2 font-medium ${
+                pctUsed >= 90 ? "text-red-400" : pctUsed >= 80 ? "text-amber-400" : "text-yellow-500"
+              }`}>
+                {pctUsed >= 90
+                  ? `⚠️ Almost at limit — only €${remaining!.toFixed(2)} left!`
+                  : pctUsed >= 80
+                    ? `⚡ Over 80% used — €${remaining!.toFixed(2)} remaining`
+                    : `💡 70% through budget — €${remaining!.toFixed(2)} left`}
+              </p>
+            )}
           </>
         ) : (
           <div>
@@ -279,33 +351,72 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         )}
       </div>
 
-      {/* Category breakdown */}
+      {/* Close month / reward */}
+      {budget && (
+        budget.closed || closeResult?.success ? (
+          <div className="bg-amber-950/20 border border-amber-700/30 rounded-2xl p-4 mb-4 flex items-center gap-3">
+            <span className="text-2xl">💎</span>
+            <div>
+              <p className="text-amber-300 font-semibold text-sm">Month closed — budget kept!</p>
+              <p className="text-amber-400/70 text-xs">25 XP earned · trophy unlocked</p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 mb-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#c4b5fd]">🔐 Close this month</p>
+                <p className="text-xs text-[#6b5a9e] mt-0.5">
+                  Stay within budget → earn 25 XP + a trophy
+                </p>
+              </div>
+              <button
+                onClick={closeMonth}
+                disabled={closingMonth || isOver}
+                className="px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-500 text-white rounded-xl text-sm font-bold disabled:opacity-40 active:scale-95 transition-all flex-shrink-0"
+              >
+                {closingMonth ? "..." : "Claim"}
+              </button>
+            </div>
+            {closeResult?.overBudget && (
+              <p className="text-xs text-red-400 mt-3 bg-red-950/30 border border-red-800/30 px-3 py-2 rounded-xl">
+                ⚠️ You&apos;re over budget — get back on track first!
+              </p>
+            )}
+          </div>
+        )
+      )}
+
+      {/* Category breakdown with donut chart */}
       {catBreakdown.length > 0 && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
           <h2 className="font-semibold text-[#c4b5fd] mb-4 text-sm">📊 By category</h2>
-          <div className="space-y-3">
-            {catBreakdown.map(({ cat, amount, pct }) => {
-              const s = CATS[cat] ?? CATS.other;
-              return (
-                <div key={cat}>
-                  <div className="flex items-center justify-between text-sm mb-1.5">
-                    <span className="text-[#ede9ff]">{s.icon} {s.label}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-[#6b5a9e]">{Math.round(pct)}%</span>
-                      <span className="font-semibold text-sm" style={{ color: s.color }}>
-                        €{amount.toFixed(2)}
-                      </span>
+          <div className="flex gap-4 items-center">
+            <DonutChart breakdown={catBreakdown} />
+            <div className="flex-1 space-y-2.5 min-w-0">
+              {catBreakdown.map(({ cat, amount, pct }) => {
+                const s = CATS[cat] ?? CATS.other;
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="text-[#ede9ff] text-xs">{s.icon} {s.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[#6b5a9e]">{Math.round(pct)}%</span>
+                        <span className="font-semibold text-xs" style={{ color: s.color }}>
+                          €{amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-[#1e1740] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, backgroundColor: s.color + "cc" }}
+                      />
                     </div>
                   </div>
-                  <div className="h-2 bg-[#1e1740] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%`, backgroundColor: s.color + "cc" }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
