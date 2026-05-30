@@ -21,6 +21,19 @@ export default async function FinancePage() {
     }),
   ]);
 
+  // Check if the current month has been closed (reward already claimed)
+  let budgetClosed = false;
+  if (budget) {
+    const rewardName = `Month Saved: ${currentMonth}`;
+    const closedReward = await prisma.reward.findUnique({ where: { name: rewardName } });
+    if (closedReward) {
+      const hasIt = await prisma.userReward.findFirst({
+        where: { userId, rewardId: closedReward.id },
+      });
+      budgetClosed = !!hasIt;
+    }
+  }
+
   // Last 6 months trend (always relative to now)
   const trend = [];
   for (let i = 5; i >= 0; i--) {
@@ -48,7 +61,7 @@ export default async function FinancePage() {
   return (
     <FinanceClient
       initialMonth={currentMonth}
-      initialBudget={budget ? { id: budget.id, month: budget.month, amount: budget.amount } : null}
+      initialBudget={budget ? { id: budget.id, month: budget.month, amount: budget.amount, closed: budgetClosed } : null}
       initialExpenses={JSON.parse(JSON.stringify(expenses))}
       trend={trend}
     />
