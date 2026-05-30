@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import FinanceGuide from "@/components/guides/FinanceGuide";
+import WeightGuide from "@/components/guides/WeightGuide";
+import HabitsGuide from "@/components/guides/HabitsGuide";
 
 type Milestone = { id: string; title: string; completed: boolean; order: number };
 type Tag = { id: string; name: string };
@@ -22,6 +25,9 @@ type Goal = {
   category: Category;
   milestones: Milestone[];
   tags: GoalTag[];
+  guideType: string | null;
+  guideTarget: number | null;
+  guideStart: number | null;
 };
 
 type Props = {
@@ -36,6 +42,14 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
   const [goal, setGoal] = useState(initial);
   const [deleting, setDeleting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+
+  function handleProgressUpdate(progress: number) {
+    setGoal((prev) => ({
+      ...prev,
+      progress,
+      status: progress >= 100 ? "completed" : "active",
+    }));
+  }
 
   async function toggleMilestone(milestoneId: string, completed: boolean) {
     const res = await fetch(`/api/goals/${goal.id}/milestones`, {
@@ -121,6 +135,11 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${priorityColor}`}>
             {priorityLabel}
           </span>
+          {goal.guideType && (
+            <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-900/20 text-amber-300 border border-amber-700/30">
+              {goal.guideType === "finance" ? "💰 Finance" : goal.guideType === "weight" ? "⚖️ Weight" : "🔁 Habits"}
+            </span>
+          )}
           {goal.tags.map(({ tag }) => (
             <span key={tag.id} className="text-xs px-2.5 py-1 rounded-full bg-[#1e1740] text-[#9d8ac7] border border-[#3b2d6e]">
               #{tag.name}
@@ -210,7 +229,32 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         </div>
       )}
 
-      {!isCompleted && (
+      {goal.guideType === "finance" && (
+        <FinanceGuide
+          goalId={goal.id}
+          guideTarget={goal.guideTarget}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      )}
+
+      {goal.guideType === "weight" && (
+        <WeightGuide
+          goalId={goal.id}
+          guideTarget={goal.guideTarget}
+          guideStart={goal.guideStart}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      )}
+
+      {goal.guideType === "habits" && (
+        <HabitsGuide
+          goalId={goal.id}
+          guideTarget={goal.guideTarget}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      )}
+
+      {!isCompleted && !goal.guideType && (
         <div className="space-y-3 mb-4">
           <button
             onClick={markComplete}
@@ -218,13 +262,16 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           >
             👑 Complete quest
           </button>
-          <Link
-            href={`/goals/${goal.id}/edit`}
-            className="block w-full py-3 border border-[#3b2d6e] text-[#c4b5fd] rounded-xl font-semibold text-center hover:border-violet-500/60 hover:bg-[#1e1740] transition-colors"
-          >
-            ✏️ Edit
-          </Link>
         </div>
+      )}
+
+      {!isCompleted && (
+        <Link
+          href={`/goals/${goal.id}/edit`}
+          className="block w-full py-3 border border-[#3b2d6e] text-[#c4b5fd] rounded-xl font-semibold text-center hover:border-violet-500/60 hover:bg-[#1e1740] transition-colors mb-3"
+        >
+          ✏️ Edit
+        </Link>
       )}
 
       <button

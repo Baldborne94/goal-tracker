@@ -7,8 +7,6 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/dashboard", icon: "🏰", label: "Realm" },
   { href: "/goals", icon: "⚔️", label: "Quests" },
-  { href: "/kakeebo", icon: "📒", label: "Gold" },
-  { href: "/vita", icon: "🌿", label: "Life" },
   { href: "/profile", icon: "🧙", label: "Hero" },
 ];
 
