@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { signOut } from "next-auth/react";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
@@ -28,6 +29,9 @@ function getLevel(points: number) {
 }
 
 export default function ProfileClient({ user, stats }: { user: User | null; stats: Stats }) {
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
   if (!user) return null;
 
   const level = getLevel(user.points);
@@ -114,6 +118,46 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
                 <div className="text-xs text-[#9d8ac7] mt-0.5">{ur.reward.description}</div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Danger zone */}
+      <div className="bg-[#16112e] rounded-2xl border border-red-900/30 p-5 mb-4">
+        <h2 className="text-sm font-semibold text-red-400/80 uppercase tracking-wider mb-4">⚠️ Danger zone</h2>
+        {!confirmReset ? (
+          <button
+            onClick={() => setConfirmReset(true)}
+            className="w-full py-2.5 border border-red-900/50 text-red-400 rounded-xl text-sm font-medium hover:bg-red-950/30 transition-colors"
+          >
+            Delete all quests
+          </button>
+        ) : (
+          <div>
+            <p className="text-sm text-[#c4b5fd] mb-3">
+              This will permanently delete all your quests, milestones and guide data. Are you sure?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmReset(false)}
+                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setResetting(true);
+                  await fetch("/api/goals/all", { method: "DELETE" });
+                  setResetting(false);
+                  setConfirmReset(false);
+                  window.location.reload();
+                }}
+                disabled={resetting}
+                className="flex-1 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all"
+              >
+                {resetting ? "Deleting..." : "Yes, delete all"}
+              </button>
+            </div>
           </div>
         )}
       </div>
