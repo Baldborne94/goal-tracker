@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, tags, milestones } = body;
+  const { title, description, priority, targetDate, categoryId, tags, milestones, guideType, guideTarget } = body;
 
   if (!title)
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -39,6 +39,8 @@ export async function POST(req: Request) {
       targetDate: targetDate ? new Date(targetDate) : null,
       categoryId: categoryId || null,
       userId: session.user.id,
+      guideType: guideType || null,
+      guideTarget: guideTarget ? parseFloat(String(guideTarget)) : null,
       tags: tags?.length
         ? {
             create: tags.map((tagName: string) => ({
