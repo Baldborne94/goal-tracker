@@ -20,6 +20,15 @@ export async function GET() {
   return NextResponse.json(goals);
 }
 
+function calculatePoints(priority: string, milestonesCount: number, hasDescription: boolean, hasTargetDate: boolean): number {
+  const base: Record<string, number> = { low: 15, medium: 30, high: 60 };
+  let pts = base[priority] ?? 30;
+  if (hasTargetDate) pts += 10;
+  pts += Math.min(milestonesCount, 5) * 5;
+  if (hasDescription) pts += 5;
+  return pts;
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
@@ -31,14 +40,23 @@ export async function POST(req: Request) {
   if (!title)
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
+  const resolvedPriority = priority || "medium";
+  const points = calculatePoints(
+    resolvedPriority,
+    milestones?.length ?? 0,
+    !!description?.trim(),
+    !!targetDate
+  );
+
   const goal = await prisma.goal.create({
     data: {
       title,
       description,
-      priority: priority || "medium",
+      priority: resolvedPriority,
       targetDate: targetDate ? new Date(targetDate) : null,
       categoryId: categoryId || null,
       userId: session.user.id,
+      points,
       guideType: guideType || null,
       guideTarget: guideTarget ? parseFloat(String(guideTarget)) : null,
       tags: tags?.length

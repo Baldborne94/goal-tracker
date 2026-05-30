@@ -17,11 +17,11 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 
 const LEVEL_THRESHOLDS = [
-  { level: 1, label: "Apprentice", icon: "🌱", min: 0, max: 49 },
-  { level: 2, label: "Adventurer", icon: "⚔️", min: 50, max: 149 },
-  { level: 3, label: "Warrior", icon: "🛡️", min: 150, max: 349 },
-  { level: 4, label: "Champion", icon: "🏆", min: 350, max: 699 },
-  { level: 5, label: "Legend", icon: "👑", min: 700, max: Infinity },
+  { level: 1, label: "Recruit",   icon: "🗡️",  min: 0,   max: 49 },
+  { level: 2, label: "Warrior",   icon: "⚔️",  min: 50,  max: 149 },
+  { level: 3, label: "Knight",    icon: "🛡️",  min: 150, max: 349 },
+  { level: 4, label: "Warlord",   icon: "🏰",  min: 350, max: 699 },
+  { level: 5, label: "King",      icon: "👑",  min: 700, max: Infinity },
 ];
 
 function getLevel(points: number) {
@@ -44,7 +44,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">🧙 Hero Profile</h1>
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">⚔️ Hero Profile</h1>
 
       {/* Hero card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "linear-gradient(135deg, #2d1b6e 0%, #1a0f3e 50%, #0f0826 100%)", border: "1px solid #4c3880"}}>

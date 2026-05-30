@@ -19,6 +19,15 @@ type Props = {
   };
 };
 
+function calcXP(priority: string, milestonesCount: number, hasDescription: boolean, hasTargetDate: boolean): number {
+  const base: Record<string, number> = { low: 15, medium: 30, high: 60 };
+  let pts = base[priority] ?? 30;
+  if (hasTargetDate) pts += 10;
+  pts += Math.min(milestonesCount, 5) * 5;
+  if (hasDescription) pts += 5;
+  return pts;
+}
+
 const GUIDE_OPTIONS = [
   { type: null as string | null, icon: "🎯", name: "No Guide", desc: "Track manually", targetLabel: "", targetPlaceholder: "" },
   { type: "finance", icon: "💰", name: "Finance", desc: "Save money", targetLabel: "Savings target (€)", targetPlaceholder: "e.g. 2000" },
@@ -87,6 +96,8 @@ export default function GoalForm({ categories, initialData }: Props) {
       router.push(`/goals/${goal.id}`);
     }
   }
+
+  const estimatedXP = calcXP(form.priority, milestones.length, !!form.description.trim(), !!form.targetDate);
 
   const inputClass = "w-full px-4 py-3 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a]";
   const selectedGuide = GUIDE_OPTIONS.find((g) => g.type === guideType);
@@ -284,6 +295,18 @@ export default function GoalForm({ categories, initialData }: Props) {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {!isEditing && (
+        <div className="flex items-center gap-3 bg-amber-900/20 border border-amber-700/30 rounded-xl px-4 py-3">
+          <span className="text-2xl">✨</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-300">{estimatedXP} XP on completion</p>
+            <p className="text-xs text-amber-400/60">
+              {form.priority === "low" ? "Easy quest" : form.priority === "high" ? "Hard quest — well rewarded!" : "Medium quest"} · add description, deadline & milestones to earn more
+            </p>
+          </div>
         </div>
       )}
 
