@@ -2,43 +2,43 @@ import { prisma } from "@/lib/db";
 
 const REWARDS = [
   {
-    name: "Prima Stella",
-    description: "Completa il tuo primo obiettivo",
+    name: "First Star",
+    description: "Complete your first goal",
     icon: "⭐",
     type: "milestone",
     condition: (completedCount: number) => completedCount >= 1,
   },
   {
-    name: "In Marcia",
-    description: "Completa 5 obiettivi",
+    name: "On the Move",
+    description: "Complete 5 goals",
     icon: "🚀",
     type: "milestone",
     condition: (completedCount: number) => completedCount >= 5,
   },
   {
-    name: "Campione",
-    description: "Completa 10 obiettivi",
+    name: "Champion",
+    description: "Complete 10 goals",
     icon: "🏆",
     type: "milestone",
     condition: (completedCount: number) => completedCount >= 10,
   },
   {
-    name: "Leggenda",
-    description: "Completa 25 obiettivi",
+    name: "Legend",
+    description: "Complete 25 goals",
     icon: "👑",
     type: "milestone",
     condition: (completedCount: number) => completedCount >= 25,
   },
   {
-    name: "Puntatore",
-    description: "Accumula 100 punti",
+    name: "Sharpshooter",
+    description: "Accumulate 100 XP",
     icon: "💯",
     type: "badge",
     condition: (_: number, points: number) => points >= 100,
   },
   {
-    name: "Esperto",
-    description: "Accumula 500 punti",
+    name: "Expert",
+    description: "Accumulate 500 XP",
     icon: "🎯",
     type: "badge",
     condition: (_: number, points: number) => points >= 500,
@@ -47,26 +47,26 @@ const REWARDS = [
 
 const KAKEEBO_REWARDS = [
   {
-    name: "Primo Bilancio",
-    description: "Imposta il tuo primo budget mensile",
+    name: "First Budget",
+    description: "Set your first monthly budget",
     icon: "💰",
     type: "badge",
   },
   {
-    name: "Cacciatore di Spese",
-    description: "Registra almeno 10 spese",
+    name: "Expense Hunter",
+    description: "Log at least 10 expenses",
     icon: "🎯",
     type: "badge",
   },
   {
-    name: "Risparmiatore",
-    description: "Chiudi un mese entro il budget",
+    name: "Saver",
+    description: "Close a month within budget",
     icon: "💎",
     type: "badge",
   },
   {
-    name: "Risparmiatore Seriale",
-    description: "Chiudi 3 mesi entro il budget",
+    name: "Serial Saver",
+    description: "Close 3 months within budget",
     icon: "🏦",
     type: "badge",
   },
@@ -74,26 +74,26 @@ const KAKEEBO_REWARDS = [
 
 const PESO_REWARDS = [
   {
-    name: "Prima Pesata",
-    description: "Registra la tua prima misurazione del peso",
+    name: "First Weigh-in",
+    description: "Log your first weight measurement",
     icon: "⚖️",
     type: "badge",
   },
   {
-    name: "Costante",
-    description: "Registra 10 misurazioni del peso",
+    name: "Consistent",
+    description: "Log 10 weight measurements",
     icon: "📊",
     type: "badge",
   },
   {
-    name: "Meno 5 kg",
-    description: "Perdi 5 kg dal tuo peso iniziale",
+    name: "Minus 5 kg",
+    description: "Lose 5 kg from your starting weight",
     icon: "🔥",
     type: "milestone",
   },
   {
-    name: "Meno 10 kg",
-    description: "Perdi 10 kg dal tuo peso iniziale",
+    name: "Minus 10 kg",
+    description: "Lose 10 kg from your starting weight",
     icon: "💪",
     type: "milestone",
   },
@@ -101,26 +101,26 @@ const PESO_REWARDS = [
 
 const ROUTINE_REWARDS = [
   {
-    name: "Prima Abitudine",
-    description: "Crea la tua prima abitudine",
+    name: "First Habit",
+    description: "Create your first habit",
     icon: "🌱",
     type: "badge",
   },
   {
     name: "Streak 7",
-    description: "7 giorni consecutivi su un'abitudine",
+    description: "7 consecutive days on a habit",
     icon: "🔥",
     type: "milestone",
   },
   {
     name: "Streak 30",
-    description: "30 giorni consecutivi su un'abitudine",
+    description: "30 consecutive days on a habit",
     icon: "⚡",
     type: "milestone",
   },
   {
-    name: "Giornata Perfetta",
-    description: "Completa tutte le abitudini in un giorno",
+    name: "Perfect Day",
+    description: "Complete all habits in a single day",
     icon: "✨",
     type: "badge",
   },
@@ -172,19 +172,12 @@ export async function checkAndAwardRewards(userId: string) {
     let reward = await prisma.reward.findUnique({ where: { name: r.name } });
     if (!reward) {
       reward = await prisma.reward.create({
-        data: {
-          name: r.name,
-          description: r.description,
-          icon: r.icon,
-          type: r.type,
-        },
+        data: { name: r.name, description: r.description, icon: r.icon, type: r.type },
       });
     }
 
     if (!earnedIds.has(reward.id)) {
-      await prisma.userReward.create({
-        data: { userId, rewardId: reward.id },
-      });
+      await prisma.userReward.create({ data: { userId, rewardId: reward.id } });
     }
   }
 }
@@ -206,14 +199,14 @@ export async function checkAndAwardKakeeboRewards(userId: string) {
   ]);
 
   const closedMonths = [...earnedNames].filter((n) =>
-    n.startsWith("Mese Risparmiato:")
+    n.startsWith("Month Saved:")
   ).length;
 
   const checks = [
-    { condition: budgetCount >= 1, name: "Primo Bilancio" },
-    { condition: expenseCount >= 10, name: "Cacciatore di Spese" },
-    { condition: closedMonths >= 1, name: "Risparmiatore" },
-    { condition: closedMonths >= 3, name: "Risparmiatore Seriale" },
+    { condition: budgetCount >= 1, name: "First Budget" },
+    { condition: expenseCount >= 10, name: "Expense Hunter" },
+    { condition: closedMonths >= 1, name: "Saver" },
+    { condition: closedMonths >= 3, name: "Serial Saver" },
   ];
 
   for (const { condition, name } of checks) {
@@ -247,10 +240,10 @@ export async function checkAndAwardPesoRewards(userId: string) {
     firstWeight !== null && lastWeight !== null ? firstWeight - lastWeight : 0;
 
   const checks = [
-    { condition: entryCount >= 1, name: "Prima Pesata" },
-    { condition: entryCount >= 10, name: "Costante" },
-    { condition: weightLoss >= 5, name: "Meno 5 kg" },
-    { condition: weightLoss >= 10, name: "Meno 10 kg" },
+    { condition: entryCount >= 1, name: "First Weigh-in" },
+    { condition: entryCount >= 10, name: "Consistent" },
+    { condition: weightLoss >= 5, name: "Minus 5 kg" },
+    { condition: weightLoss >= 10, name: "Minus 10 kg" },
   ];
 
   for (const { condition, name } of checks) {
@@ -291,10 +284,10 @@ export async function checkAndAwardRoutineRewards(userId: string) {
     habits.every((h) => h.logs.some((l: { date: string }) => l.date === today));
 
   const checks = [
-    { condition: habitCount >= 1, name: "Prima Abitudine" },
+    { condition: habitCount >= 1, name: "First Habit" },
     { condition: maxStreak >= 7, name: "Streak 7" },
     { condition: maxStreak >= 30, name: "Streak 30" },
-    { condition: allDoneToday, name: "Giornata Perfetta" },
+    { condition: allDoneToday, name: "Perfect Day" },
   ];
 
   for (const { condition, name } of checks) {
