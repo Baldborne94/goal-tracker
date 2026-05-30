@@ -282,7 +282,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
       </button>
 
       {showDelete && (
-        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60] p-4 pb-24">
           <div className="bg-[#1a1535] rounded-2xl border border-[#3b2d6e] w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-[#ede9ff] mb-2">Delete quest</h3>
             <p className="text-[#9d8ac7] text-sm mb-5">

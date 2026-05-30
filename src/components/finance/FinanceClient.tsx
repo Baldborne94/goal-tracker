@@ -31,7 +31,6 @@ type Props = {
   trend: TrendPoint[];
 };
 
-// SVG donut chart — renders category spending as arc slices
 function DonutChart({ breakdown }: { breakdown: { cat: string; pct: number }[] }) {
   if (breakdown.length === 0) return null;
   const cx = 50, cy = 50, R = 40, inner = 26;
@@ -535,8 +534,8 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
 
       {/* Add expense bottom sheet */}
       {showAdd && (
-        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50">
-          <div className="bg-[#1a1535] rounded-t-2xl border border-[#3b2d6e] w-full max-w-lg px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]">
+          <div className="bg-[#1a1535] rounded-t-2xl border border-[#3b2d6e] w-full max-w-lg px-5 pt-5 pb-20 max-h-[90vh] overflow-y-auto">
             <h3 className="font-bold text-[#ede9ff] mb-4">Add expense</h3>
 
             <div className="mb-4">
