@@ -7,7 +7,12 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  const [user, goals] = await Promise.all([
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [yr, mo] = currentMonth.split("-").map(Number);
+  const monthStart = new Date(yr, mo - 1, 1);
+  const monthEnd = new Date(yr, mo, 1);
+
+  const [user, goals, financeBudget, financeAgg] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: { userRewards: { include: { reward: true } } },
@@ -18,11 +23,20 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    prisma.monthlyBudget.findUnique({
+      where: { userId_month: { userId, month: currentMonth } },
+    }),
+    prisma.expense.aggregate({
+      where: { userId, date: { gte: monthStart, lt: monthEnd } },
+      _sum: { amount: true },
+    }),
   ]);
 
   const total = await prisma.goal.count({ where: { userId } });
   const completed = await prisma.goal.count({ where: { userId, status: "completed" } });
   const active = total - completed;
+  const financeSpent = financeAgg._sum.amount ?? 0;
+  const isOverBudget = financeBudget && financeSpent > financeBudget.amount;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -71,6 +85,50 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Finance widget */}
+      <Link
+        href="/finance"
+        className={`block rounded-2xl p-4 mb-6 transition-colors hover:border-amber-500/40 border ${
+          isOverBudget
+            ? "bg-red-950/30 border-red-700/40"
+            : "bg-[#16112e] border-[#3b2d6e]"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">💰 Finance</span>
+          <span className="text-xs text-amber-400">
+            {new Date().toLocaleDateString("en-GB", { month: "long" })} →
+          </span>
+        </div>
+        {financeBudget ? (
+          <>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-[#9d8ac7]">Spent</span>
+              <span className={`font-bold ${isOverBudget ? "text-red-400" : "text-[#ede9ff]"}`}>
+                €{financeSpent.toFixed(0)} / €{financeBudget.amount.toFixed(0)}
+              </span>
+            </div>
+            <div className="h-2 bg-[#0f0d22] rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  isOverBudget ? "bg-red-500" : financeSpent / financeBudget.amount > 0.8 ? "bg-amber-500" : "bg-violet-500"
+                }`}
+                style={{ width: `${Math.min(100, (financeSpent / financeBudget.amount) * 100)}%` }}
+              />
+            </div>
+            {isOverBudget && (
+              <p className="text-xs text-red-400 mt-1.5">
+                ⚠️ Over budget by €{(financeSpent - financeBudget.amount).toFixed(2)}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-[#9d8ac7]">
+            €{financeSpent.toFixed(2)} spent · <span className="text-amber-400/70">Set a budget →</span>
+          </p>
+        )}
+      </Link>
 
       {/* Recent goals */}
       <div className="flex items-center justify-between mb-3">
