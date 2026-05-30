@@ -31,6 +31,7 @@ type Props = {
   trend: TrendPoint[];
 };
 
+// SVG donut chart — renders category spending as arc slices
 function DonutChart({ breakdown }: { breakdown: { cat: string; pct: number }[] }) {
   if (breakdown.length === 0) return null;
   const cx = 50, cy = 50, R = 40, inner = 26;
@@ -80,7 +81,10 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [newCat, setNewCat] = useState("food");
   const [newAmt, setNewAmt] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
+  const [newDate, setNewDate] = useState(() => {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+  });
   const [adding, setAdding] = useState(false);
 
   const [editingBudget, setEditingBudget] = useState(false);
@@ -111,12 +115,13 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       }));
   }, [expenses, totalSpent]);
 
-  const isCurrentMonth = month === new Date().toISOString().slice(0, 7);
+  const now = new Date();
+  const isCurrentMonth = month === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   async function changeMonth(delta: number) {
     const [y, mo] = month.split("-").map(Number);
     const d = new Date(y, mo - 1 + delta, 1);
-    const newMonth = d.toISOString().slice(0, 7);
+    const newMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     setLoading(true);
     setCloseResult(null);
     const [bRes, eRes] = await Promise.all([
