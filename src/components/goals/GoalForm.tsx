@@ -19,6 +19,13 @@ type Props = {
   };
 };
 
+const GUIDE_OPTIONS = [
+  { type: null as string | null, icon: "🎯", name: "No Guide", desc: "Track manually", targetLabel: "", targetPlaceholder: "" },
+  { type: "finance", icon: "💰", name: "Finance", desc: "Save money", targetLabel: "Savings target (€)", targetPlaceholder: "e.g. 2000" },
+  { type: "weight", icon: "⚖️", name: "Weight", desc: "Body goal", targetLabel: "Target weight (kg)", targetPlaceholder: "e.g. 70" },
+  { type: "habits", icon: "🔁", name: "Habits", desc: "Build a streak", targetLabel: "Target days", targetPlaceholder: "e.g. 30" },
+];
+
 export default function GoalForm({ categories, initialData }: Props) {
   const router = useRouter();
   const isEditing = !!initialData?.id;
@@ -34,6 +41,8 @@ export default function GoalForm({ categories, initialData }: Props) {
   const [tagInput, setTagInput] = useState("");
   const [milestones, setMilestones] = useState<string[]>(initialData?.milestones || []);
   const [milestoneInput, setMilestoneInput] = useState("");
+  const [guideType, setGuideType] = useState<string | null>(null);
+  const [guideTarget, setGuideTarget] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -60,7 +69,13 @@ export default function GoalForm({ categories, initialData }: Props) {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, tags, milestones }),
+      body: JSON.stringify({
+        ...form,
+        tags,
+        milestones,
+        guideType: guideType || null,
+        guideTarget: guideTarget ? parseFloat(guideTarget) : null,
+      }),
     });
 
     if (!res.ok) {
@@ -74,6 +89,7 @@ export default function GoalForm({ categories, initialData }: Props) {
   }
 
   const inputClass = "w-full px-4 py-3 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a]";
+  const selectedGuide = GUIDE_OPTIONS.find((g) => g.type === guideType);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -224,6 +240,48 @@ export default function GoalForm({ categories, initialData }: Props) {
                   <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="text-[#6b5a9e] hover:text-red-400">×</button>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isEditing && (
+        <div>
+          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🧭 Guide</label>
+          <p className="text-xs text-[#6b5a9e] mb-3">Pick a tracker to help you reach this quest automatically.</p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {GUIDE_OPTIONS.map((g) => (
+              <button
+                key={String(g.type)}
+                type="button"
+                onClick={() => { setGuideType(g.type); setGuideTarget(""); }}
+                className={`p-3 rounded-xl border text-left transition-colors ${
+                  guideType === g.type
+                    ? "border-amber-500/60 bg-amber-900/20"
+                    : "border-[#3b2d6e] bg-[#16112e] hover:border-[#4a3a7a]"
+                }`}
+              >
+                <div className="text-xl mb-1">{g.icon}</div>
+                <div className="text-sm font-medium text-[#ede9ff]">{g.name}</div>
+                <div className="text-xs text-[#6b5a9e]">{g.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          {guideType && selectedGuide?.targetLabel && (
+            <div>
+              <label className="block text-sm font-medium text-[#c4b5fd] mb-1">
+                {selectedGuide.targetLabel}
+              </label>
+              <input
+                type="number"
+                value={guideTarget}
+                onChange={(e) => setGuideTarget(e.target.value)}
+                placeholder={selectedGuide.targetPlaceholder}
+                min="0"
+                step="0.01"
+                className={inputClass}
+              />
             </div>
           )}
         </div>
