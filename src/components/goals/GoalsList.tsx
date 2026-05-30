@@ -27,70 +27,85 @@ type Props = {
   categories: Category[];
 };
 
-type Suggestion = { icon: string; title: string; desc: string };
+type Suggestion = {
+  icon: string;
+  title: string;
+  desc: string;
+  durationDays?: number;
+  milestoneType?: "daily" | "weekly" | "sessions";
+  sessionsPerWeek?: number;
+};
+
+function suggestionHref(s: Suggestion): string {
+  const p = new URLSearchParams({ title: s.title });
+  if (s.durationDays) p.set("days", String(s.durationDays));
+  if (s.milestoneType) p.set("mtype", s.milestoneType);
+  if (s.sessionsPerWeek) p.set("spw", String(s.sessionsPerWeek));
+  return `/goals/new?${p.toString()}`;
+}
 
 const SUGGESTIONS: Record<string, Suggestion[]> = {
   _all: [
-    { icon: "🏋️", title: "Go to the gym 3 times a week for a month", desc: "Fitness · Health" },
-    { icon: "📚", title: "Read at least 1 hour every day for 30 days", desc: "Reading · Personal" },
-    { icon: "💧", title: "Drink 2L of water every day for 21 days", desc: "Hydration · Health" },
-    { icon: "😴", title: "Sleep 8 hours every night for 30 days", desc: "Recovery · Health" },
-    { icon: "🧘", title: "Stretch for 10 minutes after every gym session for a month", desc: "Recovery · Health" },
-    { icon: "🍳", title: "Meal prep for the week every Sunday for a month", desc: "Nutrition · Home" },
-    { icon: "📓", title: "Journal every evening for 30 days", desc: "Reflection · Personal" },
-    { icon: "📵", title: "No phone for the first 30 minutes after waking up for 21 days", desc: "Morning routine" },
+    { icon: "🏋️", title: "Go to the gym 3 times a week for a month", desc: "Fitness · Health", durationDays: 30, milestoneType: "sessions", sessionsPerWeek: 3 },
+    { icon: "📚", title: "Read at least 1 hour every day for 30 days", desc: "Reading · Personal", durationDays: 30, milestoneType: "daily" },
+    { icon: "💧", title: "Drink 2L of water every day for 21 days", desc: "Hydration · Health", durationDays: 21, milestoneType: "daily" },
+    { icon: "😴", title: "Sleep 8 hours every night for 30 days", desc: "Recovery · Health", durationDays: 30, milestoneType: "daily" },
+    { icon: "🧘", title: "Stretch for 10 minutes after every gym session for a month", desc: "Recovery · Health", durationDays: 30, milestoneType: "sessions", sessionsPerWeek: 3 },
+    { icon: "🍳", title: "Meal prep for the week every Sunday for a month", desc: "Nutrition · Home", durationDays: 30, milestoneType: "weekly" },
+    { icon: "📓", title: "Journal every evening for 30 days", desc: "Reflection · Personal", durationDays: 30, milestoneType: "daily" },
+    { icon: "📵", title: "No phone for the first 30 minutes after waking up for 21 days", desc: "Morning routine", durationDays: 21, milestoneType: "daily" },
   ],
   Health: [
-    { icon: "🏋️", title: "Go to the gym 3 times a week for a month", desc: "Consistency goal" },
-    { icon: "💧", title: "Drink 2L of water every day for 21 days", desc: "Hydration habit" },
-    { icon: "😴", title: "Sleep 8 hours every night for 30 days", desc: "Sleep routine" },
-    { icon: "🧘", title: "Stretch for 10 minutes after every gym session for a month", desc: "Recovery habit" },
-    { icon: "🥦", title: "Cook a new healthy recipe every week for a month", desc: "Nutrition variety" },
-    { icon: "🚶", title: "Walk at least 8,000 steps on rest days for 2 weeks", desc: "Active recovery" },
-    { icon: "🥗", title: "Eat a balanced meal (protein, carbs, vegetables) every day for 2 weeks", desc: "Nutrition habit" },
-    { icon: "🚫", title: "No alcohol for 30 days", desc: "Detox challenge" },
-    { icon: "☀️", title: "Morning stretch routine every day for 21 days", desc: "Flexibility habit" },
-    { icon: "💪", title: "Do 30 push-ups every day for 30 days", desc: "Strength habit" },
+    { icon: "🏋️", title: "Go to the gym 3 times a week for a month", desc: "Consistency goal", durationDays: 30, milestoneType: "sessions", sessionsPerWeek: 3 },
+    { icon: "💧", title: "Drink 2L of water every day for 21 days", desc: "Hydration habit", durationDays: 21, milestoneType: "daily" },
+    { icon: "😴", title: "Sleep 8 hours every night for 30 days", desc: "Sleep routine", durationDays: 30, milestoneType: "daily" },
+    { icon: "🧘", title: "Stretch for 10 minutes after every gym session for a month", desc: "Recovery habit", durationDays: 30, milestoneType: "sessions", sessionsPerWeek: 3 },
+    { icon: "🥦", title: "Cook a new healthy recipe every week for a month", desc: "Nutrition variety", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🚶", title: "Walk at least 8,000 steps on rest days for 2 weeks", desc: "Active recovery", durationDays: 14, milestoneType: "daily" },
+    { icon: "🥗", title: "Eat a balanced meal (protein, carbs, vegetables) every day for 2 weeks", desc: "Nutrition habit", durationDays: 14, milestoneType: "daily" },
+    { icon: "🚫", title: "No alcohol for 30 days", desc: "Detox challenge", durationDays: 30, milestoneType: "weekly" },
+    { icon: "☀️", title: "Morning stretch routine every day for 21 days", desc: "Flexibility habit", durationDays: 21, milestoneType: "daily" },
+    { icon: "💪", title: "Do 30 push-ups every day for 30 days", desc: "Strength habit", durationDays: 30, milestoneType: "daily" },
   ],
   Finance: [
-    { icon: "💰", title: "Save €200 this month", desc: "Monthly savings goal" },
-    { icon: "🧾", title: "Track every expense for 30 days", desc: "Financial awareness" },
-    { icon: "🍳", title: "Cook at home every day for a month", desc: "Cut eating-out costs" },
-    { icon: "📊", title: "Cancel all unused subscriptions this week", desc: "Reduce fixed costs" },
-    { icon: "🎯", title: "Build a €500 emergency fund in 3 months", desc: "Financial security" },
-    { icon: "🛒", title: "Plan the weekly grocery list before shopping for a month", desc: "Reduce food waste" },
+    { icon: "💰", title: "Save €200 this month", desc: "Monthly savings goal", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🧾", title: "Track every expense for 30 days", desc: "Financial awareness", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🍳", title: "Cook at home every day for a month", desc: "Cut eating-out costs", durationDays: 30, milestoneType: "daily" },
+    { icon: "📊", title: "Cancel all unused subscriptions this week", desc: "Reduce fixed costs", durationDays: 7, milestoneType: "daily" },
+    { icon: "🎯", title: "Build a €500 emergency fund in 3 months", desc: "Financial security", durationDays: 90, milestoneType: "weekly" },
+    { icon: "🛒", title: "Plan the weekly grocery list before shopping for a month", desc: "Reduce food waste", durationDays: 30, milestoneType: "weekly" },
   ],
   Personal: [
-    { icon: "📚", title: "Read at least 1 hour every day for 30 days", desc: "Reading habit" },
-    { icon: "📵", title: "No phone for the first 30 minutes after waking up for 21 days", desc: "Morning routine" },
-    { icon: "🌅", title: "Follow a consistent morning routine every day for 21 days", desc: "Start the day right" },
-    { icon: "📓", title: "Journal every evening for 30 days", desc: "Daily reflection" },
-    { icon: "📵", title: "No social media for 7 days", desc: "Digital detox" },
-    { icon: "🧺", title: "Do laundry and put it away the same day every week for a month", desc: "Home routine" },
-    { icon: "🧹", title: "Deep clean one area of the house every week for a month", desc: "Home maintenance" },
-    { icon: "🛒", title: "Do grocery shopping with a prepared list for a month", desc: "Plan before shopping" },
-    { icon: "🍳", title: "Meal prep on Sunday for the week ahead for a month", desc: "Save time during the week" },
-    { icon: "🎌", title: "Finish watching a complete anime series this month", desc: "Entertainment goal" },
-    { icon: "🎬", title: "Movie night every Friday for a month", desc: "Weekly treat" },
+    { icon: "📚", title: "Read at least 1 hour every day for 30 days", desc: "Reading habit", durationDays: 30, milestoneType: "daily" },
+    { icon: "📵", title: "No phone for the first 30 minutes after waking up for 21 days", desc: "Morning routine", durationDays: 21, milestoneType: "daily" },
+    { icon: "🌅", title: "Follow a consistent morning routine every day for 21 days", desc: "Start the day right", durationDays: 21, milestoneType: "daily" },
+    { icon: "📓", title: "Journal every evening for 30 days", desc: "Daily reflection", durationDays: 30, milestoneType: "daily" },
+    { icon: "📵", title: "No social media for 7 days", desc: "Digital detox", durationDays: 7, milestoneType: "daily" },
+    { icon: "🧺", title: "Do laundry and put it away the same day every week for a month", desc: "Home routine", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🧹", title: "Deep clean one area of the house every week for a month", desc: "Home maintenance", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🛒", title: "Do grocery shopping with a prepared list for a month", desc: "Plan before shopping", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🍳", title: "Meal prep on Sunday for the week ahead for a month", desc: "Save time during the week", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🎌", title: "Finish watching a complete anime series this month", desc: "Entertainment goal", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🎬", title: "Movie night every Friday for a month", desc: "Weekly treat", durationDays: 30, milestoneType: "weekly" },
     { icon: "🎮", title: "Finish a game you started but never completed", desc: "Entertainment goal" },
   ],
   Learning: [
-    { icon: "📚", title: "Read at least 1 hour every day for 30 days", desc: "Reading habit" },
-    { icon: "💻", title: "Complete an online course this month", desc: "New skill" },
-    { icon: "🗣️", title: "Learn 5 new words in a language every day for 30 days", desc: "Language learning" },
-    { icon: "🎸", title: "Practice an instrument for 20 min every day for 30 days", desc: "Music skill" },
-    { icon: "✍️", title: "Write 500 words every day for 30 days", desc: "Writing practice" },
-    { icon: "📺", title: "Watch 1 educational video every day for 2 weeks", desc: "Daily learning" },
+    { icon: "📚", title: "Read at least 1 hour every day for 30 days", desc: "Reading habit", durationDays: 30, milestoneType: "daily" },
+    { icon: "💻", title: "Complete an online course this month", desc: "New skill", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🗣️", title: "Learn 5 new words in a language every day for 30 days", desc: "Language learning", durationDays: 30, milestoneType: "daily" },
+    { icon: "🎸", title: "Practice an instrument for 20 min every day for 30 days", desc: "Music skill", durationDays: 30, milestoneType: "daily" },
+    { icon: "✍️", title: "Write 500 words every day for 30 days", desc: "Writing practice", durationDays: 30, milestoneType: "daily" },
+    { icon: "📺", title: "Watch 1 educational video every day for 2 weeks", desc: "Daily learning", durationDays: 14, milestoneType: "daily" },
   ],
   Work: [
-    { icon: "⏰", title: "Start work at the same time every day for 21 days", desc: "Smartworking routine" },
-    { icon: "🖥️", title: "End work at a fixed time every day for 3 weeks", desc: "Work-life balance" },
-    { icon: "📋", title: "Plan tomorrow's tasks before going to bed for 21 days", desc: "Evening planning" },
-    { icon: "☕", title: "Take a proper lunch break away from the screen every day for 2 weeks", desc: "Rest habit" },
-    { icon: "🚫", title: "No phone during focused work blocks for 2 weeks", desc: "Deep focus" },
-    { icon: "⏱️", title: "2h deep work session every morning for 30 days", desc: "Focus habit" },
-    { icon: "🤝", title: "Network with 2 new people this month", desc: "Career growth" },
-    { icon: "🎯", title: "Complete one key project this month", desc: "Focus on what matters" },
+    { icon: "⏰", title: "Start work at the same time every day for 21 days", desc: "Smartworking routine", durationDays: 21, milestoneType: "daily" },
+    { icon: "🖥️", title: "End work at a fixed time every day for 3 weeks", desc: "Work-life balance", durationDays: 21, milestoneType: "daily" },
+    { icon: "📋", title: "Plan tomorrow's tasks before going to bed for 21 days", desc: "Evening planning", durationDays: 21, milestoneType: "daily" },
+    { icon: "☕", title: "Take a proper lunch break away from the screen every day for 2 weeks", desc: "Rest habit", durationDays: 14, milestoneType: "daily" },
+    { icon: "🚫", title: "No phone during focused work blocks for 2 weeks", desc: "Deep focus", durationDays: 14, milestoneType: "daily" },
+    { icon: "⏱️", title: "2h deep work session every morning for 30 days", desc: "Focus habit", durationDays: 30, milestoneType: "daily" },
+    { icon: "🤝", title: "Network with 2 new people this month", desc: "Career growth", durationDays: 30, milestoneType: "weekly" },
+    { icon: "🎯", title: "Complete one key project this month", desc: "Focus on what matters", durationDays: 30, milestoneType: "weekly" },
   ],
 };
 
@@ -202,13 +217,24 @@ export default function GoalsList({ goals, categories }: Props) {
             {suggestions.map((s) => (
               <Link
                 key={s.title}
-                href={`/goals/new?title=${encodeURIComponent(s.title)}`}
+                href={suggestionHref(s)}
                 className="flex items-center gap-3 bg-[#0f0d22] rounded-xl px-3 py-2.5 border border-[#2a1f50] hover:border-amber-500/30 transition-colors group"
               >
                 <span className="text-xl flex-shrink-0">{s.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-[#ede9ff] leading-snug">{s.title}</p>
-                  <p className="text-xs text-[#6b5a9e] mt-0.5">{s.desc}</p>
+                  <p className="text-xs text-[#6b5a9e] mt-0.5">
+                    {s.desc}
+                    {s.durationDays && (
+                      <span className="ml-2 text-amber-500/70">
+                        · {s.milestoneType === "daily"
+                          ? `${s.durationDays} daily checkboxes`
+                          : s.milestoneType === "sessions" && s.sessionsPerWeek
+                          ? `${Math.ceil(s.durationDays / 7) * s.sessionsPerWeek} sessions`
+                          : `${Math.ceil(s.durationDays / 7)} weekly checkpoints`}
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <span className="text-[#3b2d6e] group-hover:text-amber-400 transition-colors text-lg flex-shrink-0">+</span>
               </Link>

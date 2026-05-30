@@ -55,7 +55,7 @@ export async function PATCH(
       description,
       priority,
       targetDate: targetDate ? new Date(targetDate) : existing.targetDate,
-      categoryId,
+      categoryId: categoryId === "" ? null : categoryId,
       progress,
       status,
       completedAt:
