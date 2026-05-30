@@ -23,12 +23,12 @@ export default async function GoalsPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#ede9ff]">⚔️ Missioni</h1>
+        <h1 className="text-2xl font-bold text-[#ede9ff]">⚔️ Quests</h1>
         <Link
           href="/goals/new"
           className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold shadow-lg shadow-amber-900/30"
         >
-          + Nuova
+          + New
         </Link>
       </div>
 

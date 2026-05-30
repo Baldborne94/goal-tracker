@@ -6,13 +6,12 @@ import { checkAndAwardKakeeboRewards } from "@/lib/rewards";
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { month } = await req.json();
   const userId = session.user.id;
 
-  // Already closed?
-  const rewardName = `Mese Risparmiato: ${month}`;
+  const rewardName = `Month Saved: ${month}`;
   const existing = await prisma.reward.findUnique({ where: { name: rewardName } });
   if (existing) {
     const alreadyHas = await prisma.userReward.findFirst({
@@ -25,7 +24,7 @@ export async function POST(req: Request) {
     where: { userId_month: { userId, month } },
   });
   if (!budget)
-    return NextResponse.json({ error: "Nessun budget impostato" }, { status: 400 });
+    return NextResponse.json({ error: "No budget set" }, { status: 400 });
 
   const [year, m] = month.split("-").map(Number);
   const expenses = await prisma.expense.findMany({
@@ -34,18 +33,17 @@ export async function POST(req: Request) {
       date: { gte: new Date(year, m - 1, 1), lt: new Date(year, m, 1) },
     },
   });
-  const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+  const totalSpent = expenses.reduce((s: number, e: { amount: number }) => s + e.amount, 0);
 
   if (totalSpent > budget.amount)
     return NextResponse.json({ success: false, overBudget: true });
 
-  // Create the per-month badge
   let reward = await prisma.reward.findUnique({ where: { name: rewardName } });
   if (!reward) {
     reward = await prisma.reward.create({
       data: {
         name: rewardName,
-        description: `Budget rispettato — ${month}`,
+        description: `Budget kept — ${month}`,
         icon: "💎",
         type: "badge",
       },
@@ -59,7 +57,6 @@ export async function POST(req: Request) {
   });
   await prisma.userReward.create({ data: { userId, rewardId: reward.id } });
 
-  // Check for milestone badges (Risparmiatore, Risparmiatore Seriale)
   await checkAndAwardKakeeboRewards(userId);
 
   return NextResponse.json({ success: true, xpEarned: XP });

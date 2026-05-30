@@ -8,7 +8,7 @@ export async function PATCH(
 ) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: goalId } = await params;
   const { milestoneId, completed } = await req.json();
@@ -18,7 +18,7 @@ export async function PATCH(
     include: { milestones: true },
   });
   if (!goal)
-    return NextResponse.json({ error: "Obiettivo non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Goal not found" }, { status: 404 });
 
   const milestone = await prisma.milestone.update({
     where: { id: milestoneId },

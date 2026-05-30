@@ -16,11 +16,11 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 
 const LEVEL_THRESHOLDS = [
-  { level: 1, label: "Apprendista", icon: "🌱", min: 0, max: 49 },
-  { level: 2, label: "Avventuriero", icon: "⚔️", min: 50, max: 149 },
-  { level: 3, label: "Guerriero", icon: "🛡️", min: 150, max: 349 },
-  { level: 4, label: "Campione", icon: "🏆", min: 350, max: 699 },
-  { level: 5, label: "Leggenda", icon: "👑", min: 700, max: Infinity },
+  { level: 1, label: "Apprentice", icon: "🌱", min: 0, max: 49 },
+  { level: 2, label: "Adventurer", icon: "⚔️", min: 50, max: 149 },
+  { level: 3, label: "Warrior", icon: "🛡️", min: 150, max: 349 },
+  { level: 4, label: "Champion", icon: "🏆", min: 350, max: 699 },
+  { level: 5, label: "Legend", icon: "👑", min: 700, max: Infinity },
 ];
 
 function getLevel(points: number) {
@@ -38,7 +38,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">🧙 Profilo Eroe</h1>
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">🧙 Hero Profile</h1>
 
       {/* Hero card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "linear-gradient(135deg, #2d1b6e 0%, #1a0f3e 50%, #0f0826 100%)", border: "1px solid #4c3880"}}>
@@ -51,7 +51,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
             <h2 className="text-xl font-bold text-[#ede9ff]">{user.name}</h2>
             <p className="text-[#9d8ac7] text-sm">{user.email}</p>
             <p className="text-amber-400 text-sm font-semibold mt-0.5">
-              {level.icon} Liv. {level.level} — {level.label}
+              {level.icon} Lv. {level.level} — {level.label}
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
           <div className="flex justify-between text-sm mb-1.5">
             <span className="text-amber-300/80">✨ {user.points} XP</span>
             {nextLevel && (
-              <span className="text-[#9d8ac7] text-xs">Prossimo: {nextLevel.min} XP</span>
+              <span className="text-[#9d8ac7] text-xs">Next: {nextLevel.min} XP</span>
             )}
           </div>
           <div className="h-2.5 rounded-full overflow-hidden" style={{background: "#0f0826"}}>
@@ -70,7 +70,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
             />
           </div>
           {nextLevel && (
-            <p className="text-xs text-[#6b5a9e] mt-1">{progressToNext}% verso {nextLevel.label}</p>
+            <p className="text-xs text-[#6b5a9e] mt-1">{progressToNext}% towards {nextLevel.label}</p>
           )}
         </div>
       </div>
@@ -78,9 +78,9 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: "Totali", value: stats.total, icon: "📜" },
-          { label: "Attive", value: stats.active, icon: "⚡" },
-          { label: "Completate", value: stats.completed, icon: "👑" },
+          { label: "Total", value: stats.total, icon: "📜" },
+          { label: "Active", value: stats.active, icon: "⚡" },
+          { label: "Done", value: stats.completed, icon: "👑" },
         ].map((s) => (
           <div key={s.label} className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
             <div className="text-2xl mb-1">{s.icon}</div>
@@ -93,14 +93,14 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
       {/* Rewards */}
       <div className="mb-6">
         <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">
-          💎 Trofei{" "}
+          💎 Trophies{" "}
           <span className="text-[#6b5a9e] font-normal">({user.userRewards.length})</span>
         </h2>
 
         {user.userRewards.length === 0 ? (
           <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-6 text-center">
             <div className="text-3xl mb-2">🏆</div>
-            <p className="text-[#9d8ac7] text-sm">Completa missioni per sbloccare trofei</p>
+            <p className="text-[#9d8ac7] text-sm">Complete quests to unlock trophies</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -122,7 +122,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
         onClick={() => signOut({ callbackUrl: "/login" })}
         className="w-full py-3 border border-red-900/50 text-red-400 rounded-xl font-semibold hover:bg-red-950/30 transition-colors"
       >
-        Abbandona il regno
+        Leave the realm
       </button>
     </div>
   );

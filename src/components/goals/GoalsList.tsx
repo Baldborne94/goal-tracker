@@ -52,7 +52,7 @@ export default function GoalsList({ goals, categories }: Props) {
                 : "bg-[#16112e] text-[#9d8ac7] border-[#3b2d6e] hover:border-amber-500/40"
             }`}
           >
-            {f === "all" ? "Tutte" : f === "active" ? "⚡ Attive" : "👑 Completate"}
+            {f === "all" ? "All" : f === "active" ? "⚡ Active" : "👑 Completed"}
           </button>
         ))}
       </div>
@@ -68,7 +68,7 @@ export default function GoalsList({ goals, categories }: Props) {
                 : "bg-[#16112e] text-[#9d8ac7] border-[#3b2d6e]"
             }`}
           >
-            Tutte
+            All
           </button>
           {categories.map((c) => (
             <button
@@ -92,12 +92,12 @@ export default function GoalsList({ goals, categories }: Props) {
       {filtered.length === 0 ? (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-8 text-center">
           <div className="text-4xl mb-3">🗡️</div>
-          <p className="text-[#9d8ac7] text-sm">Nessuna missione trovata</p>
+          <p className="text-[#9d8ac7] text-sm">No quests found</p>
           <Link
             href="/goals/new"
             className="inline-block mt-4 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold"
           >
-            Crea missione
+            Create quest
           </Link>
         </div>
       ) : (
@@ -130,7 +130,7 @@ function GoalCard({ goal }: { goal: Goal }) {
           }`}
         >
           {goal.status === "completed" ? "👑" : "⚡"}{" "}
-          {goal.status === "completed" ? "Fatto" : "Attiva"}
+          {goal.status === "completed" ? "Done" : "Active"}
         </span>
       </div>
 
@@ -159,7 +159,7 @@ function GoalCard({ goal }: { goal: Goal }) {
       <div>
         <div className="flex items-center justify-between text-xs text-[#6b5a9e] mb-1">
           <span>
-            {milestonesTotal > 0 ? `${milestonesDone}/${milestonesTotal} tappe` : "Progresso"}
+            {milestonesTotal > 0 ? `${milestonesDone}/${milestonesTotal} milestones` : "Progress"}
           </span>
           <span className="text-amber-400/80">{goal.progress}%</span>
         </div>

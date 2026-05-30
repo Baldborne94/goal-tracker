@@ -9,7 +9,7 @@ export async function GET(
 ) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   const goal = await prisma.goal.findFirst({
@@ -22,7 +22,7 @@ export async function GET(
   });
 
   if (!goal)
-    return NextResponse.json({ error: "Obiettivo non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Goal not found" }, { status: 404 });
 
   return NextResponse.json(goal);
 }
@@ -33,7 +33,7 @@ export async function PATCH(
 ) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   const body = await req.json();
@@ -43,7 +43,7 @@ export async function PATCH(
     where: { id, userId: session.user.id },
   });
   if (!existing)
-    return NextResponse.json({ error: "Obiettivo non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Goal not found" }, { status: 404 });
 
   const wasCompleted = existing.status === "completed";
   const isNowComplete = status === "completed" || progress === 100;
@@ -86,14 +86,14 @@ export async function DELETE(
 ) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   const existing = await prisma.goal.findFirst({
     where: { id, userId: session.user.id },
   });
   if (!existing)
-    return NextResponse.json({ error: "Obiettivo non trovato" }, { status: 404 });
+    return NextResponse.json({ error: "Goal not found" }, { status: 404 });
 
   await prisma.goal.delete({ where: { id } });
   return NextResponse.json({ success: true });

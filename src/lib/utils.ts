@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString("it-IT", {
+  return new Date(date).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -36,11 +36,11 @@ export function getPriorityColor(priority: string) {
 export function getPriorityLabel(priority: string) {
   switch (priority) {
     case "high":
-      return "Alta";
+      return "High";
     case "medium":
-      return "Media";
+      return "Medium";
     case "low":
-      return "Bassa";
+      return "Low";
     default:
       return priority;
   }

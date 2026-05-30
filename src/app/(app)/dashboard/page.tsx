@@ -28,25 +28,25 @@ export default async function DashboardPage() {
     <div className="max-w-lg mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
-        <p className="text-[#9d8ac7] text-sm">Benvenuto,</p>
-        <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Avventuriero"} ⚔️</h1>
+        <p className="text-[#9d8ac7] text-sm">Welcome,</p>
+        <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} ⚔️</h1>
       </div>
 
       {/* XP card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "linear-gradient(135deg, #2d1b6e 0%, #1a0f3e 50%, #0f0826 100%)", border: "1px solid #4c3880"}}>
         <div className="absolute top-0 right-0 w-32 h-32 opacity-10" style={{background: "radial-gradient(circle, #f59e0b 0%, transparent 70%)"}}/>
-        <p className="text-amber-300/80 text-sm mb-1">✨ Magia accumulata</p>
+        <p className="text-amber-300/80 text-sm mb-1">✨ Magic accumulated</p>
         <div className="flex items-end gap-2">
           <span className="text-4xl font-bold text-amber-400">{user?.points ?? 0}</span>
           <span className="text-amber-300/60 mb-1">XP</span>
         </div>
         <div className="mt-3 flex gap-4 text-sm">
           <div>
-            <span className="text-[#9d8ac7]">⚡ Attive: </span>
+            <span className="text-[#9d8ac7]">⚡ Active: </span>
             <span className="font-semibold text-[#ede9ff]">{active}</span>
           </div>
           <div>
-            <span className="text-[#9d8ac7]">👑 Completate: </span>
+            <span className="text-[#9d8ac7]">👑 Completed: </span>
             <span className="font-semibold text-[#ede9ff]">{completed}</span>
           </div>
         </div>
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
       {/* Recent rewards */}
       {user?.userRewards && user.userRewards.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">💎 Trofei ottenuti</h2>
+          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">💎 Trophies earned</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {user.userRewards.slice(0, 6).map((ur: { id: string; reward: { icon: string; name: string } }) => (
               <div
@@ -74,21 +74,21 @@ export default async function DashboardPage() {
 
       {/* Recent goals */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">⚔️ Missioni recenti</h2>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">⚔️ Recent quests</h2>
         <Link href="/goals" className="text-sm text-amber-400 font-medium hover:text-amber-300">
-          Vedi tutte →
+          See all →
         </Link>
       </div>
 
       {goals.length === 0 ? (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-8 text-center">
           <div className="text-4xl mb-3">🗡️</div>
-          <p className="text-[#9d8ac7] text-sm mb-4">Nessuna missione ancora</p>
+          <p className="text-[#9d8ac7] text-sm mb-4">No quests yet</p>
           <Link
             href="/goals/new"
             className="inline-block px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold"
           >
-            Inizia la prima missione
+            Start your first quest
           </Link>
         </div>
       ) : (
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
                         : "bg-violet-900/30 text-violet-300 border-violet-700/40"
                     }`}
                   >
-                    {goal.status === "completed" ? "👑 Completata" : "⚡ Attiva"}
+                    {goal.status === "completed" ? "👑 Done" : "⚡ Active"}
                   </span>
                 </div>
 
@@ -129,8 +129,8 @@ export default async function DashboardPage() {
                   <div className="flex items-center justify-between text-xs text-[#6b5a9e] mb-1">
                     <span>
                       {milestonesTotal > 0
-                        ? `${milestonesDone}/${milestonesTotal} tappe`
-                        : "Progresso"}
+                        ? `${milestonesDone}/${milestonesTotal} milestones`
+                        : "Progress"}
                     </span>
                     <span className="text-amber-400/80">{goal.progress}%</span>
                   </div>
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
 
                 {goal.targetDate && (
                   <p className="text-xs text-[#6b5a9e] mt-2">
-                    🌙 Scadenza: {formatDate(goal.targetDate)}
+                    🌙 Deadline: {formatDate(goal.targetDate)}
                   </p>
                 )}
               </Link>

@@ -6,7 +6,7 @@ import { checkAndAwardPesoRewards } from "@/lib/rewards";
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const entries = await prisma.weightEntry.findMany({
     where: { userId: session.user.id },
@@ -19,11 +19,11 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { weight, note, date } = await req.json();
   if (!weight || isNaN(parseFloat(weight)))
-    return NextResponse.json({ error: "Peso non valido" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid weight" }, { status: 400 });
 
   const entry = await prisma.weightEntry.create({
     data: {

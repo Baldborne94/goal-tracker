@@ -65,7 +65,7 @@ export default function GoalForm({ categories, initialData }: Props) {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Errore");
+      setError(data.error || "Something went wrong");
       setLoading(false);
     } else {
       const goal = await res.json();
@@ -82,43 +82,43 @@ export default function GoalForm({ categories, initialData }: Props) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Titolo *</label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Title *</label>
         <input
           required
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          placeholder="Cosa vuoi raggiungere?"
+          placeholder="What do you want to achieve?"
           className={inputClass}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Descrizione</label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Description</label>
         <textarea
           rows={3}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          placeholder="Descrivi la tua missione..."
+          placeholder="Describe your quest..."
           className={`${inputClass} resize-none`}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Difficoltà</label>
+          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Difficulty</label>
           <select
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: e.target.value })}
             className={inputClass}
           >
-            <option value="low">🍃 Bassa</option>
-            <option value="medium">⚡ Media</option>
-            <option value="high">🔥 Alta</option>
+            <option value="low">🍃 Low</option>
+            <option value="medium">⚡ Medium</option>
+            <option value="high">🔥 High</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🌙 Scadenza</label>
+          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🌙 Deadline</label>
           <input
             type="date"
             value={form.targetDate}
@@ -129,7 +129,7 @@ export default function GoalForm({ categories, initialData }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-2">Categoria</label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-2">Category</label>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -140,7 +140,7 @@ export default function GoalForm({ categories, initialData }: Props) {
                 : "bg-[#16112e] border-[#3b2d6e] text-[#9d8ac7]"
             }`}
           >
-            Nessuna
+            None
           </button>
           {categories.map((c) => (
             <button
@@ -162,15 +162,14 @@ export default function GoalForm({ categories, initialData }: Props) {
         </div>
       </div>
 
-      {/* Tags */}
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Tag</label>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Tags</label>
         <div className="flex gap-2 mb-2">
           <input
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-            placeholder="Aggiungi tag..."
+            placeholder="Add tag..."
             className="flex-1 px-4 py-2.5 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a] text-sm"
           />
           <button
@@ -193,16 +192,15 @@ export default function GoalForm({ categories, initialData }: Props) {
         )}
       </div>
 
-      {/* Milestones */}
       {!isEditing && (
         <div>
-          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">⭐ Tappe / Sotto-obiettivi</label>
+          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">⭐ Milestones / Sub-goals</label>
           <div className="flex gap-2 mb-2">
             <input
               value={milestoneInput}
               onChange={(e) => setMilestoneInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMilestone(); } }}
-              placeholder="Aggiungi una tappa..."
+              placeholder="Add a milestone..."
               className="flex-1 px-4 py-2.5 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a] text-sm"
             />
             <button
@@ -237,14 +235,14 @@ export default function GoalForm({ categories, initialData }: Props) {
           onClick={() => router.back()}
           className="flex-1 py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold hover:bg-[#1e1740] transition-colors"
         >
-          Annulla
+          Cancel
         </button>
         <button
           type="submit"
           disabled={loading}
           className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold disabled:opacity-60 shadow-lg shadow-amber-900/30"
         >
-          {loading ? "..." : isEditing ? "✨ Salva" : "⚔️ Crea missione"}
+          {loading ? "..." : isEditing ? "✨ Save" : "⚔️ Create quest"}
         </button>
       </div>
     </form>

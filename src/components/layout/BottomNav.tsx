@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", icon: "🏰", label: "Reame" },
-  { href: "/goals", icon: "⚔️", label: "Missioni" },
-  { href: "/kakeebo", icon: "📒", label: "Oro" },
-  { href: "/vita", icon: "🌿", label: "Vita" },
-  { href: "/profile", icon: "🧙", label: "Eroe" },
+  { href: "/dashboard", icon: "🏰", label: "Realm" },
+  { href: "/goals", icon: "⚔️", label: "Quests" },
+  { href: "/kakeebo", icon: "📒", label: "Gold" },
+  { href: "/vita", icon: "🌿", label: "Life" },
+  { href: "/profile", icon: "🧙", label: "Hero" },
 ];
 
 export default function BottomNav() {

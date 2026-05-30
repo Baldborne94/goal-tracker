@@ -81,15 +81,13 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      {/* Back */}
       <button
         onClick={() => router.back()}
         className="flex items-center gap-1.5 text-[#9d8ac7] text-sm mb-5 hover:text-amber-400 transition-colors"
       >
-        ← Indietro
+        ← Back
       </button>
 
-      {/* Header card */}
       <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
         <div className="flex items-start justify-between gap-3 mb-3">
           <h1 className="text-xl font-bold text-[#ede9ff] flex-1">{goal.title}</h1>
@@ -100,7 +98,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
                 : "bg-violet-900/30 text-violet-300 border-violet-700/40"
             }`}
           >
-            {isCompleted ? "👑 Completata" : "⚡ Attiva"}
+            {isCompleted ? "👑 Completed" : "⚡ Active"}
           </span>
         </div>
 
@@ -130,10 +128,9 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           ))}
         </div>
 
-        {/* Progress */}
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-[#9d8ac7] font-medium">Progresso</span>
+            <span className="text-[#9d8ac7] font-medium">Progress</span>
             <span className="font-bold text-amber-400">{goal.progress}%</span>
           </div>
           <div className="h-3 bg-[#0f0d22] rounded-full overflow-hidden">
@@ -167,18 +164,17 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           <div className="mt-4 p-3 rounded-xl flex items-center gap-2" style={{background: "linear-gradient(135deg, #78350f33, #92400e22)", border: "1px solid #92400e66"}}>
             <span className="text-2xl">👑</span>
             <div>
-              <p className="text-amber-300 font-semibold text-sm">Missione completata!</p>
-              <p className="text-amber-400/70 text-xs">Hai guadagnato {goal.points} XP</p>
+              <p className="text-amber-300 font-semibold text-sm">Quest complete!</p>
+              <p className="text-amber-400/70 text-xs">You earned {goal.points} XP</p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Milestones */}
       {goal.milestones.length > 0 && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
           <h2 className="font-semibold text-[#c4b5fd] mb-3">
-            ⭐ Tappe{" "}
+            ⭐ Milestones{" "}
             <span className="text-sm font-normal text-[#6b5a9e]">
               {goal.milestones.filter((m) => m.completed).length}/{goal.milestones.length}
             </span>
@@ -214,20 +210,19 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         </div>
       )}
 
-      {/* Actions */}
       {!isCompleted && (
         <div className="space-y-3 mb-4">
           <button
             onClick={markComplete}
             className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all shadow-lg shadow-amber-900/30"
           >
-            👑 Completa missione
+            👑 Complete quest
           </button>
           <Link
             href={`/goals/${goal.id}/edit`}
             className="block w-full py-3 border border-[#3b2d6e] text-[#c4b5fd] rounded-xl font-semibold text-center hover:border-violet-500/60 hover:bg-[#1e1740] transition-colors"
           >
-            ✏️ Modifica
+            ✏️ Edit
           </Link>
         </div>
       )}
@@ -236,30 +231,29 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         onClick={() => setShowDelete(true)}
         className="w-full py-3 border border-red-900/50 text-red-400 rounded-xl font-semibold hover:bg-red-950/30 transition-colors"
       >
-        🗑 Elimina missione
+        🗑 Delete quest
       </button>
 
-      {/* Delete modal */}
       {showDelete && (
         <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50 p-4">
           <div className="bg-[#1a1535] rounded-2xl border border-[#3b2d6e] w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-[#ede9ff] mb-2">Elimina missione</h3>
+            <h3 className="text-lg font-bold text-[#ede9ff] mb-2">Delete quest</h3>
             <p className="text-[#9d8ac7] text-sm mb-5">
-              Sei sicuro? Questa azione è irreversibile.
+              Are you sure? This action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDelete(false)}
                 className="flex-1 py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold"
               >
-                Annulla
+                Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="flex-1 py-3 bg-red-900 text-red-200 rounded-xl font-semibold disabled:opacity-60 border border-red-800"
               >
-                {deleting ? "..." : "Elimina"}
+                {deleting ? "..." : "Delete"}
               </button>
             </div>
           </div>
