@@ -17,11 +17,11 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 
 const LEVEL_THRESHOLDS = [
-  { level: 1, label: "Recruit",  icon: "🗡️", min: 0,   max: 49 },
-  { level: 2, label: "Warrior",  icon: "⚔️",  min: 50,  max: 149 },
-  { level: 3, label: "Knight",   icon: "🛡️", min: 150, max: 349 },
-  { level: 4, label: "Warlord",  icon: "🏰",  min: 350, max: 699 },
-  { level: 5, label: "King",     icon: "👑",  min: 700, max: Infinity },
+  { level: 1, label: "Recruit",   icon: "🗡️",  min: 0,   max: 49 },
+  { level: 2, label: "Warrior",   icon: "⚔️",  min: 50,  max: 149 },
+  { level: 3, label: "Knight",    icon: "🛡️",  min: 150, max: 349 },
+  { level: 4, label: "Warlord",   icon: "🏀",  min: 350, max: 699 },
+  { level: 5, label: "King",      icon: "👑",  min: 700, max: Infinity },
 ];
 
 function getLevel(points: number) {
@@ -33,6 +33,8 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
   const [resetting, setResetting] = useState(false);
   const [confirmResetRewards, setConfirmResetRewards] = useState(false);
   const [resettingRewards, setResettingRewards] = useState(false);
+  const [confirmWipeAll, setConfirmWipeAll] = useState(false);
+  const [wipingAll, setWipingAll] = useState(false);
 
   if (!user) return null;
 
@@ -99,7 +101,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
       {/* Rewards */}
       <div className="mb-6">
         <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">
-          💎 Trophies{" "}
+          💎 Trophies{" "}
           <span className="text-[#6b5a9e] font-normal">({user.userRewards.length})</span>
         </h2>
 
@@ -197,6 +199,49 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
                 className="flex-1 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all"
               >
                 {resettingRewards ? "Resetting..." : "Yes, reset"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Wipe everything */}
+      <div className="bg-[#16112e] rounded-2xl border border-red-900/50 p-5 mb-4">
+        <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-1">💀 Wipe everything</h2>
+        <p className="text-xs text-[#6b5a9e] mb-4">Delete all quests, trophies and reset XP to 0. A clean slate.</p>
+
+        {!confirmWipeAll ? (
+          <button
+            onClick={() => setConfirmWipeAll(true)}
+            className="w-full py-2.5 bg-red-950/40 border border-red-700/60 text-red-300 rounded-xl text-sm font-semibold hover:bg-red-900/40 transition-colors"
+          >
+            💀 Reset everything
+          </button>
+        ) : (
+          <div>
+            <p className="text-sm text-[#c4b5fd] mb-3">
+              This will permanently delete ALL quests, trophies and reset XP to 0. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmWipeAll(false)}
+                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setWipingAll(true);
+                  await fetch("/api/goals/all", { method: "DELETE" });
+                  await fetch("/api/profile/reset-rewards", { method: "DELETE" });
+                  setWipingAll(false);
+                  setConfirmWipeAll(false);
+                  window.location.reload();
+                }}
+                disabled={wipingAll}
+                className="flex-1 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all"
+              >
+                {wipingAll ? "Wiping..." : "Yes, wipe all"}
               </button>
             </div>
           </div>
