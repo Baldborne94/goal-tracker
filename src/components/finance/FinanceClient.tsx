@@ -480,10 +480,10 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         </div>
       </div>
 
-      {/* Expense list */}
+      {/* Daily expense log */}
       <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5">
         <h2 className="font-semibold text-[#c4b5fd] mb-4 text-sm">
-          🧾 Expenses{" "}
+          🧾 Daily log{" "}
           {expenses.length > 0 && (
             <span className="font-normal text-[#6b5a9e]">({expenses.length})</span>
           )}
@@ -502,37 +502,63 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {expenses.map((e) => {
-              const s = CATS[e.category] ?? CATS.other;
-              return (
-                <div
-                  key={e.id}
-                  className="flex items-center gap-3 bg-[#0f0d22] rounded-xl px-3 py-2.5 border border-[#2a1f50]"
-                >
-                  <span className="text-xl flex-shrink-0">{s.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#ede9ff] truncate">
-                      {e.description || s.label}
-                    </p>
-                    <p className="text-xs text-[#4a3a7a]">
-                      {new Date(e.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                      {e.merchant && ` · ${e.merchant}`}
-                    </p>
+          <div className="space-y-4">
+            {(() => {
+              const byDay: { dateKey: string; label: string; total: number; items: typeof expenses }[] = [];
+              for (const e of expenses) {
+                const dateKey = e.date.slice(0, 10);
+                const existing = byDay.find((d) => d.dateKey === dateKey);
+                if (existing) {
+                  existing.items.push(e);
+                  existing.total += e.amount;
+                } else {
+                  const d = new Date(dateKey + "T12:00:00");
+                  const todayKey = (() => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; })();
+                  const yesterdayKey = (() => { const t = new Date(); t.setDate(t.getDate()-1); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; })();
+                  const label = dateKey === todayKey ? "Today" : dateKey === yesterdayKey ? "Yesterday" : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+                  byDay.push({ dateKey, label, total: e.amount, items: [e] });
+                }
+              }
+              return byDay.map(({ dateKey, label, total, items }) => (
+                <div key={dateKey}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-[#9d8ac7] uppercase tracking-wider">{label}</span>
+                    <span className="text-xs font-bold text-amber-400">-€{total.toFixed(2)}</span>
                   </div>
-                  <span className="font-semibold text-sm flex-shrink-0" style={{ color: s.color }}>
-                    -€{e.amount.toFixed(2)}
-                  </span>
-                  <button
-                    onClick={() => deleteExpense(e.id)}
-                    disabled={deletingId === e.id}
-                    className="text-[#3b2d6e] hover:text-red-400 transition-colors flex-shrink-0 text-xl leading-none disabled:opacity-40"
-                  >
-                    ×
-                  </button>
+                  <div className="space-y-1.5">
+                    {items.map((e) => {
+                      const s = CATS[e.category] ?? CATS.other;
+                      return (
+                        <div
+                          key={e.id}
+                          className="flex items-center gap-3 bg-[#0f0d22] rounded-xl px-3 py-2.5 border border-[#2a1f50]"
+                        >
+                          <span className="text-xl flex-shrink-0">{s.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[#ede9ff] truncate">
+                              {e.description || s.label}
+                            </p>
+                            {e.merchant && (
+                              <p className="text-xs text-[#4a3a7a]">{e.merchant}</p>
+                            )}
+                          </div>
+                          <span className="font-semibold text-sm flex-shrink-0" style={{ color: s.color }}>
+                            -€{e.amount.toFixed(2)}
+                          </span>
+                          <button
+                            onClick={() => deleteExpense(e.id)}
+                            disabled={deletingId === e.id}
+                            className="text-[#3b2d6e] hover:text-red-400 transition-colors flex-shrink-0 text-xl leading-none disabled:opacity-40"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
         )}
       </div>
