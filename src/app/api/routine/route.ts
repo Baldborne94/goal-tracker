@@ -6,7 +6,7 @@ import { checkAndAwardRoutineRewards } from "@/lib/rewards";
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000)
     .toISOString()
@@ -29,11 +29,11 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { name, icon } = await req.json();
   if (!name?.trim())
-    return NextResponse.json({ error: "Nome obbligatorio" }, { status: 400 });
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
   const habit = await prisma.habit.create({
     data: {

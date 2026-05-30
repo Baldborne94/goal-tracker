@@ -6,7 +6,7 @@ import { checkAndAwardKakeeboRewards } from "@/lib/rewards";
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
@@ -29,11 +29,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { amount, category, description, merchant, date } = await req.json();
   if (!amount || !category)
-    return NextResponse.json({ error: "Importo e categoria obbligatori" }, { status: 400 });
+    return NextResponse.json({ error: "Amount and category are required" }, { status: 400 });
 
   const expense = await prisma.expense.create({
     data: {
@@ -46,7 +46,6 @@ export async function POST(req: Request) {
     },
   });
 
-  // Check for "Cacciatore di Spese" badge at 10 expenses
   await checkAndAwardKakeeboRewards(session.user.id);
 
   return NextResponse.json(expense, { status: 201 });

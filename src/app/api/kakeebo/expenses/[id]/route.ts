@@ -8,14 +8,14 @@ export async function DELETE(
 ) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   const existing = await prisma.expense.findFirst({
     where: { id, userId: session.user.id },
   });
   if (!existing)
-    return NextResponse.json({ error: "Spesa non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Expense not found" }, { status: 404 });
 
   await prisma.expense.delete({ where: { id } });
   return NextResponse.json({ success: true });

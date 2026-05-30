@@ -9,14 +9,14 @@ export async function POST(
 ) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: habitId } = await params;
   const habit = await prisma.habit.findFirst({
     where: { id: habitId, userId: session.user.id },
   });
   if (!habit)
-    return NextResponse.json({ error: "Abitudine non trovata" }, { status: 404 });
+    return NextResponse.json({ error: "Habit not found" }, { status: 404 });
 
   const today = new Date().toISOString().slice(0, 10);
   const existing = await prisma.habitLog.findUnique({
