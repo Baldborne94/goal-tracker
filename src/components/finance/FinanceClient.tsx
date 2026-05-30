@@ -83,7 +83,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [loading, setLoading] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
-  const [newCat, setNewCat] = useState("food");
+  const [newCat, setNewCat] = useState("groceries");
   const [newAmt, setNewAmt] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newDate, setNewDate] = useState(() => {
