@@ -3,14 +3,19 @@
 import { useState, useMemo } from "react";
 
 const CATS: Record<string, { icon: string; color: string; label: string }> = {
-  food:      { icon: "🍕", color: "#f59e0b", label: "Food" },
-  transport: { icon: "🚗", color: "#3b82f6", label: "Transport" },
-  leisure:   { icon: "🎮", color: "#a855f7", label: "Leisure" },
-  home:      { icon: "🏠", color: "#22c55e", label: "Home" },
-  health:    { icon: "💊", color: "#ec4899", label: "Health" },
-  hobby:     { icon: "🎨", color: "#06b6d4", label: "Hobby" },
-  savings:   { icon: "💰", color: "#fbbf24", label: "Savings" },
-  other:     { icon: "📦", color: "#6b7280", label: "Other" },
+  groceries:     { icon: "🛒", color: "#f59e0b", label: "Groceries" },
+  eating_out:    { icon: "🍽️", color: "#f97316", label: "Eating out" },
+  transport:     { icon: "🚗", color: "#0ea5e9", label: "Transport" },
+  housing:       { icon: "🏠", color: "#22c55e", label: "Housing" },
+  utilities:     { icon: "💡", color: "#3b82f6", label: "Utilities" },
+  health:        { icon: "💊", color: "#ec4899", label: "Health" },
+  subscriptions: { icon: "📱", color: "#6366f1", label: "Subs" },
+  hobby:         { icon: "🎨", color: "#06b6d4", label: "Hobby" },
+  culture:       { icon: "🎭", color: "#8b5cf6", label: "Culture" },
+  travel:        { icon: "✈️", color: "#14b8a6", label: "Travel" },
+  gifts:         { icon: "🎁", color: "#a855f7", label: "Gifts" },
+  unexpected:    { icon: "⚡", color: "#ef4444", label: "Unexpected" },
+  other:         { icon: "📦", color: "#6b7280", label: "Other" },
 };
 
 type Budget = { id: string; month: string; amount: number; closed?: boolean } | null;
@@ -78,7 +83,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [loading, setLoading] = useState(false);
 
   const [showAdd, setShowAdd] = useState(false);
-  const [newCat, setNewCat] = useState("food");
+  const [newCat, setNewCat] = useState("groceries");
   const [newAmt, setNewAmt] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newDate, setNewDate] = useState(() => {
