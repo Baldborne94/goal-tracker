@@ -4,14 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", icon: "🏰", label: "Realm" },
-  { href: "/goals", icon: "⚔️", label: "Quests" },
-  { href: "/profile", icon: "🧙", label: "Hero" },
+const LEVEL_ICONS = [
+  { min: 700, icon: "👑" },
+  { min: 350, icon: "🏰" },
+  { min: 150, icon: "🛡️" },
+  { min: 50,  icon: "⚔️" },
+  { min: 0,   icon: "🗡️" },
 ];
 
-export default function BottomNav() {
+function heroIcon(points: number): string {
+  return LEVEL_ICONS.find((l) => points >= l.min)?.icon ?? "🗡️";
+}
+
+export default function BottomNav({ points = 0 }: { points?: number }) {
   const path = usePathname();
+
+  const NAV_ITEMS = [
+    { href: "/dashboard", icon: "🏰", label: "Realm" },
+    { href: "/goals",     icon: "⚔️", label: "Quests" },
+    { href: "/profile",  icon: heroIcon(points), label: "Hero" },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-[#0f0d22] border-t border-[#3b2d6e] safe-area-pb z-50">
