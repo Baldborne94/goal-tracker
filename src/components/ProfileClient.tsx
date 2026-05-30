@@ -35,8 +35,27 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
   const [resettingRewards, setResettingRewards] = useState(false);
   const [confirmWipeAll, setConfirmWipeAll] = useState(false);
   const [wipingAll, setWipingAll] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(user?.name ?? "");
+  const [displayName, setDisplayName] = useState(user?.name ?? "");
+  const [savingName, setSavingName] = useState(false);
 
   if (!user) return null;
+
+  async function saveName() {
+    if (!nameInput.trim()) return;
+    setSavingName(true);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: nameInput.trim() }),
+    });
+    if (res.ok) {
+      setDisplayName(nameInput.trim());
+      setEditingName(false);
+    }
+    setSavingName(false);
+  }
 
   const level = getLevel(user.points);
   const nextLevel = LEVEL_THRESHOLDS.find((l) => l.level === level.level + 1);
@@ -55,8 +74,42 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
           <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold" style={{background: "linear-gradient(135deg, #3b2d6e, #1e1535)", border: "2px solid #f59e0b55"}}>
             {user.name?.[0]?.toUpperCase() || "⚔"}
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-[#ede9ff]">{user.name}</h2>
+          <div className="flex-1 min-w-0">
+            {editingName ? (
+              <div className="flex items-center gap-2 mb-1">
+                <input
+                  autoFocus
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveName();
+                    if (e.key === "Escape") setEditingName(false);
+                  }}
+                  className="flex-1 bg-[#0f0826] border border-amber-500/40 rounded-lg px-2 py-1 text-[#ede9ff] text-sm font-bold focus:outline-none focus:ring-1 focus:ring-amber-500/60 min-w-0"
+                />
+                <button
+                  onClick={saveName}
+                  disabled={savingName}
+                  className="text-amber-400 text-xs font-bold px-2 py-1 rounded bg-amber-900/30 border border-amber-700/40 disabled:opacity-50 flex-shrink-0"
+                >
+                  {savingName ? "..." : "✓"}
+                </button>
+                <button
+                  onClick={() => { setEditingName(false); setNameInput(displayName); }}
+                  className="text-[#6b5a9e] text-xs px-1 flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingName(true)}
+                className="flex items-center gap-1.5 group mb-1"
+              >
+                <h2 className="text-xl font-bold text-[#ede9ff] truncate">{displayName}</h2>
+                <span className="text-[#4a3a7a] group-hover:text-amber-400 text-xs transition-colors flex-shrink-0">✏️</span>
+              </button>
+            )}
             <p className="text-[#9d8ac7] text-sm">{user.email}</p>
             <p className="text-amber-400 text-sm font-semibold mt-0.5">
               {level.icon} Lv. {level.level} — {level.label}
