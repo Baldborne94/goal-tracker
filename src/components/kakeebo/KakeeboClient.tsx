@@ -159,6 +159,7 @@ export default function KakeeboClient() {
     <div className="max-w-lg mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">📒 Gold Ledger</h1>
 
+      {/* Month navigator */}
       <div className="flex items-center justify-between mb-5">
         <button
           onClick={() => setMonth((m) => shiftMonth(m, -1))}
@@ -175,6 +176,7 @@ export default function KakeeboClient() {
         </button>
       </div>
 
+      {/* Budget card */}
       {!showBudgetForm && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-5">
           {budget ? (
@@ -216,6 +218,7 @@ export default function KakeeboClient() {
                 />
               </div>
 
+              {/* Close month / reward section */}
               <div className="mt-3 pt-3 border-t border-[#3b2d6e]">
                 {budget.closed ? (
                   <p className="text-center text-amber-400 text-xs font-medium">✅ Month complete — reward claimed!</p>
@@ -248,6 +251,7 @@ export default function KakeeboClient() {
         </div>
       )}
 
+      {/* Budget form */}
       {showBudgetForm && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-5">
           <p className="text-sm font-semibold text-[#ede9ff] mb-3">💰 Monthly budget (€)</p>
@@ -279,6 +283,7 @@ export default function KakeeboClient() {
         </div>
       )}
 
+      {/* Add expense form */}
       {showExpenseForm && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-5">
           <p className="text-sm font-semibold text-[#ede9ff] mb-3">➕ New expense</p>
@@ -358,6 +363,7 @@ export default function KakeeboClient() {
         </div>
       )}
 
+      {/* Expense list */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">📜 Expenses</h2>
         {!showExpenseForm && (

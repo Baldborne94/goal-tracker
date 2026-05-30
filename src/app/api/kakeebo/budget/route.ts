@@ -18,6 +18,7 @@ export async function GET(req: Request) {
 
   if (!budget) return NextResponse.json(null);
 
+  // Check if the month has already been closed (reward claimed)
   const rewardName = `Month Saved: ${month}`;
   const closedReward = await prisma.reward.findUnique({ where: { name: rewardName } });
   let closed = false;
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
     update: { amount: parseFloat(amount) },
   });
 
+  // Award "Primo Bilancio" if this is their first budget
   await checkAndAwardKakeeboRewards(userId);
 
   return NextResponse.json(budget);

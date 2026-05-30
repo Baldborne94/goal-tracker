@@ -69,10 +69,22 @@ function WeightChart({ entries }: { entries: WeightEntry[] }) {
           fill={i === entries.length - 1 ? "#f59e0b" : "#7c5fcc"}
         />
       ))}
-      <text x={toX(0)} y={H - 2} fontSize="9" fill="#6b5a9e" textAnchor="middle">
+      <text
+        x={toX(0)}
+        y={H - 2}
+        fontSize="9"
+        fill="#6b5a9e"
+        textAnchor="middle"
+      >
         {fmt(entries[0].date)}
       </text>
-      <text x={toX(entries.length - 1)} y={H - 2} fontSize="9" fill="#f59e0b" textAnchor="middle">
+      <text
+        x={toX(entries.length - 1)}
+        y={H - 2}
+        fontSize="9"
+        fill="#f59e0b"
+        textAnchor="middle"
+      >
         {fmt(entries[entries.length - 1].date)}
       </text>
     </svg>
@@ -163,6 +175,7 @@ export default function PesoClient() {
 
   return (
     <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-amber-400">⚖️ Weight</h1>
@@ -175,6 +188,7 @@ export default function PesoClient() {
         )}
       </div>
 
+      {/* Stats */}
       {latest && (
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4 space-y-3">
           <div className="flex items-end gap-3">
@@ -202,6 +216,7 @@ export default function PesoClient() {
             </div>
           </div>
 
+          {/* Chart */}
           <WeightChart entries={sorted.slice(-20)} />
 
           {sorted.length < 2 && (
@@ -212,6 +227,7 @@ export default function PesoClient() {
         </div>
       )}
 
+      {/* CTA empty state */}
       {!latest && (
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-6 text-center space-y-2">
           <p className="text-3xl">⚖️</p>
@@ -222,6 +238,7 @@ export default function PesoClient() {
         </div>
       )}
 
+      {/* Add button / form */}
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
@@ -235,7 +252,9 @@ export default function PesoClient() {
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-xs text-[#6b5a9e] mb-1 block">Weight (kg) *</label>
+              <label className="text-xs text-[#6b5a9e] mb-1 block">
+                Weight (kg) *
+              </label>
               <input
                 type="number"
                 step="0.1"
@@ -260,7 +279,9 @@ export default function PesoClient() {
           </div>
 
           <div>
-            <label className="text-xs text-[#6b5a9e] mb-1 block">Note (optional)</label>
+            <label className="text-xs text-[#6b5a9e] mb-1 block">
+              Note (optional)
+            </label>
             <input
               type="text"
               placeholder="e.g. after workout"
@@ -279,7 +300,11 @@ export default function PesoClient() {
               {saving ? "Saving..." : "Save"}
             </button>
             <button
-              onClick={() => { setShowForm(false); setWeight(""); setNote(""); }}
+              onClick={() => {
+                setShowForm(false);
+                setWeight("");
+                setNote("");
+              }}
               className="px-4 py-2.5 rounded-xl border border-[#3b2d6e] text-[#6b5a9e] text-sm"
             >
               Cancel
@@ -288,16 +313,28 @@ export default function PesoClient() {
         </div>
       )}
 
+      {/* Recent entries */}
       {recentDesc.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-[#6b5a9e] uppercase tracking-wider px-1">History</p>
+          <p className="text-xs font-semibold text-[#6b5a9e] uppercase tracking-wider px-1">
+            History
+          </p>
           {recentDesc.map((e) => (
-            <div key={e.id} className="bg-[#16112e] border border-[#3b2d6e] rounded-xl px-4 py-3 flex items-center gap-3">
+            <div
+              key={e.id}
+              className="bg-[#16112e] border border-[#3b2d6e] rounded-xl px-4 py-3 flex items-center gap-3"
+            >
               <span className="text-lg">⚖️</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-white font-bold">{e.weight.toFixed(1)} kg</span>
-                  {e.note && <span className="text-xs text-[#6b5a9e] truncate">{e.note}</span>}
+                  <span className="text-white font-bold">
+                    {e.weight.toFixed(1)} kg
+                  </span>
+                  {e.note && (
+                    <span className="text-xs text-[#6b5a9e] truncate">
+                      {e.note}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-[#6b5a9e]">{fmt(e.date)}</p>
               </div>

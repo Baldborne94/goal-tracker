@@ -68,6 +68,7 @@ export async function PATCH(
     },
   });
 
+  // award points and badges when completing
   if (isNowComplete && !wasCompleted) {
     await prisma.user.update({
       where: { id: session.user.id },

@@ -139,10 +139,9 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const trendCurr = trend[trend.length - 1];
   const trendPrev = trend[trend.length - 2];
   const trendDiff = trendCurr && trendPrev ? trendCurr.spent - trendPrev.spent : null;
-  const trendPct =
-    trendPrev?.spent > 0 && trendDiff !== null
-      ? Math.abs(Math.round((trendDiff / trendPrev.spent) * 100))
-      : null;
+  const trendPct = trendPrev?.spent > 0 && trendDiff !== null
+    ? Math.abs(Math.round((trendDiff / trendPrev.spent) * 100))
+    : null;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-28">

@@ -46,6 +46,7 @@ export async function POST(req: Request) {
     },
   });
 
+  // Check for "Cacciatore di Spese" badge at 10 expenses
   await checkAndAwardKakeeboRewards(session.user.id);
 
   return NextResponse.json(expense, { status: 201 });

@@ -210,15 +210,13 @@ return new PrismaClient({ adapter });
 ```
 
 ### Prisma 7 — schema senza `url`
-In Prisma 7 l'URL del datasource non si mette più in `schema.prisma` ma nel file `prisma.config.ts`.
-Usare `DIRECT_URL` (porta 5432) per operazioni schema, `DATABASE_URL` (PgBouncer, porta 6543) per le query runtime:
+In Prisma 7 l'URL del datasource non si mette più in `schema.prisma` ma nel file `prisma.config.ts`:
 ```ts
-// prisma.config.ts — usa connessione diretta per schema ops
+// prisma.config.ts
+import { defineConfig } from "prisma/config";
 export default defineConfig({
-  datasource: { url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"] },
+  datasourceUrl: process.env["DATABASE_URL"],
 });
-// src/lib/db.ts — usa PgBouncer per performance runtime
-const adapter = new PrismaPg(process.env.DATABASE_URL!);
 ```
 
 ### TypeScript strict + Prisma

@@ -40,6 +40,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
     <div className="max-w-lg mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">🧙 Hero Profile</h1>
 
+      {/* Hero card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "linear-gradient(135deg, #2d1b6e 0%, #1a0f3e 50%, #0f0826 100%)", border: "1px solid #4c3880"}}>
         <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{background: "radial-gradient(circle, #f59e0b 0%, transparent 70%)"}}/>
         <div className="flex items-center gap-4 mb-4">
@@ -74,6 +75,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
         </div>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { label: "Total", value: stats.total, icon: "📜" },
@@ -88,6 +90,7 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
         ))}
       </div>
 
+      {/* Rewards */}
       <div className="mb-6">
         <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">
           💎 Trophies{" "}

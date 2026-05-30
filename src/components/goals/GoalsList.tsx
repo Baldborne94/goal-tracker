@@ -40,6 +40,7 @@ export default function GoalsList({ goals, categories }: Props) {
 
   return (
     <>
+      {/* Status filters */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
         {(["all", "active", "completed"] as const).map((f) => (
           <button
@@ -56,6 +57,7 @@ export default function GoalsList({ goals, categories }: Props) {
         ))}
       </div>
 
+      {/* Category filter */}
       {categories.length > 0 && (
         <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
           <button

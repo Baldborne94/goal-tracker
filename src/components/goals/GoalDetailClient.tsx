@@ -255,7 +255,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
       )}
 
       {!isCompleted && !goal.guideType && (
-        <div className="mb-3">
+        <div className="space-y-3 mb-4">
           <button
             onClick={markComplete}
             className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all shadow-lg shadow-amber-900/30"

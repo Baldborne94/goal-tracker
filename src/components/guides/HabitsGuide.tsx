@@ -88,7 +88,7 @@ export default function HabitsGuide({ goalId, guideTarget, onProgressUpdate }: P
 
       {habits.length > 0 && (
         <div className="space-y-2 mb-4">
-          <p className="text-xs font-medium text-[#6b5a9e] uppercase tracking-wider mb-2">Today&apos;s check-in</p>
+          <p className="text-xs font-medium text-[#6b5a9e] uppercase tracking-wider">Today&apos;s check-in</p>
           {habits.map((h) => {
             const checked = h.logs.some((l) => l.date === today);
             return (
