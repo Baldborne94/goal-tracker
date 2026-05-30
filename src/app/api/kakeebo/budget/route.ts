@@ -6,7 +6,7 @@ import { checkAndAwardKakeeboRewards } from "@/lib/rewards";
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
@@ -18,8 +18,7 @@ export async function GET(req: Request) {
 
   if (!budget) return NextResponse.json(null);
 
-  // Check if the month has already been closed (reward claimed)
-  const rewardName = `Mese Risparmiato: ${month}`;
+  const rewardName = `Month Saved: ${month}`;
   const closedReward = await prisma.reward.findUnique({ where: { name: rewardName } });
   let closed = false;
   if (closedReward) {
@@ -35,11 +34,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
-    return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { month, amount } = await req.json();
   if (!month || !amount)
-    return NextResponse.json({ error: "Mese e importo obbligatori" }, { status: 400 });
+    return NextResponse.json({ error: "Month and amount are required" }, { status: 400 });
 
   const userId = session.user.id;
 
@@ -49,7 +48,6 @@ export async function POST(req: Request) {
     update: { amount: parseFloat(amount) },
   });
 
-  // Award "Primo Bilancio" if this is their first budget
   await checkAndAwardKakeeboRewards(userId);
 
   return NextResponse.json(budget);

@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 
 const CATEGORIES = [
-  { value: "cibo", label: "Cibo", icon: "🍕" },
-  { value: "trasporti", label: "Trasporti", icon: "🚗" },
-  { value: "svago", label: "Svago", icon: "🎮" },
-  { value: "casa", label: "Casa", icon: "🏠" },
-  { value: "salute", label: "Salute", icon: "💊" },
+  { value: "cibo", label: "Food", icon: "🍕" },
+  { value: "trasporti", label: "Transport", icon: "🚗" },
+  { value: "svago", label: "Leisure", icon: "🎮" },
+  { value: "casa", label: "Home", icon: "🏠" },
+  { value: "salute", label: "Health", icon: "💊" },
   { value: "hobby", label: "Hobby", icon: "🎲" },
-  { value: "extra", label: "Extra", icon: "📦" },
+  { value: "extra", label: "Other", icon: "📦" },
 ];
 
 type Expense = {
@@ -30,7 +30,7 @@ function currentMonthStr() {
 
 function formatMonthLabel(m: string) {
   const [year, month] = m.split("-");
-  return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString("it-IT", {
+  return new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString("en-GB", {
     month: "long",
     year: "numeric",
   });
@@ -142,7 +142,7 @@ export default function KakeeboClient() {
       });
       const data = await res.json();
       if (data.success) {
-        setCloseMsg(`+${data.xpEarned} XP guadagnati! 🎉`);
+        setCloseMsg(`+${data.xpEarned} XP earned! 🎉`);
         fetchData();
       }
     } finally {
@@ -157,9 +157,8 @@ export default function KakeeboClient() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">📒 Kakeebo</h1>
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">📒 Gold Ledger</h1>
 
-      {/* Month navigator */}
       <div className="flex items-center justify-between mb-5">
         <button
           onClick={() => setMonth((m) => shiftMonth(m, -1))}
@@ -176,13 +175,12 @@ export default function KakeeboClient() {
         </button>
       </div>
 
-      {/* Budget card */}
       {!showBudgetForm && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-5">
           {budget ? (
             <>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-[#9d8ac7]">💰 Budget mensile</span>
+                <span className="text-sm text-[#9d8ac7]">💰 Monthly budget</span>
                 <button
                   onClick={() => {
                     setBudgetInput(String(budget.amount));
@@ -190,7 +188,7 @@ export default function KakeeboClient() {
                   }}
                   className="text-xs text-amber-400 hover:text-amber-300"
                 >
-                  Modifica
+                  Edit
                 </button>
               </div>
               <div className="flex justify-between text-sm mb-3">
@@ -199,11 +197,11 @@ export default function KakeeboClient() {
                   <p className="text-[#ede9ff] font-bold">€{budget.amount.toFixed(2)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[#6b5a9e] text-xs mb-0.5">Speso</p>
+                  <p className="text-[#6b5a9e] text-xs mb-0.5">Spent</p>
                   <p className="text-amber-400 font-bold">€{totalSpent.toFixed(2)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[#6b5a9e] text-xs mb-0.5">Rimanente</p>
+                  <p className="text-[#6b5a9e] text-xs mb-0.5">Remaining</p>
                   <p className={`font-bold ${remaining! < 0 ? "text-red-400" : "text-violet-300"}`}>
                     {remaining! < 0 ? "-" : ""}€{Math.abs(remaining!).toFixed(2)}
                   </p>
@@ -218,10 +216,9 @@ export default function KakeeboClient() {
                 />
               </div>
 
-              {/* Close month / reward section */}
               <div className="mt-3 pt-3 border-t border-[#3b2d6e]">
                 {budget.closed ? (
-                  <p className="text-center text-amber-400 text-xs font-medium">✅ Mese completato — premio riscosso!</p>
+                  <p className="text-center text-amber-400 text-xs font-medium">✅ Month complete — reward claimed!</p>
                 ) : closeMsg ? (
                   <p className="text-center text-amber-400 text-sm font-bold">{closeMsg}</p>
                 ) : remaining! >= 0 ? (
@@ -230,36 +227,35 @@ export default function KakeeboClient() {
                     disabled={saving}
                     className="w-full py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-50"
                   >
-                    🏆 Riscuoti premio mensile (+25 XP)
+                    🏆 Claim monthly reward (+25 XP)
                   </button>
                 ) : (
-                  <p className="text-center text-red-400 text-xs">Hai superato il budget — nessun premio disponibile</p>
+                  <p className="text-center text-red-400 text-xs">Budget exceeded — no reward available</p>
                 )}
               </div>
             </>
           ) : (
             <div className="text-center py-2">
-              <p className="text-[#9d8ac7] text-sm mb-3">Nessun budget impostato per questo mese</p>
+              <p className="text-[#9d8ac7] text-sm mb-3">No budget set for this month</p>
               <button
                 onClick={() => setShowBudgetForm(true)}
                 className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold"
               >
-                Imposta budget
+                Set budget
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Budget form */}
       {showBudgetForm && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-5">
-          <p className="text-sm font-semibold text-[#ede9ff] mb-3">💰 Budget mensile (€)</p>
+          <p className="text-sm font-semibold text-[#ede9ff] mb-3">💰 Monthly budget (€)</p>
           <input
             type="number"
             value={budgetInput}
             onChange={(e) => setBudgetInput(e.target.value)}
-            placeholder="es. 500"
+            placeholder="e.g. 500"
             className="w-full bg-[#0f0d22] text-[#ede9ff] border border-[#3b2d6e] rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:border-violet-500"
           />
           <div className="flex gap-2">
@@ -268,7 +264,7 @@ export default function KakeeboClient() {
               disabled={saving || !budgetInput}
               className="flex-1 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-50"
             >
-              Salva
+              Save
             </button>
             <button
               onClick={() => {
@@ -277,20 +273,19 @@ export default function KakeeboClient() {
               }}
               className="flex-1 py-2 bg-[#0f0d22] text-[#9d8ac7] border border-[#3b2d6e] rounded-xl text-sm"
             >
-              Annulla
+              Cancel
             </button>
           </div>
         </div>
       )}
 
-      {/* Add expense form */}
       {showExpenseForm && (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-5">
-          <p className="text-sm font-semibold text-[#ede9ff] mb-3">➕ Nuova spesa</p>
+          <p className="text-sm font-semibold text-[#ede9ff] mb-3">➕ New expense</p>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-[#6b5a9e] mb-1 block">Importo (€)</label>
+                <label className="text-xs text-[#6b5a9e] mb-1 block">Amount (€)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -301,7 +296,7 @@ export default function KakeeboClient() {
                 />
               </div>
               <div>
-                <label className="text-xs text-[#6b5a9e] mb-1 block">Data</label>
+                <label className="text-xs text-[#6b5a9e] mb-1 block">Date</label>
                 <input
                   type="date"
                   value={form.date}
@@ -311,7 +306,7 @@ export default function KakeeboClient() {
               </div>
             </div>
             <div>
-              <label className="text-xs text-[#6b5a9e] mb-1 block">Categoria</label>
+              <label className="text-xs text-[#6b5a9e] mb-1 block">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -325,22 +320,22 @@ export default function KakeeboClient() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-[#6b5a9e] mb-1 block">Dove</label>
+              <label className="text-xs text-[#6b5a9e] mb-1 block">Where</label>
               <input
                 type="text"
                 value={form.merchant}
                 onChange={(e) => setForm((f) => ({ ...f, merchant: e.target.value }))}
-                placeholder="es. Esselunga, Amazon…"
+                placeholder="e.g. Tesco, Amazon…"
                 className="w-full bg-[#0f0d22] text-[#ede9ff] border border-[#3b2d6e] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
               />
             </div>
             <div>
-              <label className="text-xs text-[#6b5a9e] mb-1 block">Cosa (opzionale)</label>
+              <label className="text-xs text-[#6b5a9e] mb-1 block">What (optional)</label>
               <input
                 type="text"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Descrizione…"
+                placeholder="Description…"
                 className="w-full bg-[#0f0d22] text-[#ede9ff] border border-[#3b2d6e] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
               />
             </div>
@@ -350,38 +345,37 @@ export default function KakeeboClient() {
                 disabled={saving || !form.amount}
                 className="flex-1 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-50"
               >
-                Aggiungi
+                Add
               </button>
               <button
                 onClick={() => setShowExpenseForm(false)}
                 className="flex-1 py-2 bg-[#0f0d22] text-[#9d8ac7] border border-[#3b2d6e] rounded-xl text-sm"
               >
-                Annulla
+                Cancel
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Expense list */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">📜 Spese</h2>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">📜 Expenses</h2>
         {!showExpenseForm && (
           <button
             onClick={() => setShowExpenseForm(true)}
             className="text-sm text-amber-400 font-medium hover:text-amber-300"
           >
-            + Aggiungi
+            + Add
           </button>
         )}
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-[#6b5a9e] text-sm">Caricamento…</div>
+        <div className="text-center py-8 text-[#6b5a9e] text-sm">Loading…</div>
       ) : expenses.length === 0 ? (
         <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-8 text-center">
           <div className="text-4xl mb-3">📒</div>
-          <p className="text-[#9d8ac7] text-sm">Nessuna spesa registrata</p>
+          <p className="text-[#9d8ac7] text-sm">No expenses recorded</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -404,7 +398,7 @@ export default function KakeeboClient() {
                     <p className="text-xs text-[#6b5a9e] truncate">{e.description}</p>
                   )}
                   <p className="text-xs text-[#6b5a9e]">
-                    {new Date(e.date).toLocaleDateString("it-IT", {
+                    {new Date(e.date).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "short",
                     })}

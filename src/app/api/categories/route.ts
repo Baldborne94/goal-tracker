@@ -4,7 +4,11 @@ import { prisma } from "@/lib/db";
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
-  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  if (!session?.user?.id)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const categories = await prisma.category.findMany({
+    orderBy: { name: "asc" },
+  });
   return NextResponse.json(categories);
 }

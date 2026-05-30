@@ -11,7 +11,11 @@ type WeightEntry = {
 
 function fmt(dateStr: string) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function fmtInput(dateStr: string) {
+  return new Date(dateStr).toISOString().slice(0, 10);
 }
 
 function WeightChart({ entries }: { entries: WeightEntry[] }) {
@@ -65,22 +69,10 @@ function WeightChart({ entries }: { entries: WeightEntry[] }) {
           fill={i === entries.length - 1 ? "#f59e0b" : "#7c5fcc"}
         />
       ))}
-      <text
-        x={toX(0)}
-        y={H - 2}
-        fontSize="9"
-        fill="#6b5a9e"
-        textAnchor="middle"
-      >
+      <text x={toX(0)} y={H - 2} fontSize="9" fill="#6b5a9e" textAnchor="middle">
         {fmt(entries[0].date)}
       </text>
-      <text
-        x={toX(entries.length - 1)}
-        y={H - 2}
-        fontSize="9"
-        fill="#f59e0b"
-        textAnchor="middle"
-      >
+      <text x={toX(entries.length - 1)} y={H - 2} fontSize="9" fill="#f59e0b" textAnchor="middle">
         {fmt(entries[entries.length - 1].date)}
       </text>
     </svg>
@@ -144,7 +136,7 @@ export default function PesoClient() {
         setDate(new Date().toISOString().slice(0, 10));
         setShowForm(false);
         await fetchData();
-        setMsg("+10 XP guadagnati!");
+        setMsg("+10 XP earned!");
         setTimeout(() => setMsg(""), 3000);
       }
     } finally {
@@ -171,11 +163,10 @@ export default function PesoClient() {
 
   return (
     <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-amber-400">⚖️ Corpo</h1>
-          <p className="text-xs text-[#6b5a9e]">Traccia il tuo peso nel tempo</p>
+          <h1 className="text-xl font-bold text-amber-400">⚖️ Weight</h1>
+          <p className="text-xs text-[#6b5a9e]">Track your weight over time</p>
         </div>
         {msg && (
           <span className="text-xs bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full font-medium">
@@ -184,7 +175,6 @@ export default function PesoClient() {
         )}
       </div>
 
-      {/* Stats */}
       {latest && (
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4 space-y-3">
           <div className="flex items-end gap-3">
@@ -195,30 +185,18 @@ export default function PesoClient() {
             <div className="ml-auto flex flex-col items-end gap-1">
               {deltaLast !== null && (
                 <span
-                  className={`text-sm font-semibold ${
-                    deltaLast < 0
-                      ? "text-green-400"
-                      : deltaLast > 0
-                        ? "text-red-400"
-                        : "text-[#6b5a9e]"
-                  }`}
+                  className={`text-sm font-semibold ${deltaLast < 0 ? "text-green-400" : deltaLast > 0 ? "text-red-400" : "text-[#6b5a9e]"}`}
                 >
                   {deltaLast > 0 ? "+" : ""}
-                  {deltaLast.toFixed(1)} kg vs prec.
+                  {deltaLast.toFixed(1)} kg vs prev.
                 </span>
               )}
               {deltaStart !== null && (
                 <span
-                  className={`text-xs ${
-                    deltaStart < 0
-                      ? "text-green-500"
-                      : deltaStart > 0
-                        ? "text-red-400"
-                        : "text-[#6b5a9e]"
-                  }`}
+                  className={`text-xs ${deltaStart < 0 ? "text-green-500" : deltaStart > 0 ? "text-red-400" : "text-[#6b5a9e]"}`}
                 >
                   {deltaStart > 0 ? "+" : ""}
-                  {deltaStart.toFixed(1)} kg dall&apos;inizio
+                  {deltaStart.toFixed(1)} kg from start
                 </span>
               )}
             </div>
@@ -228,7 +206,7 @@ export default function PesoClient() {
 
           {sorted.length < 2 && (
             <p className="text-xs text-[#6b5a9e] text-center">
-              Registra almeno 2 misurazioni per vedere il grafico
+              Log at least 2 measurements to see the chart
             </p>
           )}
         </div>
@@ -237,9 +215,9 @@ export default function PesoClient() {
       {!latest && (
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-6 text-center space-y-2">
           <p className="text-3xl">⚖️</p>
-          <p className="text-white font-medium">Nessuna misurazione ancora</p>
+          <p className="text-white font-medium">No measurements yet</p>
           <p className="text-xs text-[#6b5a9e]">
-            Inizia a tracciare il tuo peso per guadagnare XP e badge
+            Start tracking your weight to earn XP and badges
           </p>
         </div>
       )}
@@ -249,21 +227,21 @@ export default function PesoClient() {
           onClick={() => setShowForm(true)}
           className="w-full py-3 rounded-xl bg-amber-400 text-[#0c0a1a] font-bold text-sm active:scale-95 transition-transform"
         >
-          + Registra peso
+          + Log weight
         </button>
       ) : (
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-white">Nuova misurazione</p>
+          <p className="text-sm font-semibold text-white">New measurement</p>
 
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-xs text-[#6b5a9e] mb-1 block">Peso (kg) *</label>
+              <label className="text-xs text-[#6b5a9e] mb-1 block">Weight (kg) *</label>
               <input
                 type="number"
                 step="0.1"
                 min="20"
                 max="300"
-                placeholder="es. 82.5"
+                placeholder="e.g. 82.5"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 className="w-full bg-[#0c0a1a] border border-[#3b2d6e] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
@@ -271,7 +249,7 @@ export default function PesoClient() {
               />
             </div>
             <div className="flex-1">
-              <label className="text-xs text-[#6b5a9e] mb-1 block">Data</label>
+              <label className="text-xs text-[#6b5a9e] mb-1 block">Date</label>
               <input
                 type="date"
                 value={date}
@@ -282,10 +260,10 @@ export default function PesoClient() {
           </div>
 
           <div>
-            <label className="text-xs text-[#6b5a9e] mb-1 block">Nota (opzionale)</label>
+            <label className="text-xs text-[#6b5a9e] mb-1 block">Note (optional)</label>
             <input
               type="text"
-              placeholder="es. dopo allenamento"
+              placeholder="e.g. after workout"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="w-full bg-[#0c0a1a] border border-[#3b2d6e] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
@@ -298,17 +276,13 @@ export default function PesoClient() {
               disabled={saving || !weight}
               className="flex-1 py-2.5 rounded-xl bg-amber-400 text-[#0c0a1a] font-bold text-sm disabled:opacity-50"
             >
-              {saving ? "Salvataggio..." : "Salva"}
+              {saving ? "Saving..." : "Save"}
             </button>
             <button
-              onClick={() => {
-                setShowForm(false);
-                setWeight("");
-                setNote("");
-              }}
+              onClick={() => { setShowForm(false); setWeight(""); setNote(""); }}
               className="px-4 py-2.5 rounded-xl border border-[#3b2d6e] text-[#6b5a9e] text-sm"
             >
-              Annulla
+              Cancel
             </button>
           </div>
         </div>
@@ -316,30 +290,21 @@ export default function PesoClient() {
 
       {recentDesc.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-[#6b5a9e] uppercase tracking-wider px-1">
-            Storico
-          </p>
+          <p className="text-xs font-semibold text-[#6b5a9e] uppercase tracking-wider px-1">History</p>
           {recentDesc.map((e) => (
-            <div
-              key={e.id}
-              className="bg-[#16112e] border border-[#3b2d6e] rounded-xl px-4 py-3 flex items-center gap-3"
-            >
+            <div key={e.id} className="bg-[#16112e] border border-[#3b2d6e] rounded-xl px-4 py-3 flex items-center gap-3">
               <span className="text-lg">⚖️</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-white font-bold">
-                    {e.weight.toFixed(1)} kg
-                  </span>
-                  {e.note && (
-                    <span className="text-xs text-[#6b5a9e] truncate">{e.note}</span>
-                  )}
+                  <span className="text-white font-bold">{e.weight.toFixed(1)} kg</span>
+                  {e.note && <span className="text-xs text-[#6b5a9e] truncate">{e.note}</span>}
                 </div>
                 <p className="text-xs text-[#6b5a9e]">{fmt(e.date)}</p>
               </div>
               <button
                 onClick={() => deleteEntry(e.id)}
                 className="text-[#3b2d6e] hover:text-red-400 transition-colors text-lg leading-none"
-                aria-label="Elimina"
+                aria-label="Delete"
               >
                 ×
               </button>
