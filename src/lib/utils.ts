@@ -45,3 +45,27 @@ export function getPriorityLabel(priority: string) {
       return priority;
   }
 }
+
+export function calculateStreak(completedDates: (Date | null)[]): number {
+  const dates = new Set(
+    completedDates
+      .filter((d): d is Date => d !== null)
+      .map((d) => d.toISOString().slice(0, 10))
+  );
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const checkDate = new Date(today);
+
+  if (!dates.has(todayStr)) {
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  let streak = 0;
+  while (dates.has(checkDate.toISOString().slice(0, 10))) {
+    streak++;
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  return streak;
+}

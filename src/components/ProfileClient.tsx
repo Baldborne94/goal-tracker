@@ -28,7 +28,7 @@ function getLevel(points: number) {
   return LEVEL_THRESHOLDS.find((l) => points >= l.min && points <= l.max) || LEVEL_THRESHOLDS[0];
 }
 
-export default function ProfileClient({ user, stats }: { user: User | null; stats: Stats }) {
+export default function ProfileClient({ user, stats, streak = 0 }: { user: User | null; stats: Stats; streak?: number }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [confirmResetRewards, setConfirmResetRewards] = useState(false);
@@ -137,15 +137,16 @@ export default function ProfileClient({ user, stats }: { user: User | null; stat
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-2 mb-6">
         {[
           { label: "Total", value: stats.total, icon: "📜" },
           { label: "Active", value: stats.active, icon: "⚡" },
           { label: "Done", value: stats.completed, icon: "👑" },
+          { label: "Streak", value: streak, icon: streak > 0 ? "🔥" : "💤" },
         ].map((s) => (
-          <div key={s.label} className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
-            <div className="text-2xl mb-1">{s.icon}</div>
-            <div className="text-2xl font-bold text-amber-400">{s.value}</div>
+          <div key={s.label} className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-3 text-center">
+            <div className="text-xl mb-1">{s.icon}</div>
+            <div className="text-xl font-bold text-amber-400">{s.value}</div>
             <div className="text-xs text-[#9d8ac7]">{s.label}</div>
           </div>
         ))}

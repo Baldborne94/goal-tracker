@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { formatDate } from "@/lib/utils";
+import { formatDate, calculateStreak } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   const monthStart = new Date(yr, mo - 1, 1);
   const monthEnd = new Date(yr, mo, 1);
 
-  const [user, goals, financeBudget, financeAgg] = await Promise.all([
+  const [user, goals, financeBudget, financeAgg, streakMilestones] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: { userRewards: { include: { reward: true } } },
@@ -30,6 +30,10 @@ export default async function DashboardPage() {
       where: { userId, date: { gte: monthStart, lt: monthEnd } },
       _sum: { amount: true },
     }),
+    prisma.milestone.findMany({
+      where: { goal: { userId }, completed: true, completedAt: { not: null } },
+      select: { completedAt: true },
+    }),
   ]);
 
   const total = await prisma.goal.count({ where: { userId } });
@@ -37,6 +41,7 @@ export default async function DashboardPage() {
   const active = total - completed;
   const financeSpent = financeAgg._sum.amount ?? 0;
   const isOverBudget = financeBudget && financeSpent > financeBudget.amount;
+  const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -64,6 +69,40 @@ export default async function DashboardPage() {
             <span className="font-semibold text-[#ede9ff]">{completed}</span>
           </div>
         </div>
+      </div>
+
+      {/* Streak card */}
+      <div className="rounded-2xl p-4 mb-6 flex items-center gap-4" style={{background: "#16112e", border: "1px solid #3b2d6e"}}>
+        <div className="text-4xl flex-shrink-0">{streak > 0 ? "🔥" : "💤"}</div>
+        <div className="flex-1 min-w-0">
+          {streak > 0 ? (
+            <>
+              <p className="text-lg font-bold text-amber-400">
+                {streak}-day streak!
+              </p>
+              <p className="text-xs text-[#9d8ac7]">
+                {streak >= 30
+                  ? "Legendary dedication. Don't stop now!"
+                  : streak >= 7
+                  ? "One week strong — keep the fire burning!"
+                  : streak >= 3
+                  ? "Great momentum! Keep checking off milestones."
+                  : "Nice start! Come back tomorrow to keep it going."}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-base font-bold text-[#ede9ff]">No active streak</p>
+              <p className="text-xs text-[#9d8ac7]">Complete a milestone today to start one!</p>
+            </>
+          )}
+        </div>
+        {streak > 0 && (
+          <div className="flex-shrink-0 text-center">
+            <div className="text-2xl font-bold text-amber-400">{streak}</div>
+            <div className="text-xs text-[#6b5a9e]">days</div>
+          </div>
+        )}
       </div>
 
       {/* Recent rewards */}
