@@ -161,17 +161,17 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         <button
           onClick={() => changeMonth(-1)}
           disabled={loading}
-          className="w-9 h-9 flex items-center justify-center text-[#9d8ac7] hover:text-amber-400 rounded-xl hover:bg-[#1e1740] transition-colors disabled:opacity-40"
+          className="w-9 h-9 flex items-center justify-center text-[#9d8ac7] hover:text-amber-400 rounded-xl hover:bg-[#1e1740] transition-colors disabled:opacity-40 text-lg font-bold"
         >
-          ←
+          ‹
         </button>
         <span className="font-semibold text-[#ede9ff] text-sm">{monthLabel}</span>
         <button
           onClick={() => changeMonth(1)}
           disabled={isCurrentMonth || loading}
-          className="w-9 h-9 flex items-center justify-center text-[#9d8ac7] hover:text-amber-400 rounded-xl hover:bg-[#1e1740] transition-colors disabled:opacity-30"
+          className="w-9 h-9 flex items-center justify-center text-[#9d8ac7] hover:text-amber-400 rounded-xl hover:bg-[#1e1740] transition-colors disabled:opacity-30 text-lg font-bold"
         >
-          →
+          ›
         </button>
       </div>
 
@@ -312,7 +312,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
 
       {/* 6-month trend */}
       <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
-        <h2 className="font-semibold text-[#c4b5fd] mb-3 text-sm">📈 6-month trend</h2>
+        <h2 className="font-semibold text-[#c4b5fd] mb-3 text-sm">6-month trend</h2>
 
         {trendDiff !== null && (
           <div
@@ -424,8 +424,8 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
 
       {/* Add expense bottom sheet */}
       {showAdd && (
-        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50 p-4">
-          <div className="bg-[#1a1535] rounded-2xl border border-[#3b2d6e] w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50">
+          <div className="bg-[#1a1535] rounded-t-2xl border border-[#3b2d6e] w-full max-w-lg px-5 pt-5 pb-8 max-h-[90vh] overflow-y-auto">
             <h3 className="font-bold text-[#ede9ff] mb-4">Add expense</h3>
 
             <div className="mb-4">
