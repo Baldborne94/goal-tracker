@@ -50,7 +50,7 @@ function getDeadline(today: Date, durationDays: number): string {
 export default async function NewGoalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ title?: string; days?: string; mtype?: string; spw?: string }>;
+  searchParams: Promise<{ title?: string; days?: string; mtype?: string; spw?: string; template?: string }>;
 }) {
   await auth();
   const [categories, params] = await Promise.all([
@@ -58,22 +58,37 @@ export default async function NewGoalPage({
     searchParams,
   ]);
 
-  const { title, days, mtype, spw } = params;
-  const durationDays = days ? parseInt(days, 10) : 0;
-  const sessionsPerWeek = spw ? parseInt(spw, 10) : undefined;
+  const { title, days, mtype, spw, template } = params;
   const today = new Date();
+  let prefill: { title: string; description: string; priority: string; targetDate: string; categoryId: string; tags: string[]; milestones: string[] } | undefined;
 
-  const milestones =
-    mtype && durationDays > 0
-      ? generateMilestones(mtype, durationDays, today, sessionsPerWeek)
-      : [];
+  if (template) {
+    try {
+      const data = JSON.parse(Buffer.from(template, "base64").toString("utf-8"));
+      prefill = {
+        title: data.title ?? "",
+        description: data.description ?? "",
+        priority: data.priority ?? "medium",
+        targetDate: "",
+        categoryId: "",
+        tags: [],
+        milestones: Array.isArray(data.milestones) ? data.milestones : [],
+      };
+    } catch {
+      // invalid template — ignore
+    }
+  }
 
-  const targetDate =
-    durationDays > 0 ? getDeadline(today, durationDays) : "";
-
-  const prefill = title
-    ? { title, description: "", priority: "medium", targetDate, categoryId: "", tags: [], milestones }
-    : undefined;
+  if (!prefill && title) {
+    const durationDays = days ? parseInt(days, 10) : 0;
+    const sessionsPerWeek = spw ? parseInt(spw, 10) : undefined;
+    const milestones =
+      mtype && durationDays > 0
+        ? generateMilestones(mtype, durationDays, today, sessionsPerWeek)
+        : [];
+    const targetDate = durationDays > 0 ? getDeadline(today, durationDays) : "";
+    prefill = { title, description: "", priority: "medium", targetDate, categoryId: "", tags: [], milestones };
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">

@@ -101,6 +101,11 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [closingMonth, setClosingMonth] = useState(false);
   const [closeResult, setCloseResult] = useState<{ success?: boolean; xpEarned?: number; overBudget?: boolean } | null>(null);
 
+  const [showImport, setShowImport] = useState(false);
+  const [csvRows, setCsvRows] = useState<{ date: string; amount: number; category: string; description: string }[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importDone, setImportDone] = useState(0);
+
   const totalSpent = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
   const remaining = budget ? budget.amount - totalSpent : null;
   const isOver = remaining !== null && remaining < 0;
@@ -201,6 +206,62 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     setClosingMonth(false);
   }
 
+  function parseCsvFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = (e.target?.result as string) ?? "";
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) return;
+
+      const firstLine = lines[0].toLowerCase();
+      const hasHeader = firstLine.includes("date") || firstLine.includes("amount") || firstLine.includes("categoria");
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+
+      const KNOWN_CATS = Object.keys(CATS);
+      const rows = dataLines
+        .map((line) => {
+          const parts = line.split(",").map((p) => p.trim().replace(/^"|"$/g, ""));
+          const [rawDate, rawAmount, rawCat, rawDesc] = parts;
+          const amount = parseFloat(rawAmount);
+          if (!rawDate || isNaN(amount) || amount <= 0) return null;
+          const date = rawDate.includes("/")
+            ? rawDate.split("/").reverse().join("-")
+            : rawDate;
+          const category = KNOWN_CATS.includes(rawCat?.toLowerCase()) ? rawCat.toLowerCase() : "other";
+          return { date, amount, category, description: rawDesc ?? "" };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      setCsvRows(rows);
+      setImportDone(0);
+      setShowImport(true);
+    };
+    reader.readAsText(file);
+  }
+
+  async function confirmImport() {
+    setImporting(true);
+    let done = 0;
+    for (const row of csvRows) {
+      const r = await fetch("/api/kakeebo/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(row),
+      });
+      if (r.ok) {
+        const e = await r.json();
+        setExpenses((prev) =>
+          [e, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        );
+        done++;
+        setImportDone(done);
+      }
+    }
+    setImporting(false);
+    setCsvRows([]);
+    setShowImport(false);
+  }
+
   const monthLabel = new Date(month + "-15").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const maxTrend = Math.max(...trend.map((t) => Math.max(t.spent, t.budget ?? 0)), 1);
 
@@ -216,12 +277,23 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-[#ede9ff]">💰 Finance</h1>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold active:scale-95 transition-all"
-        >
-          + Expense
-        </button>
+        <div className="flex gap-2">
+          <label className="px-3 py-2 bg-[#16112e] border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm font-medium cursor-pointer hover:border-violet-500/60 active:scale-95 transition-all">
+            📥 CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && parseCsvFile(e.target.files[0])}
+            />
+          </label>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold active:scale-95 transition-all"
+          >
+            + Expense
+          </button>
+        </div>
       </div>
 
       {/* Month navigation */}
@@ -567,6 +639,63 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           </div>
         )}
       </div>
+
+      {/* CSV import modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]">
+          <div className="bg-[#1a1535] rounded-t-2xl border border-[#3b2d6e] w-full max-w-lg px-5 pt-5 pb-20 max-h-[80vh] overflow-y-auto">
+            <h3 className="font-bold text-[#ede9ff] mb-1">📥 Import from CSV</h3>
+            <p className="text-xs text-[#6b5a9e] mb-4">
+              {csvRows.length} rows found — review before importing
+            </p>
+
+            {csvRows.length === 0 ? (
+              <p className="text-[#9d8ac7] text-sm text-center py-4">No valid rows found. Check format: <code className="text-amber-400">date,amount,category,description</code></p>
+            ) : (
+              <div className="space-y-1.5 mb-4 max-h-52 overflow-y-auto">
+                {csvRows.map((row, i) => {
+                  const s = CATS[row.category] ?? CATS.other;
+                  return (
+                    <div key={i} className="flex items-center gap-3 bg-[#0f0d22] rounded-xl px-3 py-2 border border-[#2a1f50]">
+                      <span className="text-lg flex-shrink-0">{s.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-[#ede9ff] truncate">{row.description || s.label}</p>
+                        <p className="text-xs text-[#4a3a7a]">{row.date}</p>
+                      </div>
+                      <span className="font-semibold text-xs flex-shrink-0" style={{ color: s.color }}>
+                        -€{row.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {importing && (
+              <p className="text-xs text-amber-400 text-center mb-3">
+                Importing {importDone}/{csvRows.length}...
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowImport(false); setCsvRows([]); }}
+                disabled={importing}
+                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm font-semibold disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmImport}
+                disabled={importing || csvRows.length === 0}
+                className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all"
+              >
+                {importing ? `${importDone}/${csvRows.length}...` : `Import ${csvRows.length}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add expense bottom sheet */}
       {showAdd && (

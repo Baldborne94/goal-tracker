@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
+import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -29,6 +30,7 @@ function getLevel(points: number) {
 }
 
 export default function ProfileClient({ user, stats, streak = 0 }: { user: User | null; stats: Stats; streak?: number }) {
+  const { theme, colors, setTheme } = useTheme();
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [confirmResetRewards, setConfirmResetRewards] = useState(false);
@@ -39,6 +41,52 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [displayName, setDisplayName] = useState(user?.name ?? "");
   const [savingName, setSavingName] = useState(false);
+
+  const [notifPermission, setNotifPermission] = useState<string>("default");
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifTime, setNotifTime] = useState("09:00");
+  const [notifRequesting, setNotifRequesting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    setNotifPermission(Notification.permission);
+    setNotifEnabled(localStorage.getItem("reminder-enabled") === "true");
+    setNotifTime(localStorage.getItem("reminder-time") || "09:00");
+  }, []);
+
+  useEffect(() => {
+    if (!notifEnabled || notifPermission !== "granted") return;
+    const now = new Date();
+    const [h, m] = notifTime.split(":").map(Number);
+    const target = new Date(now);
+    target.setHours(h, m, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    const ms = target.getTime() - now.getTime();
+    const id = setTimeout(() => {
+      new Notification("⚔️ Quest time!", {
+        body: "Don't break your streak! Complete a milestone today.",
+      });
+    }, ms);
+    return () => clearTimeout(id);
+  }, [notifEnabled, notifTime, notifPermission]);
+
+  async function requestNotifPermission() {
+    if (!("Notification" in window)) return;
+    setNotifRequesting(true);
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+    setNotifRequesting(false);
+  }
+
+  function toggleReminder(enabled: boolean) {
+    setNotifEnabled(enabled);
+    localStorage.setItem("reminder-enabled", String(enabled));
+  }
+
+  function saveReminderTime(time: string) {
+    setNotifTime(time);
+    localStorage.setItem("reminder-time", time);
+  }
 
   if (!user) return null;
 
@@ -68,8 +116,8 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
       <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">⚔️ Hero Profile</h1>
 
       {/* Hero card */}
-      <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "linear-gradient(135deg, #2d1b6e 0%, #1a0f3e 50%, #0f0826 100%)", border: "1px solid #4c3880"}}>
-        <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{background: "radial-gradient(circle, #f59e0b 0%, transparent 70%)"}}/>
+      <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
+        <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{background: "radial-gradient(circle, var(--theme-accent) 0%, transparent 70%)"}}/>
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold" style={{background: "linear-gradient(135deg, #3b2d6e, #1e1535)", border: "2px solid #f59e0b55"}}>
             {user.name?.[0]?.toUpperCase() || "⚔"}
@@ -111,7 +159,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
               </button>
             )}
             <p className="text-[#9d8ac7] text-sm">{user.email}</p>
-            <p className="text-amber-400 text-sm font-semibold mt-0.5">
+            <p className="text-sm font-semibold mt-0.5" style={{color: "var(--theme-accent)"}}>
               {level.icon} Lv. {level.level} — {level.label}
             </p>
           </div>
@@ -119,7 +167,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
 
         <div>
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-amber-300/80">✨ {user.points} XP</span>
+            <span className="text-sm opacity-80" style={{color: "var(--theme-accent)"}}>✨ {user.points} XP</span>
             {nextLevel && (
               <span className="text-[#9d8ac7] text-xs">Next: {nextLevel.min} XP</span>
             )}
@@ -127,7 +175,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
           <div className="h-2.5 rounded-full overflow-hidden" style={{background: "#0f0826"}}>
             <div
               className="h-full rounded-full transition-all"
-              style={{ width: `${progressToNext}%`, background: "linear-gradient(90deg, #f59e0b, #fbbf24)" }}
+              style={{ width: `${progressToNext}%`, background: "var(--theme-bar)" }}
             />
           </div>
           {nextLevel && (
@@ -176,6 +224,76 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
                 <div className="text-xs text-[#9d8ac7] mt-0.5">{ur.reward.description}</div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Theme picker */}
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎨 Hero Theme</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {(Object.values(THEMES) as (typeof THEMES)[ThemeKey][]).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTheme(t.key as ThemeKey)}
+              className="flex items-center gap-3 p-3 rounded-2xl border transition-all"
+              style={{
+                borderColor: theme === t.key ? t.accent : "#3b2d6e",
+                background: theme === t.key ? t.accent + "15" : "#16112e",
+              }}
+            >
+              <div className="w-5 h-5 rounded-full flex-shrink-0" style={{ background: t.bar }} />
+              <span className={`text-sm font-medium ${theme === t.key ? "text-[#ede9ff]" : "text-[#6b5a9e]"}`}>
+                {t.name}
+              </span>
+              {theme === t.key && <span className="ml-auto text-xs" style={{color: t.accent}}>✓</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Daily reminder */}
+      <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-6">
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">⏰ Daily Reminder</h2>
+
+        {notifPermission === "denied" ? (
+          <p className="text-xs text-red-400">Notifications blocked by browser. Allow them in your browser settings to use reminders.</p>
+        ) : notifPermission !== "granted" ? (
+          <div>
+            <p className="text-xs text-[#6b5a9e] mb-3">Get a daily nudge to keep your streak alive.</p>
+            <button
+              onClick={requestNotifPermission}
+              disabled={notifRequesting}
+              className="w-full py-2.5 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-900/10 transition-colors disabled:opacity-50"
+            >
+              {notifRequesting ? "..." : "🔔 Enable notifications"}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#ede9ff]">Daily reminder</span>
+              <button
+                onClick={() => toggleReminder(!notifEnabled)}
+                className={`w-11 h-6 rounded-full transition-colors relative ${notifEnabled ? "bg-amber-500" : "bg-[#3b2d6e]"}`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifEnabled ? "translate-x-6" : "translate-x-1"}`}
+                />
+              </button>
+            </div>
+            {notifEnabled && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#9d8ac7]">Remind me at</span>
+                <input
+                  type="time"
+                  value={notifTime}
+                  onChange={(e) => saveReminderTime(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] text-[#ede9ff] text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                />
+              </div>
+            )}
+            <p className="text-xs text-[#4a3a7a]">Works while the app is open in your browser.</p>
           </div>
         )}
       </div>
