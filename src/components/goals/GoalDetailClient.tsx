@@ -53,9 +53,13 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
     };
     const encoded = btoa(JSON.stringify(data));
     const url = `${window.location.origin}/goals/new?template=${encoded}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt("Copy this link:", url);
+    }
   }
 
   function handleProgressUpdate(progress: number) {

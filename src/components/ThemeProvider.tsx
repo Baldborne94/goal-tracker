@@ -58,12 +58,13 @@ export function useTheme() {
 }
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeKey>("warrior");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("hero-theme") as ThemeKey;
-    if (stored && stored in THEMES) setThemeState(stored);
-  }, []);
+  const [theme, setThemeState] = useState<ThemeKey>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("hero-theme") as ThemeKey;
+      if (stored && stored in THEMES) return stored;
+    }
+    return "warrior";
+  });
 
   function setTheme(t: ThemeKey) {
     setThemeState(t);
@@ -75,6 +76,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   return (
     <ThemeContext.Provider value={{ theme, colors, setTheme }}>
       <div
+        suppressHydrationWarning
         style={
           {
             "--theme-gradient": colors.gradient,

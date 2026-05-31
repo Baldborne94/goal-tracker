@@ -58,6 +58,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
     if (!notifEnabled || notifPermission !== "granted") return;
     const now = new Date();
     const [h, m] = notifTime.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return;
     const target = new Date(now);
     target.setHours(h, m, 0, 0);
     if (target <= now) target.setDate(target.getDate() + 1);
