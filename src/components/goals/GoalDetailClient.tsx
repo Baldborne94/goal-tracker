@@ -42,6 +42,25 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
   const [goal, setGoal] = useState(initial);
   const [deleting, setDeleting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function shareTemplate() {
+    const data = {
+      title: goal.title,
+      description: goal.description ?? "",
+      priority: goal.priority,
+      milestones: goal.milestones.map((m) => m.title),
+    };
+    const encoded = btoa(JSON.stringify(data));
+    const url = `${window.location.origin}/goals/new?template=${encoded}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt("Copy this link:", url);
+    }
+  }
 
   function handleProgressUpdate(progress: number) {
     setGoal((prev) => ({
@@ -273,6 +292,13 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           ✏️ Edit
         </Link>
       )}
+
+      <button
+        onClick={shareTemplate}
+        className="w-full py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold hover:border-violet-500/60 hover:bg-[#1e1740] transition-colors mb-3"
+      >
+        {copied ? "✅ Link copied!" : "📤 Share as template"}
+      </button>
 
       <button
         onClick={() => setShowDelete(true)}

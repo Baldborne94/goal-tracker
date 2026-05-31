@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { formatDate } from "@/lib/utils";
+import { formatDate, calculateStreak } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -12,7 +12,12 @@ export default async function DashboardPage() {
   const monthStart = new Date(yr, mo - 1, 1);
   const monthEnd = new Date(yr, mo, 1);
 
-  const [user, goals, financeBudget, financeAgg] = await Promise.all([
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  const dow = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() - (dow === 0 ? 6 : dow - 1));
+
+  const [user, goals, financeBudget, financeAgg, streakMilestones, weekMilestones, weekGoals] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: { userRewards: { include: { reward: true } } },
@@ -30,6 +35,16 @@ export default async function DashboardPage() {
       where: { userId, date: { gte: monthStart, lt: monthEnd } },
       _sum: { amount: true },
     }),
+    prisma.milestone.findMany({
+      where: { goal: { userId }, completed: true, completedAt: { not: null } },
+      select: { completedAt: true },
+    }),
+    prisma.milestone.count({
+      where: { goal: { userId }, completed: true, completedAt: { gte: weekStart } },
+    }),
+    prisma.goal.count({
+      where: { userId, status: "completed", completedAt: { gte: weekStart } },
+    }),
   ]);
 
   const total = await prisma.goal.count({ where: { userId } });
@@ -37,6 +52,7 @@ export default async function DashboardPage() {
   const active = total - completed;
   const financeSpent = financeAgg._sum.amount ?? 0;
   const isOverBudget = financeBudget && financeSpent > financeBudget.amount;
+  const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -47,11 +63,11 @@ export default async function DashboardPage() {
       </div>
 
       {/* XP card */}
-      <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "linear-gradient(135deg, #2d1b6e 0%, #1a0f3e 50%, #0f0826 100%)", border: "1px solid #4c3880"}}>
-        <div className="absolute top-0 right-0 w-32 h-32 opacity-10" style={{background: "radial-gradient(circle, #f59e0b 0%, transparent 70%)"}}/>
+      <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
+        <div className="absolute top-0 right-0 w-32 h-32 opacity-10" style={{background: "radial-gradient(circle, var(--theme-accent) 0%, transparent 70%)"}}/>
         <p className="text-amber-300/80 text-sm mb-1">✨ Magic accumulated</p>
         <div className="flex items-end gap-2">
-          <span className="text-4xl font-bold text-amber-400">{user?.points ?? 0}</span>
+          <span className="text-4xl font-bold" style={{color: "var(--theme-accent)"}}>{user?.points ?? 0}</span>
           <span className="text-amber-300/60 mb-1">XP</span>
         </div>
         <div className="mt-3 flex gap-4 text-sm">
@@ -64,6 +80,54 @@ export default async function DashboardPage() {
             <span className="font-semibold text-[#ede9ff]">{completed}</span>
           </div>
         </div>
+      </div>
+
+      {/* Weekly recap */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
+          <div className="text-2xl mb-1">✅</div>
+          <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekMilestones}</div>
+          <div className="text-xs text-[#9d8ac7]">This week</div>
+        </div>
+        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
+          <div className="text-2xl mb-1">👑</div>
+          <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekGoals}</div>
+          <div className="text-xs text-[#9d8ac7]">Quests done</div>
+        </div>
+      </div>
+
+      {/* Streak card */}
+      <div className="rounded-2xl p-4 mb-6 flex items-center gap-4" style={{background: "#16112e", border: "1px solid #3b2d6e"}}>
+        <div className="text-4xl flex-shrink-0">{streak > 0 ? "🔥" : "💤"}</div>
+        <div className="flex-1 min-w-0">
+          {streak > 0 ? (
+            <>
+              <p className="text-lg font-bold text-amber-400">
+                {streak}-day streak!
+              </p>
+              <p className="text-xs text-[#9d8ac7]">
+                {streak >= 30
+                  ? "Legendary dedication. Don't stop now!"
+                  : streak >= 7
+                  ? "One week strong — keep the fire burning!"
+                  : streak >= 3
+                  ? "Great momentum! Keep checking off milestones."
+                  : "Nice start! Come back tomorrow to keep it going."}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-base font-bold text-[#ede9ff]">No active streak</p>
+              <p className="text-xs text-[#9d8ac7]">Complete a milestone today to start one!</p>
+            </>
+          )}
+        </div>
+        {streak > 0 && (
+          <div className="flex-shrink-0 text-center">
+            <div className="text-2xl font-bold text-amber-400">{streak}</div>
+            <div className="text-xs text-[#6b5a9e]">days</div>
+          </div>
+        )}
       </div>
 
       {/* Recent rewards */}

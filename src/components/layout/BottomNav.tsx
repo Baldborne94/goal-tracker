@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const LEVEL_ICONS = [
   { min: 700, icon: "👑" },
-  { min: 350, icon: "🏀" },
+  { min: 350, icon: "🏰" },
   { min: 150, icon: "🛡️" },
   { min: 50,  icon: "⚔️" },
   { min: 0,   icon: "🗡️" },
@@ -20,7 +20,7 @@ export default function BottomNav({ points = 0 }: { points?: number }) {
   const path = usePathname();
 
   const NAV_ITEMS = [
-    { href: "/dashboard", icon: "🏀", label: "Realm" },
+    { href: "/dashboard", icon: "🏰", label: "Realm" },
     { href: "/goals",     icon: "⚔️", label: "Quests" },
     { href: "/profile",  icon: heroIcon(points), label: "Hero" },
   ];
