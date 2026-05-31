@@ -89,22 +89,25 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
     localStorage.setItem("reminder-time", time);
   }
 
-  if (!user) return null;
-
   async function saveName() {
     if (!nameInput.trim()) return;
     setSavingName(true);
-    const res = await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: nameInput.trim() }),
-    });
-    if (res.ok) {
-      setDisplayName(nameInput.trim());
-      setEditingName(false);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nameInput.trim() }),
+      });
+      if (res.ok) {
+        setDisplayName(nameInput.trim());
+        setEditingName(false);
+      }
+    } finally {
+      setSavingName(false);
     }
-    setSavingName(false);
   }
+
+  if (!user) return null;
 
   const level = getLevel(user.points);
   const nextLevel = LEVEL_THRESHOLDS.find((l) => l.level === level.level + 1);
@@ -121,7 +124,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
         <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{background: "radial-gradient(circle, var(--theme-accent) 0%, transparent 70%)"}}/>
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold" style={{background: "linear-gradient(135deg, #3b2d6e, #1e1535)", border: "2px solid #f59e0b55"}}>
-            {user.name?.[0]?.toUpperCase() || "⚔"}
+            {displayName?.[0]?.toUpperCase() || "⚔"}
           </div>
           <div className="flex-1 min-w-0">
             {editingName ? (
