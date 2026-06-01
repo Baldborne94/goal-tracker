@@ -40,7 +40,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [displayName, setDisplayName] = useState(user?.name ?? "");
-  const [savingName, setSavingName] = useState(false);
+  const [nameStatus, setNameStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const [notifPermission, setNotifPermission] = useState<string>("default");
   const [notifEnabled, setNotifEnabled] = useState(false);
@@ -91,7 +91,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
 
   async function saveName() {
     if (!nameInput.trim()) return;
-    setSavingName(true);
+    setNameStatus("saving");
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
@@ -100,10 +100,18 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
       });
       if (res.ok) {
         setDisplayName(nameInput.trim());
-        setEditingName(false);
+        setNameStatus("saved");
+        setTimeout(() => {
+          setEditingName(false);
+          setNameStatus("idle");
+        }, 1200);
+      } else {
+        setNameStatus("error");
+        setTimeout(() => setNameStatus("idle"), 3000);
       }
-    } finally {
-      setSavingName(false);
+    } catch {
+      setNameStatus("error");
+      setTimeout(() => setNameStatus("idle"), 3000);
     }
   }
 
@@ -141,10 +149,16 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
                 />
                 <button
                   onClick={saveName}
-                  disabled={savingName}
-                  className="text-amber-400 text-xs font-bold px-2 py-1 rounded bg-amber-900/30 border border-amber-700/40 disabled:opacity-50 flex-shrink-0"
+                  disabled={nameStatus === "saving" || nameStatus === "saved"}
+                  className={`text-xs font-bold px-2 py-1 rounded border disabled:opacity-50 flex-shrink-0 transition-colors ${
+                    nameStatus === "saved"
+                      ? "bg-green-900/40 border-green-600/50 text-green-400"
+                      : nameStatus === "error"
+                      ? "bg-red-900/40 border-red-600/50 text-red-400"
+                      : "bg-amber-900/30 border-amber-700/40 text-amber-400"
+                  }`}
                 >
-                  {savingName ? "..." : "✓"}
+                  {nameStatus === "saving" ? "..." : nameStatus === "saved" ? "✓ Saved!" : nameStatus === "error" ? "✗ Error" : "✓"}
                 </button>
                 <button
                   onClick={() => { setEditingName(false); setNameInput(displayName); }}
