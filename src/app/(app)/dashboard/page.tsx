@@ -93,20 +93,20 @@ export default async function DashboardPage() {
 
       {/* Weekly recap */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
+        <div className="rounded-2xl border p-4 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-2xl mb-1">✅</div>
           <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekMilestones}</div>
-          <div className="text-xs text-[#9d8ac7]">This week</div>
+          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>This week</div>
         </div>
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
+        <div className="rounded-2xl border p-4 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-2xl mb-1">👑</div>
           <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekGoals}</div>
-          <div className="text-xs text-[#9d8ac7]">Quests done</div>
+          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>Quests done</div>
         </div>
       </div>
 
       {/* Streak card */}
-      <div className="rounded-2xl p-4 mb-6 flex items-center gap-4" style={{background: "#16112e", border: "1px solid #3b2d6e"}}>
+      <div className="rounded-2xl p-4 mb-6 flex items-center gap-4" style={{background: "var(--theme-surface)", border: "1px solid var(--theme-surface-border)"}}>
         <div className="text-4xl flex-shrink-0">{streak > 0 ? "🔥" : "💤"}</div>
         <div className="flex-1 min-w-0">
           {streak > 0 ? (
@@ -147,7 +147,8 @@ export default async function DashboardPage() {
             {user.userRewards.slice(0, 6).map((ur: { id: string; reward: { icon: string; name: string } }) => (
               <div
                 key={ur.id}
-                className="flex-shrink-0 bg-[#16112e] rounded-xl border border-[#3b2d6e] px-4 py-3 text-center"
+                className="flex-shrink-0 rounded-xl border px-4 py-3 text-center"
+                style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}
               >
                 <div className="text-2xl mb-1">{ur.reward.icon}</div>
                 <div className="text-xs font-medium text-[#c4b5fd] whitespace-nowrap">
@@ -162,24 +163,23 @@ export default async function DashboardPage() {
       {/* Finance widget */}
       <Link
         href="/finance"
-        className={`block rounded-2xl p-4 mb-6 transition-colors hover:border-amber-500/40 border ${
-          isOverBudget
-            ? "bg-red-950/30 border-red-700/40"
-            : "bg-[#16112e] border-[#3b2d6e]"
-        }`}
+        className="block rounded-2xl p-4 mb-6 transition-colors border"
+        style={isOverBudget
+          ? { background: "rgba(127,29,29,0.2)", borderColor: "rgba(185,28,28,0.4)" }
+          : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
       >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">💰 Finance</span>
-          <span className="text-xs text-amber-400">
+          <span className="text-sm font-semibold uppercase tracking-wider" style={{color: "var(--theme-text-muted)"}}>💰 Finance</span>
+          <span className="text-xs" style={{color: "var(--theme-accent)"}}>
             {new Date().toLocaleDateString("en-GB", { month: "long" })} →
           </span>
         </div>
         {financeBudget ? (
           <>
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#9d8ac7]">Spent</span>
+              <span style={{color: "var(--theme-text-muted)"}}>Spent</span>
               <span className={`font-bold ${isOverBudget ? "text-red-400" : "text-[#ede9ff]"}`}>
-                €{financeSpent.toFixed(0)} / €{financeBudget.amount.toFixed(0)}
+                €{financeSpent.toFixed(2)} / €{financeBudget.amount.toFixed(2)}
               </span>
             </div>
             <div className="h-2 bg-[#0f0d22] rounded-full overflow-hidden">
@@ -212,7 +212,7 @@ export default async function DashboardPage() {
       </div>
 
       {goals.length === 0 ? (
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-8 text-center">
+        <div className="rounded-2xl border p-8 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-4xl mb-3">🗡️</div>
           <p className="text-[#9d8ac7] text-sm mb-4">No quests yet</p>
           <Link
@@ -232,7 +232,8 @@ export default async function DashboardPage() {
               <Link
                 key={goal.id}
                 href={`/goals/${goal.id}`}
-                className="block bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 hover:border-amber-500/40 transition-colors"
+                className="block rounded-2xl border p-4 transition-colors"
+                style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-semibold text-[#ede9ff] line-clamp-1">{goal.title}</h3>
