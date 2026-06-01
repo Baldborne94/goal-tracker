@@ -40,10 +40,14 @@ export async function PATCH(
     },
   });
 
-  if (progress === 100 && goal.status !== "completed") {
+  // Award proportional XP: delta between new and previous progress share
+  const previouslyEarned = Math.round(goal.points * goal.progress / 100);
+  const nowEarned = Math.round(goal.points * progress / 100);
+  const delta = nowEarned - previouslyEarned;
+  if (delta !== 0) {
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { points: { increment: goal.points } },
+      data: { points: { increment: delta } },
     });
   }
 
