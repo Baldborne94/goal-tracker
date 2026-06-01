@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         { name: "Learning", color: "#a855f7", icon: "book-open" },
         { name: "Finance", color: "#f59e0b", icon: "piggy-bank" },
         { name: "Personal", color: "#ec4899", icon: "star" },
+        { name: "Hobby", color: "#f97316", icon: "gamepad-2" },
       ],
     });
   }

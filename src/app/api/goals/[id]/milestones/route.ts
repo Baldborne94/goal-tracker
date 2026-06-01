@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -39,12 +40,18 @@ export async function PATCH(
     },
   });
 
-  if (progress === 100 && goal.status !== "completed") {
+  // Award proportional XP: delta between new and previous progress share
+  const previouslyEarned = Math.round(goal.points * goal.progress / 100);
+  const nowEarned = Math.round(goal.points * progress / 100);
+  const delta = nowEarned - previouslyEarned;
+  if (delta !== 0) {
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { points: { increment: goal.points } },
+      data: { points: { increment: delta } },
     });
   }
 
+  revalidatePath("/goals");
+  revalidatePath("/dashboard");
   return NextResponse.json({ milestone, progress });
 }
