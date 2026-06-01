@@ -22,7 +22,8 @@ export default function BottomNav({ points = 0 }: { points?: number }) {
   const NAV_ITEMS = [
     { href: "/dashboard", icon: "🏰", label: "Realm" },
     { href: "/goals",     icon: "⚔️", label: "Quests" },
-    { href: "/profile",  icon: heroIcon(points), label: "Hero" },
+    { href: "/vita",      icon: "🌿", label: "Life" },
+    { href: "/profile",   icon: heroIcon(points), label: "Hero" },
   ];
 
   return (
