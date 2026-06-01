@@ -7,7 +7,7 @@ export default async function ProfilePage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  const [user, completed, active, streakMilestones] = await Promise.all([
+  const [userRaw, completed, active, streakMilestones] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -16,7 +16,12 @@ export default async function ProfilePage() {
           orderBy: { earnedAt: "desc" },
         },
       },
-    }),
+    }).catch(() =>
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, email: true, image: true, points: true, createdAt: true, updatedAt: true },
+      }).then((u) => u ? { ...u, reminderEnabled: false, reminderTime: "09:00", theme: "warrior", onboardingComplete: true, password: null, userRewards: [] } : null).catch(() => null)
+    ),
     prisma.goal.count({ where: { userId, status: "completed" } }),
     prisma.goal.count({ where: { userId, status: "active" } }),
     prisma.milestone.findMany({
@@ -25,6 +30,7 @@ export default async function ProfilePage() {
     }),
   ]);
 
+  const user = userRaw;
   const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
 
   const stats = {
