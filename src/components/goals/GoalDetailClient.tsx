@@ -131,7 +131,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <button
-        onClick={() => router.back()}
+        onClick={() => router.push("/goals")}
         className="flex items-center gap-1.5 text-[#9d8ac7] text-sm mb-5 hover:text-amber-400 transition-colors"
       >
         ← Back
