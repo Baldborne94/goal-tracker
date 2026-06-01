@@ -4,6 +4,28 @@ import { getWebPush } from "@/lib/vapid";
 
 export const runtime = "nodejs";
 
+async function sendPush(
+  webpush: ReturnType<typeof getWebPush>,
+  subs: { endpoint: string; p256dh: string; auth: string }[],
+  payload: { title: string; body: string; tag: string }
+) {
+  let sent = 0;
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify(payload)
+      );
+      sent++;
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "statusCode" in err && (err as { statusCode: number }).statusCode === 410) {
+        await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {});
+      }
+    }
+  }
+  return sent;
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const querySecret = url.searchParams.get("secret");
@@ -16,60 +38,56 @@ export async function GET(req: Request) {
 
   const webpush = getWebPush();
 
-  const usersWithGoals = await prisma.user.findMany({
-    where: {
-      pushSubscriptions: { some: {} },
-      goals: { some: { status: "active", reminderTime: { not: null } } },
-    },
+  const users = await prisma.user.findMany({
+    where: { pushSubscriptions: { some: {} } },
     select: {
       id: true,
       timezone: true,
       pushSubscriptions: { select: { endpoint: true, p256dh: true, auth: true } },
       goals: {
-        where: { status: "active", reminderTime: { not: null } },
-        select: { id: true, title: true, reminderTime: true },
+        where: { status: "active" },
+        select: { id: true, title: true, reminderTime: true, targetDate: true },
       },
     },
   });
 
   let sent = 0;
 
-  for (const user of usersWithGoals) {
+  for (const user of users) {
+    const tz = user.timezone || "UTC";
     const now = new Date();
+
     const userTime = new Intl.DateTimeFormat("en-GB", {
-      timeZone: user.timezone || "UTC",
+      timeZone: tz,
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
     }).format(now);
 
-    const matchingGoals = user.goals.filter(
-      (g) => g.reminderTime === userTime
-    );
+    // Daily reminder notifications
+    for (const goal of user.goals.filter((g) => g.reminderTime === userTime)) {
+      sent += await sendPush(webpush, user.pushSubscriptions, {
+        title: `⚔️ Quest reminder: ${goal.title}`,
+        body: "Time to work on your quest!",
+        tag: `goal-${goal.id}`,
+      });
+    }
 
-    for (const goal of matchingGoals) {
-      for (const sub of user.pushSubscriptions) {
-        try {
-          await webpush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            JSON.stringify({
-              title: `⚔️ Quest reminder: ${goal.title}`,
-              body: "Time to work on your quest!",
-              tag: `goal-${goal.id}`,
-            })
-          );
-          sent++;
-        } catch (err: unknown) {
-          if (
-            err &&
-            typeof err === "object" &&
-            "statusCode" in err &&
-            (err as { statusCode: number }).statusCode === 410
-          ) {
-            await prisma.pushSubscription
-              .delete({ where: { endpoint: sub.endpoint } })
-              .catch(() => {});
-          }
+    // Deadline warning: fire once when the user's local time is 09:00 and deadline is in 3 days
+    if (userTime === "09:00") {
+      const todayLocal = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(now); // YYYY-MM-DD
+      const [y, mo, d] = todayLocal.split("-").map(Number);
+      const deadlineDate = new Date(y, mo - 1, d + 3);
+      const deadlineStr = `${deadlineDate.getFullYear()}-${String(deadlineDate.getMonth() + 1).padStart(2, "0")}-${String(deadlineDate.getDate()).padStart(2, "0")}`;
+
+      for (const goal of user.goals.filter((g) => g.targetDate)) {
+        const goalDate = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(goal.targetDate!));
+        if (goalDate === deadlineStr) {
+          sent += await sendPush(webpush, user.pushSubscriptions, {
+            title: `⏰ Quest expires in 3 days: ${goal.title}`,
+            body: "You have 3 days left. Push through!",
+            tag: `deadline-${goal.id}`,
+          });
         }
       }
     }

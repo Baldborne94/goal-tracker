@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const dow = weekStart.getDay();
   weekStart.setDate(weekStart.getDate() - (dow === 0 ? 6 : dow - 1));
 
-  const [user, goals, financeBudget, financeAgg, streakMilestones, weekMilestones, weekGoals] = await Promise.all([
+  const [user, goals, financeBudget, financeAgg, streakMilestones, weekMilestones, weekGoals, todayFocusRaw] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: { userRewards: { include: { reward: true } } },
@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       }).then((u) => u ? { ...u, emailVerified: null, password: null, userRewards: [] } : null).catch(() => null)
     ),
     prisma.goal.findMany({
-      where: { userId },
+      where: { userId, status: { in: ["active", "completed"] } },
       include: { category: true, milestones: true },
       orderBy: { createdAt: "desc" },
       take: 5,
@@ -51,11 +51,28 @@ export default async function DashboardPage() {
     prisma.goal.count({
       where: { userId, status: "completed", completedAt: { gte: weekStart } },
     }),
+    prisma.goal.findMany({
+      where: { userId, status: "active", reminderTime: { not: null } },
+      select: {
+        id: true,
+        title: true,
+        reminderTime: true,
+        milestones: {
+          where: { completed: false },
+          orderBy: { order: "asc" },
+          take: 1,
+          select: { id: true, title: true },
+        },
+      },
+      orderBy: { reminderTime: "asc" },
+    }).catch(() => []),
   ]);
 
-  const total = await prisma.goal.count({ where: { userId } });
-  const completed = await prisma.goal.count({ where: { userId, status: "completed" } });
-  const active = total - completed;
+  const [active, completed] = await Promise.all([
+    prisma.goal.count({ where: { userId, status: "active" } }),
+    prisma.goal.count({ where: { userId, status: "completed" } }),
+  ]);
+  const todayFocus = todayFocusRaw.filter((g: { milestones: { id: string }[] }) => g.milestones.length > 0);
   const financeSpent = financeAgg._sum.amount ?? 0;
   const isOverBudget = financeBudget && financeSpent > financeBudget.amount;
   const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
@@ -138,6 +155,32 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Today's focus */}
+      {todayFocus.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎯 Today&apos;s focus</h2>
+          <div className="space-y-2">
+            {(todayFocus as { id: string; title: string; reminderTime: string | null; milestones: { id: string; title: string }[] }[]).map((g) => (
+              <Link
+                key={g.id}
+                href={`/goals/${g.id}`}
+                className="flex items-center gap-3 rounded-2xl border p-3 transition-colors"
+                style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+              >
+                <div className="w-5 h-5 rounded-full border-2 border-[#3b2d6e] flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[#ede9ff] truncate">{g.milestones[0]?.title}</p>
+                  <p className="text-xs truncate" style={{ color: "var(--theme-text-muted)" }}>{g.title}</p>
+                </div>
+                {g.reminderTime && (
+                  <span className="text-xs text-amber-400/70 flex-shrink-0">🔔 {g.reminderTime}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent rewards */}
       {user?.userRewards && user.userRewards.length > 0 && (

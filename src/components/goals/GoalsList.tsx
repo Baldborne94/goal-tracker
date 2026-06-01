@@ -16,6 +16,7 @@ type Goal = {
   status: string;
   priority: string;
   progress: number;
+  points: number;
   targetDate: string | null;
   reminderTime: string | null;
   category: Category | null;
@@ -111,16 +112,30 @@ const SUGGESTIONS: Record<string, Suggestion[]> = {
 };
 
 export default function GoalsList({ goals, categories }: Props) {
-  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "completed" | "archived">("all");
   const [categoryId, setCategoryId] = useState<string>("all");
+  const [sort, setSort] = useState<"newest" | "deadline" | "progress" | "xp">("newest");
   const [showSuggestions, setShowSuggestions] = useState(goals.length === 0);
 
-  const filtered = goals.filter((g) => {
-    if (filter === "active" && g.status !== "active") return false;
-    if (filter === "completed" && g.status !== "completed") return false;
-    if (categoryId !== "all" && g.category?.id !== categoryId) return false;
-    return true;
-  });
+  const filtered = goals
+    .filter((g) => {
+      if (filter === "all" && g.status === "archived") return false;
+      if (filter === "active" && g.status !== "active") return false;
+      if (filter === "completed" && g.status !== "completed") return false;
+      if (filter === "archived" && g.status !== "archived") return false;
+      if (categoryId !== "all" && g.category?.id !== categoryId) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sort === "deadline") {
+        if (!a.targetDate && !b.targetDate) return 0;
+        if (!a.targetDate) return 1;
+        if (!b.targetDate) return -1;
+        return new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime();
+      }
+      if (sort === "progress") return b.progress - a.progress;
+      return 0; // "newest" — already ordered by server
+    });
 
   const activeCategoryName = categoryId === "all"
     ? null
@@ -134,8 +149,8 @@ export default function GoalsList({ goals, categories }: Props) {
   return (
     <>
       {/* Status filters */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-        {(["all", "active", "completed"] as const).map((f) => (
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+        {(["all", "active", "completed", "archived"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -146,7 +161,26 @@ export default function GoalsList({ goals, categories }: Props) {
                 : { background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }
             }
           >
-            {f === "all" ? "All" : f === "active" ? "⚡ Active" : "👑 Completed"}
+            {f === "all" ? "All" : f === "active" ? "⚡ Active" : f === "completed" ? "👑 Done" : "📦 Archived"}
+          </button>
+        ))}
+      </div>
+
+      {/* Sort */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        <span className="flex-shrink-0 text-xs self-center" style={{ color: "var(--theme-text-muted)" }}>Sort:</span>
+        {(["newest", "deadline", "progress"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setSort(s)}
+            className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border"
+            style={
+              sort === s
+                ? { background: "var(--theme-surface-border)", color: "#ede9ff", borderColor: "var(--theme-surface-border)" }
+                : { background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }
+            }
+          >
+            {s === "newest" ? "🕐 Newest" : s === "deadline" ? "🌙 Deadline" : "📊 Progress"}
           </button>
         ))}
       </div>
@@ -264,11 +298,12 @@ function GoalCard({ goal }: { goal: Goal }) {
           className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium border ${
             goal.status === "completed"
               ? "bg-amber-900/30 text-amber-300 border-amber-700/40"
+              : goal.status === "archived"
+              ? "bg-zinc-800/60 text-zinc-400 border-zinc-600/40"
               : "bg-violet-900/30 text-violet-300 border-violet-700/40"
           }`}
         >
-          {goal.status === "completed" ? "👑" : "⚡"}{" "}
-          {goal.status === "completed" ? "Done" : "Active"}
+          {goal.status === "completed" ? "👑 Done" : goal.status === "archived" ? "📦 Archived" : "⚡ Active"}
         </span>
       </div>
 
