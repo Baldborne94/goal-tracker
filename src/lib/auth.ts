@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
@@ -9,6 +10,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -35,12 +40,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google" && user.email) {
+        const existing = await prisma.user.findUnique({ where: { email: user.email } });
+        if (!existing) {
+          await prisma.user.create({
+            data: { email: user.email, name: user.name ?? null, image: user.image ?? null },
+          });
+        }
+      }
+      return true;
+    },
     jwt({ token, user }) {
       if (user) token.id = user.id;
       return token;
     },
-    session({ session, token }) {
-      if (token && session.user) session.user.id = token.id as string;
+    async session({ session, token }) {
+      if (token && session.user) {
+        if (token.id) {
+          session.user.id = token.id as string;
+        } else if (session.user.email) {
+          const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } });
+          if (dbUser) session.user.id = dbUser.id;
+        }
+      }
       return session;
     },
   },
