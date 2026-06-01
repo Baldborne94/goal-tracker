@@ -18,3 +18,21 @@ export async function updateProfileName(name: string): Promise<{ ok: boolean; na
 
   return { ok: true, name: user.name ?? trimmed };
 }
+
+export async function updateTheme(theme: string): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) return;
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { theme },
+  });
+}
+
+export async function updateReminder(enabled: boolean, time: string): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) return;
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { reminderEnabled: enabled, reminderTime: time },
+  });
+}

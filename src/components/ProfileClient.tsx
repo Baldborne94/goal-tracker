@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
-import { updateProfileName } from "@/app/(app)/profile/actions";
+import { updateProfileName, updateTheme, updateReminder } from "@/app/(app)/profile/actions";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -30,7 +30,7 @@ function getLevel(points: number) {
   return LEVEL_THRESHOLDS.find((l) => points >= l.min && points <= l.max) || LEVEL_THRESHOLDS[0];
 }
 
-export default function ProfileClient({ user, stats, streak = 0 }: { user: User | null; stats: Stats; streak?: number }) {
+export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00" }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string }) {
   const { theme, colors, setTheme } = useTheme();
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -44,16 +44,17 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
   const [nameStatus, setNameStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const [notifPermission, setNotifPermission] = useState<string>("default");
-  const [notifEnabled, setNotifEnabled] = useState(false);
-  const [notifTime, setNotifTime] = useState("09:00");
+  const [notifEnabled, setNotifEnabled] = useState(dbReminderEnabled);
+  const [notifTime, setNotifTime] = useState(dbReminderTime);
   const [notifRequesting, setNotifRequesting] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
     setNotifPermission(Notification.permission);
-    setNotifEnabled(localStorage.getItem("reminder-enabled") === "true");
-    setNotifTime(localStorage.getItem("reminder-time") || "09:00");
-  }, []);
+    // Sync localStorage with DB values on mount
+    localStorage.setItem("reminder-enabled", String(dbReminderEnabled));
+    localStorage.setItem("reminder-time", dbReminderTime);
+  }, [dbReminderEnabled, dbReminderTime]);
 
   useEffect(() => {
     if (!notifEnabled || notifPermission !== "granted") return;
@@ -83,11 +84,13 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
   function toggleReminder(enabled: boolean) {
     setNotifEnabled(enabled);
     localStorage.setItem("reminder-enabled", String(enabled));
+    updateReminder(enabled, notifTime);
   }
 
   function saveReminderTime(time: string) {
     setNotifTime(time);
     localStorage.setItem("reminder-time", time);
+    updateReminder(notifEnabled, time);
   }
 
   async function saveName() {
@@ -250,7 +253,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
           {(Object.values(THEMES) as (typeof THEMES)[ThemeKey][]).map((t) => (
             <button
               key={t.key}
-              onClick={() => setTheme(t.key as ThemeKey)}
+              onClick={() => { setTheme(t.key as ThemeKey); updateTheme(t.key); }}
               className="flex items-center gap-3 p-3 rounded-2xl border transition-all"
               style={{
                 borderColor: theme === t.key ? t.accent : "#3b2d6e",
