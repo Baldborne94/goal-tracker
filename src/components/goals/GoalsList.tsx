@@ -17,6 +17,7 @@ type Goal = {
   priority: string;
   progress: number;
   targetDate: string | null;
+  reminderTime: string | null;
   category: Category | null;
   milestones: Milestone[];
   tags: GoalTag[];
@@ -138,11 +139,12 @@ export default function GoalsList({ goals, categories }: Props) {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+            className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors border"
+            style={
               filter === f
-                ? "bg-amber-500 text-black border-amber-500 font-bold"
-                : "bg-[#16112e] text-[#9d8ac7] border-[#3b2d6e] hover:border-amber-500/40"
-            }`}
+                ? { background: "var(--theme-accent)", color: "#000", borderColor: "var(--theme-accent)", fontWeight: 700 }
+                : { background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }
+            }
           >
             {f === "all" ? "All" : f === "active" ? "⚡ Active" : "👑 Completed"}
           </button>
@@ -154,11 +156,12 @@ export default function GoalsList({ goals, categories }: Props) {
         <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
           <button
             onClick={() => setCategoryId("all")}
-            className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+            className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border"
+            style={
               categoryId === "all"
-                ? "bg-[#ede9ff] text-[#0c0a1a] border-[#ede9ff]"
-                : "bg-[#16112e] text-[#9d8ac7] border-[#3b2d6e]"
-            }`}
+                ? { background: "#ede9ff", color: "#0c0a1a", borderColor: "#ede9ff" }
+                : { background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }
+            }
           >
             All
           </button>
@@ -166,13 +169,11 @@ export default function GoalsList({ goals, categories }: Props) {
             <button
               key={c.id}
               onClick={() => setCategoryId(c.id)}
-              className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
-                categoryId === c.id ? "text-black" : "bg-[#16112e] text-[#9d8ac7]"
-              }`}
+              className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border"
               style={
                 categoryId === c.id
-                  ? { backgroundColor: c.color, borderColor: c.color }
-                  : { borderColor: "#3b2d6e" }
+                  ? { backgroundColor: c.color, borderColor: c.color, color: "#000" }
+                  : { background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }
               }
             >
               {c.name}
@@ -182,12 +183,12 @@ export default function GoalsList({ goals, categories }: Props) {
       )}
 
       {filtered.length === 0 ? (
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-8 text-center mb-4">
+        <div className="rounded-2xl border p-8 text-center mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
           <div className="text-4xl mb-3">🗡️</div>
-          <p className="text-[#9d8ac7] text-sm">No quests found</p>
+          <p className="text-sm mb-4" style={{ color: "var(--theme-text-muted)" }}>No quests found</p>
           <Link
             href="/goals/new"
-            className="inline-block mt-4 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold"
+            className="inline-block px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold"
           >
             Create quest
           </Link>
@@ -201,15 +202,15 @@ export default function GoalsList({ goals, categories }: Props) {
       )}
 
       {/* Quest suggestions */}
-      <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] overflow-hidden">
+      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <button
           onClick={() => setShowSuggestions((v) => !v)}
           className="w-full flex items-center justify-between px-5 py-4 text-left"
         >
-          <span className="text-sm font-semibold text-[#c4b5fd]">
+          <span className="text-sm font-semibold" style={{ color: "var(--theme-text-muted)" }}>
             💡 Quest ideas{activeCategoryName ? ` · ${activeCategoryName}` : ""}
           </span>
-          <span className="text-[#6b5a9e] text-xs">{showSuggestions ? "▲" : "▼"}</span>
+          <span className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{showSuggestions ? "▲" : "▼"}</span>
         </button>
 
         {showSuggestions && (
@@ -218,12 +219,13 @@ export default function GoalsList({ goals, categories }: Props) {
               <Link
                 key={s.title}
                 href={suggestionHref(s)}
-                className="flex items-center gap-3 bg-[#0f0d22] rounded-xl px-3 py-2.5 border border-[#2a1f50] hover:border-amber-500/30 transition-colors group"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 border transition-colors group hover:border-amber-500/30"
+                style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
               >
                 <span className="text-xl flex-shrink-0">{s.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-[#ede9ff] leading-snug">{s.title}</p>
-                  <p className="text-xs text-[#6b5a9e] mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: "var(--theme-text-muted)" }}>
                     {s.desc}
                     {s.durationDays && (
                       <span className="ml-2 text-amber-500/70">
@@ -236,7 +238,7 @@ export default function GoalsList({ goals, categories }: Props) {
                     )}
                   </p>
                 </div>
-                <span className="text-[#3b2d6e] group-hover:text-amber-400 transition-colors text-lg flex-shrink-0">+</span>
+                <span className="text-lg flex-shrink-0 group-hover:text-amber-400 transition-colors" style={{ color: "var(--theme-surface-border)" }}>+</span>
               </Link>
             ))}
           </div>
@@ -253,7 +255,8 @@ function GoalCard({ goal }: { goal: Goal }) {
   return (
     <Link
       href={`/goals/${goal.id}`}
-      className="block bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 hover:border-amber-500/40 transition-colors"
+      className="block rounded-2xl border p-4 hover:border-amber-500/40 transition-colors"
+      style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <h3 className="font-semibold text-[#ede9ff] line-clamp-2 flex-1">{goal.title}</h3>
@@ -273,10 +276,7 @@ function GoalCard({ goal }: { goal: Goal }) {
         {goal.category && (
           <span
             className="text-xs px-2 py-0.5 rounded-full font-medium"
-            style={{
-              backgroundColor: goal.category.color + "25",
-              color: goal.category.color,
-            }}
+            style={{ backgroundColor: goal.category.color + "25", color: goal.category.color }}
           >
             {goal.category.name}
           </span>
@@ -285,37 +285,46 @@ function GoalCard({ goal }: { goal: Goal }) {
           {getPriorityLabel(goal.priority)}
         </span>
         {goal.tags.slice(0, 2).map(({ tag }) => (
-          <span key={tag.id} className="text-xs px-2 py-0.5 rounded-full bg-[#1e1740] text-[#9d8ac7] border border-[#3b2d6e]">
+          <span
+            key={tag.id}
+            className="text-xs px-2 py-0.5 rounded-full border"
+            style={{ background: "var(--theme-bg)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
+          >
             #{tag.name}
           </span>
         ))}
       </div>
 
       <div>
-        <div className="flex items-center justify-between text-xs text-[#6b5a9e] mb-1">
+        <div className="flex items-center justify-between text-xs mb-1" style={{ color: "var(--theme-text-muted)" }}>
           <span>
             {milestonesTotal > 0 ? `${milestonesDone}/${milestonesTotal} milestones` : "Progress"}
           </span>
           <span className="text-amber-400/80">{goal.progress}%</span>
         </div>
-        <div className="h-2 bg-[#0f0d22] rounded-full overflow-hidden">
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
           <div
             className={`h-full rounded-full transition-all ${
-              goal.progress >= 100
-                ? "bg-amber-400"
-                : goal.progress >= 50
-                ? "bg-violet-500"
-                : "bg-violet-700"
+              goal.progress >= 100 ? "bg-amber-400" : goal.progress >= 50 ? "bg-violet-500" : "bg-violet-700"
             }`}
             style={{ width: `${goal.progress}%` }}
           />
         </div>
       </div>
 
-      {goal.targetDate && (
-        <p className="text-xs text-[#6b5a9e] mt-2">
-          🌙 {formatDate(goal.targetDate)}
-        </p>
+      {(goal.targetDate || goal.reminderTime) && (
+        <div className="flex items-center gap-3 mt-2">
+          {goal.targetDate && (
+            <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
+              🌙 {formatDate(goal.targetDate)}
+            </p>
+          )}
+          {goal.reminderTime && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full border border-amber-700/30 bg-amber-900/20 text-amber-400/80">
+              🔔 {goal.reminderTime}
+            </span>
+          )}
+        </div>
       )}
     </Link>
   );
