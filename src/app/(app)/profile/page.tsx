@@ -19,8 +19,8 @@ export default async function ProfilePage() {
     }).catch(() =>
       prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, name: true, email: true, image: true, points: true, createdAt: true, updatedAt: true },
-      }).then((u) => u ? { ...u, reminderEnabled: false, reminderTime: "09:00", theme: "warrior", onboardingComplete: true, password: null, userRewards: [] } : null).catch(() => null)
+        select: { id: true, name: true, email: true, image: true, points: true, createdAt: true },
+      }).then((u) => u ? { ...u, reminderEnabled: false, reminderTime: "09:00", theme: "warrior", onboardingComplete: true, password: null, emailVerified: null, userRewards: [] } : null).catch(() => null)
     ),
     prisma.goal.count({ where: { userId, status: "completed" } }),
     prisma.goal.count({ where: { userId, status: "active" } }),

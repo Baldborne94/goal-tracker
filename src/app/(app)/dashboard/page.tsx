@@ -24,8 +24,8 @@ export default async function DashboardPage() {
     }).catch(() =>
       prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, name: true, email: true, image: true, points: true, createdAt: true, updatedAt: true },
-      }).then((u) => u ? { ...u, userRewards: [] } : null).catch(() => null)
+        select: { id: true, name: true, email: true, image: true, points: true, createdAt: true },
+      }).then((u) => u ? { ...u, emailVerified: null, password: null, userRewards: [] } : null).catch(() => null)
     ),
     prisma.goal.findMany({
       where: { userId },
