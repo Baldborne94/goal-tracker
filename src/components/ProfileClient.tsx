@@ -210,10 +210,10 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
           { label: "Done", value: stats.completed, icon: "👑" },
           { label: "Streak", value: streak, icon: streak > 0 ? "🔥" : "💤" },
         ].map((s) => (
-          <div key={s.label} className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-3 text-center">
+          <div key={s.label} className="rounded-2xl border p-3 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
             <div className="text-xl mb-1">{s.icon}</div>
-            <div className="text-xl font-bold text-amber-400">{s.value}</div>
-            <div className="text-xs text-[#9d8ac7]">{s.label}</div>
+            <div className="text-xl font-bold" style={{color: "var(--theme-accent)"}}>{s.value}</div>
+            <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -226,16 +226,17 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
         </h2>
 
         {user.userRewards.length === 0 ? (
-          <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-6 text-center">
+          <div className="rounded-2xl border p-6 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
             <div className="text-3xl mb-2">🏆</div>
-            <p className="text-[#9d8ac7] text-sm">Complete quests to unlock trophies</p>
+            <p className="text-sm" style={{color: "var(--theme-text-muted)"}}>Complete quests to unlock trophies</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {user.userRewards.map((ur) => (
               <div
                 key={ur.id}
-                className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4"
+                className="rounded-2xl border p-4"
+                style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}
               >
                 <div className="text-3xl mb-2">{ur.reward.icon}</div>
                 <div className="font-semibold text-[#ede9ff] text-sm">{ur.reward.name}</div>
@@ -256,8 +257,8 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
               onClick={() => { setTheme(t.key as ThemeKey); updateTheme(t.key); }}
               className="flex items-center gap-3 p-3 rounded-2xl border transition-all"
               style={{
-                borderColor: theme === t.key ? t.accent : "#3b2d6e",
-                background: theme === t.key ? t.accent + "15" : "#16112e",
+                borderColor: theme === t.key ? t.accent : "var(--theme-surface-border)",
+                background: theme === t.key ? t.accent + "22" : "var(--theme-surface)",
               }}
             >
               <div className="w-5 h-5 rounded-full flex-shrink-0" style={{ background: t.bar }} />
@@ -271,7 +272,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       </div>
 
       {/* Daily reminder */}
-      <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-6">
+      <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
         <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">⏰ Daily Reminder</h2>
 
         {notifPermission === "denied" ? (
@@ -293,7 +294,8 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
               <span className="text-sm text-[#ede9ff]">Daily reminder</span>
               <button
                 onClick={() => toggleReminder(!notifEnabled)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${notifEnabled ? "bg-amber-500" : "bg-[#3b2d6e]"}`}
+                className="w-11 h-6 rounded-full transition-colors relative"
+                style={{background: notifEnabled ? "var(--theme-accent)" : "var(--theme-surface-border)"}}
               >
                 <span
                   className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifEnabled ? "translate-x-6" : "translate-x-1"}`}
@@ -307,7 +309,8 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                   type="time"
                   value={notifTime}
                   onChange={(e) => saveReminderTime(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] text-[#ede9ff] text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                  className="flex-1 px-3 py-2 rounded-xl text-[#ede9ff] text-sm focus:outline-none border"
+                  style={{background: "var(--theme-bg, #0f0d22)", borderColor: "var(--theme-surface-border)"}}
                 />
               </div>
             )}
@@ -317,7 +320,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       </div>
 
       {/* Danger zone */}
-      <div className="bg-[#16112e] rounded-2xl border border-red-900/30 p-5 mb-4">
+      <div className="rounded-2xl border border-red-900/30 p-5 mb-4" style={{background: "var(--theme-surface)"}}>
         <h2 className="text-sm font-semibold text-red-400/80 uppercase tracking-wider mb-4">⚠️ Danger zone</h2>
 
         {!confirmReset ? (
@@ -335,7 +338,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmReset(false)}
-                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+                className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
                 Cancel
               </button>
@@ -373,7 +376,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmResetRewards(false)}
-                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+                className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
                 Cancel
               </button>
@@ -396,7 +399,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       </div>
 
       {/* Wipe everything */}
-      <div className="bg-[#16112e] rounded-2xl border border-red-900/50 p-5 mb-4">
+      <div className="rounded-2xl border border-red-900/50 p-5 mb-4" style={{background: "var(--theme-surface)"}}>
         <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-1">💀 Wipe everything</h2>
         <p className="text-xs text-[#6b5a9e] mb-4">Delete all quests, trophies and reset XP to 0. A clean slate.</p>
 
@@ -415,7 +418,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmWipeAll(false)}
-                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+                className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
                 Cancel
               </button>
