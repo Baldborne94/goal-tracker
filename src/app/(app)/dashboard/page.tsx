@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDate, calculateStreak } from "@/lib/utils";
+import LogoutButton from "@/components/LogoutButton";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -62,9 +63,12 @@ export default async function DashboardPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       {/* Header */}
-      <div className="mb-6">
-        <p className="text-[#9d8ac7] text-sm">Welcome,</p>
-        <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} ⚔️</h1>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <p className="text-[#9d8ac7] text-sm">Welcome,</p>
+          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} ⚔️</h1>
+        </div>
+        <LogoutButton />
       </div>
 
       {/* XP card */}
