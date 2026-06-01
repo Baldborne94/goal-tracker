@@ -13,8 +13,11 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  points        Int       @default(0)
-  createdAt     DateTime  @default(now())
+  points          Int     @default(0)
+  theme           String  @default("warrior")
+  reminderEnabled Boolean @default(false)
+  reminderTime    String  @default("09:00")
+  createdAt       DateTime @default(now())
 
   accounts       Account[]
   sessions       Session[]

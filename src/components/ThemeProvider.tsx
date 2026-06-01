@@ -57,13 +57,13 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-export default function ThemeProvider({ children }: { children: React.ReactNode }) {
+export default function ThemeProvider({ children, initialTheme }: { children: React.ReactNode; initialTheme?: ThemeKey }) {
   const [theme, setThemeState] = useState<ThemeKey>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("hero-theme") as ThemeKey;
       if (stored && stored in THEMES) return stored;
     }
-    return "warrior";
+    return initialTheme ?? "warrior";
   });
 
   function setTheme(t: ThemeKey) {
