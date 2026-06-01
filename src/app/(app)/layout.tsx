@@ -11,8 +11,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user!.id! },
-    select: { points: true, theme: true },
+    select: { points: true, theme: true, onboardingComplete: true },
   });
+
+  if (!dbUser?.onboardingComplete) redirect("/onboarding");
 
   return (
     <SessionProvider>
