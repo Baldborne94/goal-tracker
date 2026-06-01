@@ -28,13 +28,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             });
           }
         } catch {
-          // DB error (e.g. missing columns) — still allow sign-in; user record will be created on next request
+          // DB error — still allow sign-in
         }
       }
       return true;
     },
-    jwt({ token, user }) {
-      if (user) token.id = user.id;
+    async jwt({ token, user, account }) {
+      // On first sign-in, resolve the real DB ID from email
+      if (user?.email && account?.provider === "google") {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { id: true },
+          });
+          if (dbUser) token.id = dbUser.id;
+        } catch {
+          // ignore
+        }
+      } else if (user) {
+        token.id = user.id;
+      }
       return token;
     },
     async session({ session, token }) {
