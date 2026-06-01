@@ -112,6 +112,20 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
   }
 
   const isCompleted = goal.status === "completed";
+  const isArchived = goal.status === "archived";
+
+  async function handleArchive() {
+    const newStatus = isArchived ? "active" : "archived";
+    const res = await fetch(`/api/goals/${goal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      setGoal((prev) => ({ ...prev, status: newStatus }));
+      if (!isArchived) router.push("/goals");
+    }
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -129,10 +143,12 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
             className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 border ${
               isCompleted
                 ? "bg-amber-900/30 text-amber-300 border-amber-700/40"
+                : isArchived
+                ? "bg-zinc-800/60 text-zinc-400 border-zinc-600/40"
                 : "bg-violet-900/30 text-violet-300 border-violet-700/40"
             }`}
           >
-            {isCompleted ? "👑 Completed" : "⚡ Active"}
+            {isCompleted ? "👑 Completed" : isArchived ? "📦 Archived" : "⚡ Active"}
           </span>
         </div>
 
@@ -306,6 +322,15 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
       >
         {copied ? "✅ Link copied!" : "📤 Share as template"}
       </button>
+
+      {!isCompleted && (
+        <button
+          onClick={handleArchive}
+          className="w-full py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold hover:border-zinc-500/60 hover:bg-zinc-900/20 transition-colors mb-3"
+        >
+          {isArchived ? "📂 Unarchive quest" : "📦 Archive quest"}
+        </button>
+      )}
 
       <button
         onClick={() => setShowDelete(true)}

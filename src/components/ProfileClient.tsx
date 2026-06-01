@@ -17,6 +17,7 @@ type User = {
 };
 
 type Stats = { total: number; completed: number; active: number };
+type CategoryStat = { name: string; color: string; total: number; completed: number };
 
 const LEVEL_THRESHOLDS = [
   { level: 1, label: "Recruit",   icon: "🗡️",  min: 0,   max: 49 },
@@ -30,7 +31,7 @@ function getLevel(points: number) {
   return LEVEL_THRESHOLDS.find((l) => points >= l.min && points <= l.max) || LEVEL_THRESHOLDS[0];
 }
 
-export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00" }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string }) {
+export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00", categoryStats = [], weeklyMilestones = [0, 0, 0, 0] }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string; categoryStats?: CategoryStat[]; weeklyMilestones?: number[] }) {
   const { theme, colors, setTheme } = useTheme();
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -217,6 +218,50 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
           </div>
         ))}
       </div>
+
+      {/* Weekly activity */}
+      {weeklyMilestones.some((v) => v > 0) && (
+        <div className="rounded-2xl border p-4 mb-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>📅 Weekly milestones</h2>
+          <div className="flex items-end gap-2 h-16">
+            {weeklyMilestones.map((count, i) => {
+              const max = Math.max(...weeklyMilestones, 1);
+              const pct = Math.round((count / max) * 100);
+              const labels = ["3w ago", "2w ago", "Last week", "This week"];
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs font-bold" style={{ color: "var(--theme-accent)" }}>{count > 0 ? count : ""}</span>
+                  <div className="w-full rounded-t-lg transition-all" style={{ height: `${Math.max(pct, 4)}%`, background: i === 3 ? "var(--theme-accent)" : "var(--theme-surface-border)" }} />
+                  <span className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>{labels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Category breakdown */}
+      {categoryStats.length > 0 && (
+        <div className="rounded-2xl border p-4 mb-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>🗂 By category</h2>
+          <div className="space-y-2.5">
+            {categoryStats.map((c) => (
+              <div key={c.name}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-medium text-[#ede9ff]">{c.name}</span>
+                  <span style={{ color: "var(--theme-text-muted)" }}>{c.completed}/{c.total}</span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${Math.round((c.total / categoryStats[0].total) * 100)}%`, backgroundColor: c.color + "99" }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Rewards */}
       <div className="mb-6">
