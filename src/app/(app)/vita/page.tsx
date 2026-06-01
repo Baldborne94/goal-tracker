@@ -8,31 +8,33 @@ export default async function VitaPage() {
     <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
       <div>
         <h1 className="text-xl font-bold text-amber-400">🌿 Life</h1>
-        <p className="text-xs text-[#6b5a9e]">Your personal trackers</p>
+        <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Your personal trackers</p>
       </div>
 
       <Link
         href="/peso"
-        className="flex items-center gap-4 bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-5 active:scale-95 transition-transform"
+        className="flex items-center gap-4 border rounded-2xl p-5 active:scale-95 transition-transform"
+        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
       >
         <span className="text-4xl">⚖️</span>
         <div>
           <p className="text-white font-semibold">Weight</p>
-          <p className="text-xs text-[#6b5a9e]">Track your measurements and progress</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Track your measurements and progress</p>
         </div>
-        <span className="ml-auto text-[#6b5a9e] text-lg">›</span>
+        <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
       </Link>
 
       <Link
         href="/routine"
-        className="flex items-center gap-4 bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-5 active:scale-95 transition-transform"
+        className="flex items-center gap-4 border rounded-2xl p-5 active:scale-95 transition-transform"
+        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
       >
         <span className="text-4xl">🔁</span>
         <div>
           <p className="text-white font-semibold">Habits</p>
-          <p className="text-xs text-[#6b5a9e]">Daily check-ins and weekly streaks</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Daily check-ins and weekly streaks</p>
         </div>
-        <span className="ml-auto text-[#6b5a9e] text-lg">›</span>
+        <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
       </Link>
     </div>
   );
