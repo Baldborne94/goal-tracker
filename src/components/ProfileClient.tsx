@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
+import { updateProfileName } from "@/app/(app)/profile/actions";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -93,13 +94,9 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
     if (!nameInput.trim()) return;
     setNameStatus("saving");
     try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nameInput.trim() }),
-      });
-      if (res.ok) {
-        setDisplayName(nameInput.trim());
+      const result = await updateProfileName(nameInput.trim());
+      if (result.ok) {
+        setDisplayName(result.name ?? nameInput.trim());
         setNameStatus("saved");
         setTimeout(() => {
           setEditingName(false);
