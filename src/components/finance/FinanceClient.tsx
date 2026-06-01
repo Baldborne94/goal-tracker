@@ -127,6 +127,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
 
   const now = new Date();
   const isCurrentMonth = month === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const isLastDayOfMonth = isCurrentMonth && now.getDate() === new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
   async function changeMonth(delta: number) {
     const [y, mo] = month.split("-").map(Number);
@@ -364,7 +365,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
               <div className="text-right">
                 <p className="text-xs text-[#6b5a9e] mb-1">Spent</p>
                 <p className={`text-2xl font-bold ${isOver ? "text-red-400" : "text-amber-400"}`}>
-                  €{totalSpent.toFixed(0)}
+                  €{totalSpent.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -402,7 +403,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             <div className="flex justify-between items-start mb-3">
               <div>
                 <p className="text-xs text-[#6b5a9e] uppercase tracking-wider mb-1">No budget set</p>
-                <p className="text-2xl font-bold text-amber-400">€{totalSpent.toFixed(0)}</p>
+                <p className="text-2xl font-bold text-amber-400">€{totalSpent.toFixed(2)}</p>
                 <p className="text-xs text-[#6b5a9e]">spent this month</p>
               </div>
             </div>
@@ -444,6 +445,14 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           </div>
         ) : (
           <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 mb-4">
+            {isLastDayOfMonth && !isOver && (
+              <div className="mb-3 bg-amber-950/30 border border-amber-600/40 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                <span className="text-lg">🔔</span>
+                <p className="text-xs text-amber-300 font-medium">
+                  Today is the last day of the month — claim your reward before midnight!
+                </p>
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-[#c4b5fd]">🔐 Close this month</p>
@@ -459,9 +468,9 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 {closingMonth ? "..." : "Claim"}
               </button>
             </div>
-            {closeResult?.overBudget && (
+            {isOver && (
               <p className="text-xs text-red-400 mt-3 bg-red-950/30 border border-red-800/30 px-3 py-2 rounded-xl">
-                ⚠️ You&apos;re over budget — get back on track first!
+                ⚠️ You&apos;re over budget — reduce your spending to unlock the reward.
               </p>
             )}
           </div>
