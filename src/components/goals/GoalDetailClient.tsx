@@ -28,6 +28,7 @@ type Goal = {
   guideType: string | null;
   guideTarget: number | null;
   guideStart: number | null;
+  reminderTime: string | null;
 };
 
 type Props = {
@@ -185,7 +186,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           </div>
         </div>
 
-        <div className="flex gap-4 text-sm text-[#9d8ac7]">
+        <div className="flex gap-4 text-sm text-[#9d8ac7] flex-wrap">
           <div className="flex items-center gap-1">
             <span>✨</span>
             <span>{goal.points} XP</span>
@@ -194,6 +195,12 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
             <div className="flex items-center gap-1">
               <span>🌙</span>
               <span>{formattedDate}</span>
+            </div>
+          )}
+          {goal.reminderTime && (
+            <div className="flex items-center gap-1">
+              <span>🔔</span>
+              <span>{goal.reminderTime} daily</span>
             </div>
           )}
         </div>
