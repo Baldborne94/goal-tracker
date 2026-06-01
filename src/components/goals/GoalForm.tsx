@@ -158,7 +158,7 @@ export default function GoalForm({ categories, initialData }: Props) {
       setLoading(false);
     } else {
       const goal = await res.json();
-      router.push(`/goals/${goal.id}`);
+      router.push(`/goals`);
     }
   }
 
