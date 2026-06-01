@@ -18,16 +18,18 @@ model User {
   reminderEnabled     Boolean @default(false)
   reminderTime        String  @default("09:00")
   onboardingComplete  Boolean @default(false)
+  timezone            String  @default("UTC")
   createdAt           DateTime @default(now())
 
-  accounts       Account[]
-  sessions       Session[]
-  goals          Goal[]
-  userRewards    UserReward[]
-  monthlyBudgets MonthlyBudget[]
-  expenses       Expense[]
-  weightEntries  WeightEntry[]
-  habits         Habit[]
+  accounts          Account[]
+  sessions          Session[]
+  goals             Goal[]
+  userRewards       UserReward[]
+  monthlyBudgets    MonthlyBudget[]
+  expenses          Expense[]
+  weightEntries     WeightEntry[]
+  habits            Habit[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Account {
@@ -215,4 +217,15 @@ model HabitLog {
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([habitId, date])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
