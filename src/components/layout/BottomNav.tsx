@@ -26,7 +26,7 @@ export default function BottomNav({ points = 0 }: { points?: number }) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#0f0d22] border-t border-[#3b2d6e] safe-area-pb z-50">
+    <nav className="fixed bottom-0 left-0 right-0 border-t safe-area-pb z-50" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-4">
         {NAV_ITEMS.map((item) => {
           const active = path.startsWith(item.href);
@@ -34,13 +34,11 @@ export default function BottomNav({ points = 0 }: { points?: number }) {
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                "flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all",
-                active ? "text-amber-400" : "text-[#6b5a9e]"
-              )}
+              className="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all"
+              style={{ color: active ? "var(--theme-accent)" : "var(--theme-text-muted)" }}
             >
               <span className={cn("text-2xl transition-transform", active && "scale-110")}>{item.icon}</span>
-              <span className={cn("text-xs font-medium", active ? "text-amber-400" : "text-[#6b5a9e]")}>
+              <span className="text-xs font-medium">
                 {item.label}
               </span>
             </Link>

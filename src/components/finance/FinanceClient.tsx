@@ -526,7 +526,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             <span>{trendDiff > 0 ? "↑" : "↓"}</span>
             <span>
               {trendPct !== null ? `${trendPct}%` : "—"} vs last month —{" "}
-              €{Math.abs(trendDiff).toFixed(0)} {trendDiff > 0 ? "more" : "less"} spent
+              €{Math.abs(trendDiff).toFixed(2)} {trendDiff > 0 ? "more" : "less"} spent
             </span>
           </div>
         )}
