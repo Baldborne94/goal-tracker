@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, tags, milestones, guideType, guideTarget } = body;
+  const { title, description, priority, targetDate, categoryId, tags, milestones, guideType, guideTarget, reminderTime } = body;
 
   if (!title)
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -59,6 +59,7 @@ export async function POST(req: Request) {
       points,
       guideType: guideType || null,
       guideTarget: guideTarget ? parseFloat(String(guideTarget)) : null,
+      reminderTime: reminderTime || null,
       tags: tags?.length
         ? {
             create: tags.map((tagName: string) => ({
