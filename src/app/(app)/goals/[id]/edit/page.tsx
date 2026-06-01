@@ -31,6 +31,7 @@ export default async function EditGoalPage({
     priority: goal.priority,
     targetDate: goal.targetDate ? goal.targetDate.toISOString().split("T")[0] : "",
     categoryId: goal.categoryId || "",
+    reminderTime: (goal as { reminderTime?: string | null }).reminderTime || "",
     tags: goal.tags.map((gt: { tag: { name: string } }) => gt.tag.name),
     milestones: goal.milestones.map((m: { title: string }) => m.title),
   };

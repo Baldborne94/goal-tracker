@@ -14,6 +14,7 @@ type Props = {
     priority: string;
     targetDate: string;
     categoryId: string;
+    reminderTime?: string;
     tags: string[];
     milestones: string[];
   };
@@ -49,6 +50,7 @@ export default function GoalForm({ categories, initialData }: Props) {
     priority: initialData?.priority || "medium",
     targetDate: initialData?.targetDate || "",
     categoryId: initialData?.categoryId || "",
+    reminderTime: initialData?.reminderTime || "",
   });
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
@@ -142,6 +144,7 @@ export default function GoalForm({ categories, initialData }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        reminderTime: form.reminderTime || null,
         tags,
         milestones,
         guideType: guideType || null,
@@ -215,6 +218,28 @@ export default function GoalForm({ categories, initialData }: Props) {
             className={inputClass}
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🔔 Daily reminder</label>
+        <div className="flex items-center gap-3">
+          <input
+            type="time"
+            value={form.reminderTime}
+            onChange={(e) => setForm({ ...form, reminderTime: e.target.value })}
+            className={`flex-1 ${inputClass}`}
+          />
+          {form.reminderTime && (
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, reminderTime: "" })}
+              className="text-xs text-[#6b5a9e] hover:text-red-400 transition-colors px-3 py-3 rounded-xl border border-[#3b2d6e] hover:border-red-800/50"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-[#4a3a7a] mt-1">Browser will notify you at this time every day while this quest is active.</p>
       </div>
 
       <div>

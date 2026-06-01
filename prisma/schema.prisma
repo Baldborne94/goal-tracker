@@ -92,11 +92,12 @@ model Goal {
   points      Int       @default(10)
   userId      String
   categoryId  String?
-  guideType   String?   // "finance" | "weight" | "habits"
-  guideTarget Float?
-  guideStart  Float?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  guideType    String?   // "finance" | "weight" | "habits"
+  guideTarget  Float?
+  guideStart   Float?
+  reminderTime String?   // "HH:MM" e.g. "09:00"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   category      Category?     @relation(fields: [categoryId], references: [id])
