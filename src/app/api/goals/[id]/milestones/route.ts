@@ -16,7 +16,7 @@ export async function PATCH(
 
   const goal = await prisma.goal.findFirst({
     where: { id: goalId, userId: session.user.id },
-    include: { milestones: true },
+    include: { milestones: { orderBy: { order: "asc" } } },
   });
   if (!goal)
     return NextResponse.json({ error: "Goal not found" }, { status: 404 });
@@ -48,6 +48,42 @@ export async function PATCH(
     await prisma.user.update({
       where: { id: session.user.id },
       data: { points: { increment: delta } },
+    });
+  }
+
+  // Auto-clone recurring quests when completed
+  if (progress === 100 && goal.status !== "completed" && (goal as { isRecurring?: boolean }).isRecurring) {
+    const nextTargetDate = goal.targetDate
+      ? (() => {
+          const d = new Date(goal.targetDate);
+          const rt = (goal as { recurrenceType?: string }).recurrenceType;
+          if (rt === "weekly") d.setDate(d.getDate() + 7);
+          else d.setMonth(d.getMonth() + 1);
+          return d;
+        })()
+      : null;
+
+    await prisma.goal.create({
+      data: {
+        title: goal.title,
+        description: goal.description,
+        priority: goal.priority,
+        targetDate: nextTargetDate,
+        categoryId: goal.categoryId,
+        userId: session.user.id,
+        points: goal.points,
+        guideType: goal.guideType,
+        guideTarget: goal.guideTarget,
+        reminderTime: goal.reminderTime,
+        reminderFrequency: (goal as { reminderFrequency?: string }).reminderFrequency,
+        reminderDay: (goal as { reminderDay?: number }).reminderDay,
+        reminderDays: (goal as { reminderDays?: string }).reminderDays,
+        isRecurring: true,
+        recurrenceType: (goal as { recurrenceType?: string }).recurrenceType,
+        milestones: {
+          create: goal.milestones.map((m, i) => ({ title: m.title, order: i })),
+        },
+      },
     });
   }
 

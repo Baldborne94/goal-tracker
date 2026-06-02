@@ -76,6 +76,8 @@ export default function GoalForm({ categories, initialData }: Props) {
   const [guideTarget, setGuideTarget] = useState("");
   const [habitFreqCount, setHabitFreqCount] = useState(1);
   const [habitFreqType, setHabitFreqType] = useState<"day" | "week">("day");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<"weekly" | "monthly">("monthly");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -167,6 +169,8 @@ export default function GoalForm({ categories, initialData }: Props) {
         milestones,
         guideType: guideType || null,
         guideTarget: guideTarget ? parseFloat(guideTarget) : null,
+        isRecurring,
+        recurrenceType: isRecurring ? recurrenceType : null,
       }),
     });
 
@@ -587,6 +591,42 @@ export default function GoalForm({ categories, initialData }: Props) {
               {form.priority === "low" ? "Easy quest" : form.priority === "high" ? "Hard quest — well rewarded!" : "Medium quest"} · add description, deadline & milestones to earn more
             </p>
           </div>
+        </div>
+      )}
+
+      {!isEditing && (
+        <div className="rounded-xl border p-4 space-y-3" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+          <button
+            type="button"
+            onClick={() => setIsRecurring(!isRecurring)}
+            className="flex items-center justify-between w-full"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🔄</span>
+              <div className="text-left">
+                <p className="text-sm font-medium text-[#ede9ff]">Recurring quest</p>
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Auto-creates a new copy when completed</p>
+              </div>
+            </div>
+            <div className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${isRecurring ? "bg-amber-500" : "bg-[#3b2d6e]"}`}>
+              <div className={`w-5 h-5 rounded-full bg-white m-0.5 transition-transform ${isRecurring ? "translate-x-5" : "translate-x-0"}`} />
+            </div>
+          </button>
+          {isRecurring && (
+            <div className="flex gap-2 pt-1">
+              {(["weekly", "monthly"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setRecurrenceType(t)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors capitalize ${recurrenceType === t ? "border-amber-500/60 bg-amber-900/20 text-amber-300" : ""}`}
+                  style={recurrenceType !== t ? { borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" } : {}}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

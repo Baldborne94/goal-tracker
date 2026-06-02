@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { amount, category, description, merchant, date } = await req.json();
+  const { amount, category, description, merchant, date, isRecurring } = await req.json();
   if (!amount || !category)
     return NextResponse.json({ error: "Amount and category are required" }, { status: 400 });
 
@@ -43,6 +43,7 @@ export async function POST(req: Request) {
       description: description || null,
       merchant: merchant || null,
       date: date ? new Date(date) : new Date(),
+      isRecurring: !!isRecurring,
     },
   });
 

@@ -65,7 +65,7 @@ export async function GET(req: Request) {
     }).format(now);
 
     const todayLocal = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(now);
-    const dayOfWeek = new Date(now.toLocaleString("en-US", { timeZone: tz })).getDay(); // 0=Sun
+    const dayOfWeek = new Date(now.toLocaleString("en-US", { timeZone: tz })).getDay();
     const dayOfMonth = parseInt(todayLocal.split("-")[2]);
 
     // Reminder notifications (daily / weekly / monthly)
@@ -88,20 +88,58 @@ export async function GET(req: Request) {
       });
     }
 
-    // Deadline warning: fire once when the user's local time is 09:00 and deadline is in 3 days
+    // Deadline warnings at 09:00 local time
     if (userTime === "09:00") {
       const [y, mo, d] = todayLocal.split("-").map(Number);
-      const deadlineDate = new Date(y, mo - 1, d + 3);
-      const deadlineStr = `${deadlineDate.getFullYear()}-${String(deadlineDate.getMonth() + 1).padStart(2, "0")}-${String(deadlineDate.getDate()).padStart(2, "0")}`;
 
-      for (const goal of user.goals.filter((g) => g.targetDate)) {
-        const goalDate = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(goal.targetDate!));
-        if (goalDate === deadlineStr) {
-          sent += await sendPush(webpush, user.pushSubscriptions, {
-            title: `⏰ Quest expires in 3 days: ${goal.title}`,
-            body: "You have 3 days left. Push through!",
-            tag: `deadline-${goal.id}`,
-          });
+      for (const daysLeft of [7, 3, 1]) {
+        const targetDate = new Date(y, mo - 1, d + daysLeft);
+        const targetStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, "0")}-${String(targetDate.getDate()).padStart(2, "0")}`;
+
+        for (const goal of user.goals.filter((g) => g.targetDate)) {
+          const goalDate = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(goal.targetDate!));
+          if (goalDate === targetStr) {
+            sent += await sendPush(webpush, user.pushSubscriptions, {
+              title: `⏰ Quest expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}: ${goal.title}`,
+              body: daysLeft === 1 ? "Last chance — finish strong today!" : `Only ${daysLeft} days left. Push through!`,
+              tag: `deadline-${daysLeft}d-${goal.id}`,
+            });
+          }
+        }
+      }
+
+      // On the 1st of each month at 09:00 local time: create recurring expenses
+      if (dayOfMonth === 1) {
+        const prevMonth = new Date(y, mo - 2, 1);
+        const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+        const currMonthStr = `${y}-${String(mo).padStart(2, "0")}`;
+
+        const recurringExpenses = await prisma.$queryRawUnsafe<{
+          id: string; amount: number; category: string; description: string | null; merchant: string | null;
+        }[]>(
+          `SELECT id, amount, category, description, merchant FROM "Expense"
+           WHERE "userId" = $1 AND "isRecurring" = true
+           AND date >= $2::timestamp AND date < $3::timestamp`,
+          user.id,
+          `${prevMonthStr}-01`,
+          `${currMonthStr}-01`
+        );
+
+        for (const exp of recurringExpenses) {
+          const existsThisMonth = await prisma.$queryRawUnsafe<{ id: string }[]>(
+            `SELECT id FROM "Expense" WHERE "userId" = $1 AND "category" = $2 AND "isRecurring" = true
+             AND date >= $3::timestamp AND date < $4::timestamp LIMIT 1`,
+            user.id, exp.category, `${currMonthStr}-01`,
+            `${y}-${String(mo + 1).padStart(2, "0")}-01`
+          );
+          if (existsThisMonth.length === 0) {
+            const newId = `exp_${Math.random().toString(36).slice(2, 11)}`;
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "Expense" ("id","userId","amount","category","description","merchant","date","createdAt","isRecurring")
+               VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW(),true)`,
+              newId, user.id, exp.amount, exp.category, exp.description, exp.merchant
+            );
+          }
         }
       }
     }

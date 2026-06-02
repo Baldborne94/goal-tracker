@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 type HabitLog = { id: string; date: string };
 type Habit = {
@@ -14,6 +14,89 @@ const PRESET_ICONS = [
   "🏃", "💪", "📚", "🧘", "💧", "🥗", "😴", "✍️",
   "🎸", "🏋️", "🚴", "🧹", "🥤", "🌙", "🧠", "🎯",
 ];
+
+function HabitHeatmap({ habits }: { habits: { name: string; icon: string; logs: { date: string }[] }[] }) {
+  const weeks = 12;
+  const days = weeks * 7;
+  const today = new Date();
+  const totalHabits = habits.length;
+
+  const grid = useMemo(() => {
+    const cells: { date: string; count: number; total: number }[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const count = habits.filter((h) => h.logs.some((l) => l.date === dateStr)).length;
+      cells.push({ date: dateStr, count, total: totalHabits });
+    }
+    return cells;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habits]);
+
+  if (totalHabits === 0) return null;
+
+  function cellColor(count: number, total: number) {
+    if (total === 0 || count === 0) return "rgba(59,45,110,0.4)";
+    const pct = count / total;
+    if (pct >= 1) return "#f59e0b";
+    if (pct >= 0.6) return "#d97706";
+    if (pct >= 0.3) return "#92400e";
+    return "#451a03";
+  }
+
+  const monthLabels: { label: string; colIndex: number }[] = [];
+  grid.forEach(({ date }, i) => {
+    if (i % 7 === 0) {
+      const m = new Date(date).toLocaleDateString("en-GB", { month: "short" });
+      const weekIdx = Math.floor(i / 7);
+      if (monthLabels.length === 0 || monthLabels[monthLabels.length - 1].label !== m) {
+        monthLabels.push({ label: m, colIndex: weekIdx });
+      }
+    }
+  });
+
+  return (
+    <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4">
+      <p className="text-xs font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">🗓 12-week heatmap</p>
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: `${weeks * 14}px` }}>
+          <div className="flex gap-0.5 mb-1">
+            {Array.from({ length: weeks }).map((_, wi) => {
+              const label = monthLabels.find((m) => m.colIndex === wi);
+              return (
+                <div key={wi} className="flex-1 text-center" style={{ minWidth: 12 }}>
+                  {label && <span className="text-[9px] text-[#6b5a9e]">{label.label}</span>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-0.5">
+            {Array.from({ length: weeks }).map((_, wi) => (
+              <div key={wi} className="flex flex-col gap-0.5 flex-1">
+                {grid.slice(wi * 7, wi * 7 + 7).map((cell) => (
+                  <div
+                    key={cell.date}
+                    className="rounded-sm"
+                    style={{ height: 11, backgroundColor: cellColor(cell.count, cell.total) }}
+                    title={`${cell.date}: ${cell.count}/${cell.total} habits`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-2 justify-end">
+        <span className="text-[9px] text-[#6b5a9e]">Less</span>
+        {[0, 0.3, 0.6, 1].map((pct) => (
+          <div key={pct} className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: cellColor(pct > 0 ? 1 : 0, pct > 0 ? 1 / pct : 1) }} />
+        ))}
+        <span className="text-[9px] text-[#6b5a9e]">More</span>
+      </div>
+    </div>
+  );
+}
 
 function calcStreak(dates: string[]): number {
   if (!dates.length) return 0;
@@ -235,6 +318,9 @@ export default function RoutineClient() {
           </div>
         );
       })}
+
+      {/* Heatmap */}
+      {habits.length > 0 && <HabitHeatmap habits={habits} />}
 
       {/* Add button / form */}
       {!showForm ? (
