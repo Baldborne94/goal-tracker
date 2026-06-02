@@ -122,6 +122,8 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [budgetInput, setBudgetInput] = useState("");
   const [savingBudget, setSavingBudget] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingMonth, setClearingMonth] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [closingMonth, setClosingMonth] = useState(false);
   const [closeResult, setCloseResult] = useState<{ success?: boolean } | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -273,6 +275,17 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     setCloseResult(data);
     if (data.success) setBudget(prev => prev ? { ...prev, closed: true } : prev);
     setClosingMonth(false);
+  }
+
+  async function clearMonth() {
+    setClearingMonth(true);
+    const r = await fetch(`/api/kakeebo/expenses?month=${month}`, { method: "DELETE" });
+    if (r.ok) {
+      setExpenses([]);
+      setCloseResult(null);
+    }
+    setClearingMonth(false);
+    setShowClearConfirm(false);
   }
 
   function parseCsvFile(file: File) {
@@ -630,9 +643,20 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             🧾 Daily log{" "}
             {expenses.length > 0 && <span className="font-normal" style={{ color: "var(--theme-text-muted)" }}>({expenses.length})</span>}
           </h2>
-          {expenses.length > 0 && (
-            <span className="text-xs font-bold text-amber-400">-€{totalSpent.toFixed(2)}</span>
-          )}
+          <div className="flex items-center gap-2">
+            {expenses.length > 0 && (
+              <span className="text-xs font-bold text-amber-400">-€{totalSpent.toFixed(2)}</span>
+            )}
+            {expenses.length > 0 && (
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                className="text-xs px-2 py-1 rounded-lg border transition-colors"
+                style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+              >
+                🗑️ Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -701,6 +725,24 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           </div>
         )}
       </div>
+
+      {/* Clear month confirmation */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] px-4">
+          <div className="rounded-2xl border w-full max-w-sm p-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+            <h3 className="font-bold text-[#ede9ff] mb-2">🗑️ Clear {monthLabel}?</h3>
+            <p className="text-sm mb-5" style={{ color: "var(--theme-text-muted)" }}>
+              This will permanently delete all {expenses.length} expense{expenses.length !== 1 ? "s" : ""} for this month. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowClearConfirm(false)} disabled={clearingMonth} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border disabled:opacity-50" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
+              <button onClick={clearMonth} disabled={clearingMonth} className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all">
+                {clearingMonth ? "Clearing..." : "Delete all"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CSV import modal */}
       {showImport && (

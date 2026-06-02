@@ -51,3 +51,23 @@ export async function POST(req: Request) {
 
   return NextResponse.json(expense, { status: 201 });
 }
+
+export async function DELETE(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const month = searchParams.get("month");
+  if (!month) return NextResponse.json({ error: "month required" }, { status: 400 });
+
+  const [year, m] = month.split("-").map(Number);
+  const start = new Date(year, m - 1, 1);
+  const end = new Date(year, m, 1);
+
+  const { count } = await prisma.expense.deleteMany({
+    where: { userId: session.user.id, date: { gte: start, lt: end } },
+  });
+
+  return NextResponse.json({ deleted: count });
+}
