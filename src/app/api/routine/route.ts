@@ -8,7 +8,7 @@ export async function GET() {
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000)
+  const thirtyDaysAgo = new Date(Date.now() - 90 * 86400000)
     .toISOString()
     .slice(0, 10);
 

@@ -30,7 +30,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { amount, category, description, merchant, date } = await req.json();
+  const { amount, category, description, merchant, date, isRecurring } = await req.json();
 
   const existing = await prisma.expense.findFirst({
     where: { id, userId: session.user.id },
@@ -46,6 +46,7 @@ export async function PATCH(
       ...(description !== undefined && { description: description || null }),
       ...(merchant !== undefined && { merchant: merchant || null }),
       ...(date !== undefined && { date: new Date(date) }),
+      ...(isRecurring !== undefined && { isRecurring: !!isRecurring }),
     },
   });
 

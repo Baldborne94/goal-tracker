@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDate, calculateStreak } from "@/lib/utils";
 import LogoutButton from "@/components/LogoutButton";
+import DailyChallenges from "@/components/DailyChallenges";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -68,14 +69,33 @@ export default async function DashboardPage() {
     }).catch(() => []),
   ]);
 
-  const [active, completed] = await Promise.all([
+  const [active, completed, topCatAgg] = await Promise.all([
     prisma.goal.count({ where: { userId, status: "active" } }),
     prisma.goal.count({ where: { userId, status: "completed" } }),
+    prisma.expense.groupBy({
+      by: ["category"],
+      where: { userId, date: { gte: monthStart, lt: monthEnd } },
+      _sum: { amount: true },
+      orderBy: { _sum: { amount: "desc" } },
+      take: 1,
+    }),
   ]);
   const todayFocus = todayFocusRaw.filter((g: { milestones: { id: string }[] }) => g.milestones.length > 0);
   const financeSpent = financeAgg._sum.amount ?? 0;
   const isOverBudget = financeBudget && financeSpent > financeBudget.amount;
   const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
+  const topCat = topCatAgg[0] ?? null;
+  const daysInMonth = new Date(yr, mo, 0).getDate();
+  const daysLeft = Math.max(1, daysInMonth - new Date().getDate() + 1);
+  const dailyBudgetLeft = financeBudget && financeSpent < financeBudget.amount
+    ? (financeBudget.amount - financeSpent) / daysLeft
+    : null;
+
+  const CAT_ICONS: Record<string, string> = {
+    groceries: "🛒", eating_out: "🍽️", transport: "🚗", housing: "🏠",
+    utilities: "💡", health: "💊", subscriptions: "📱", hobby: "🎨",
+    culture: "🎭", travel: "✈️", gifts: "🎁", unexpected: "⚡", other: "📦",
+  };
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -233,11 +253,18 @@ export default async function DashboardPage() {
                 style={{ width: `${Math.min(100, (financeSpent / financeBudget.amount) * 100)}%` }}
               />
             </div>
-            {isOverBudget && (
-              <p className="text-xs text-red-400 mt-1.5">
-                ⚠️ Over budget by €{(financeSpent - financeBudget.amount).toFixed(2)}
-              </p>
-            )}
+            <div className="flex justify-between mt-2 text-xs">
+              {isOverBudget ? (
+                <span className="text-red-400">⚠️ Over by €{(financeSpent - financeBudget.amount).toFixed(2)}</span>
+              ) : dailyBudgetLeft !== null ? (
+                <span className="text-green-400">€{dailyBudgetLeft.toFixed(2)}/day · {daysLeft}d left</span>
+              ) : <span />}
+              {topCat && (
+                <span style={{color: "var(--theme-text-muted)"}}>
+                  Top: {CAT_ICONS[topCat.category] ?? "📦"} €{(topCat._sum.amount ?? 0).toFixed(0)}
+                </span>
+              )}
+            </div>
           </>
         ) : (
           <p className="text-sm text-[#9d8ac7]">
@@ -245,6 +272,9 @@ export default async function DashboardPage() {
           </p>
         )}
       </Link>
+
+      {/* Daily challenges */}
+      <DailyChallenges />
 
       {/* Recent goals */}
       <div className="flex items-center justify-between mb-3">

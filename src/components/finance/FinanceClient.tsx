@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 const ISYBANK_CAT_MAP: Record<string, string> = {
   "ristoranti e bar": "eating_out",
@@ -61,7 +61,9 @@ type Expense = {
   description: string | null;
   merchant: string | null;
   date: string;
+  isRecurring?: boolean;
 };
+type CatBudget = { id: string; category: string; amount: number };
 type TrendPoint = { month: string; label: string; spent: number; budget: number | null };
 type Props = {
   initialMonth: string;
@@ -137,6 +139,17 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [csvRows, setCsvRows] = useState<{ date: string; amount: number; category: string; description: string; merchant?: string }[]>([]);
   const [importing, setImporting] = useState(false);
   const [importDone, setImportDone] = useState(0);
+  const [formRecurring, setFormRecurring] = useState(false);
+  const [catBudgets, setCatBudgets] = useState<CatBudget[]>([]);
+  const [editingCatBudget, setEditingCatBudget] = useState<string | null>(null);
+  const [catBudgetInput, setCatBudgetInput] = useState("");
+
+  useEffect(() => {
+    fetch(`/api/kakeebo/category-budget?month=${month}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(setCatBudgets)
+      .catch(() => {});
+  }, [month]);
 
   const totalSpent = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
   const remaining = budget ? budget.amount - totalSpent : null;
@@ -183,6 +196,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     setFormAmt("");
     setFormDesc("");
     setFormDate(toDateKey(new Date()));
+    setFormRecurring(false);
     setShowForm(true);
   }
 
@@ -193,7 +207,58 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     setFormAmt(String(e.amount));
     setFormDesc(e.description ?? "");
     setFormDate(e.date.slice(0, 10));
+    setFormRecurring(e.isRecurring ?? false);
     setShowForm(true);
+  }
+
+  function exportCsv() {
+    const rows = [
+      ["Date", "Amount", "Category", "Description", "Merchant", "Recurring"],
+      ...expenses.map(e => [
+        e.date.slice(0, 10),
+        e.amount.toFixed(2),
+        CATS[e.category]?.label ?? e.category,
+        e.description ?? "",
+        e.merchant ?? "",
+        e.isRecurring ? "yes" : "no",
+      ]),
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expenses-${month}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function saveCatBudget(category: string) {
+    const val = parseFloat(catBudgetInput);
+    if (!catBudgetInput || val <= 0) { setEditingCatBudget(null); return; }
+    const r = await fetch("/api/kakeebo/category-budget", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ month, category, amount: val }),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      setCatBudgets(prev => {
+        const filtered = prev.filter(b => b.category !== category);
+        return [...filtered, d];
+      });
+    }
+    setEditingCatBudget(null);
+    setCatBudgetInput("");
+  }
+
+  async function deleteCatBudget(category: string) {
+    await fetch("/api/kakeebo/category-budget", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ month, category }),
+    });
+    setCatBudgets(prev => prev.filter(b => b.category !== category));
   }
 
   async function submitForm() {
@@ -204,7 +269,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       const r = await fetch("/api/kakeebo/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: val, category: formCat, description: formDesc || null, date: formDate }),
+        body: JSON.stringify({ amount: val, category: formCat, description: formDesc || null, date: formDate, isRecurring: formRecurring }),
       });
       if (r.ok) {
         const e = await r.json();
@@ -215,7 +280,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       const r = await fetch(`/api/kakeebo/expenses/${formId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: val, category: formCat, description: formDesc || null, date: formDate }),
+        body: JSON.stringify({ amount: val, category: formCat, description: formDesc || null, date: formDate, isRecurring: formRecurring }),
       });
       if (r.ok) {
         const updated = await r.json();
@@ -398,7 +463,12 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-[#ede9ff]">💰 Finance</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          {expenses.length > 0 && (
+            <button onClick={exportCsv} className="px-3 py-2 rounded-xl text-sm font-medium active:scale-95 transition-all border" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
+              ⬇️ CSV
+            </button>
+          )}
           <label className="px-3 py-2 rounded-xl text-sm font-medium cursor-pointer active:scale-95 transition-all border" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
             📊 ISYbank
             <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={e => e.target.files?.[0] && parseExcelFile(e.target.files[0])} />
@@ -580,17 +650,55 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             <div className="flex-1 space-y-2.5 min-w-0">
               {catBreakdown.map(({ cat, amount, pct }) => {
                 const s = CATS[cat] ?? CATS.other;
+                const catLimit = catBudgets.find(b => b.category === cat);
+                const limitPct = catLimit ? Math.min(100, (amount / catLimit.amount) * 100) : null;
+                const overCatBudget = catLimit && amount > catLimit.amount;
                 return (
                   <div key={cat}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-[#ede9ff]">{s.icon} {s.label}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{Math.round(pct)}%</span>
-                        <span className="font-semibold text-xs" style={{ color: s.color }}>€{amount.toFixed(2)}</span>
+                      <div className="flex items-center gap-1.5">
+                        {catLimit && (
+                          <span className={`text-xs font-medium ${overCatBudget ? "text-red-400" : "text-green-400"}`}>
+                            {overCatBudget ? "⚠️" : ""} €{amount.toFixed(0)}/€{catLimit.amount.toFixed(0)}
+                          </span>
+                        )}
+                        {!catLimit && <span className="font-semibold text-xs" style={{ color: s.color }}>€{amount.toFixed(2)}</span>}
+                        {editingCatBudget === cat ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={catBudgetInput}
+                              onChange={e => setCatBudgetInput(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter") saveCatBudget(cat); if (e.key === "Escape") setEditingCatBudget(null); }}
+                              placeholder="limit"
+                              autoFocus
+                              className="w-16 px-1.5 py-0.5 rounded-lg text-xs text-[#ede9ff] border border-amber-500/40 focus:outline-none"
+                              style={{ background: "var(--theme-bg)" }}
+                            />
+                            <button onClick={() => saveCatBudget(cat)} className="text-xs text-amber-400">✓</button>
+                            <button onClick={() => setEditingCatBudget(null)} className="text-xs" style={{ color: "var(--theme-text-muted)" }}>✕</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setEditingCatBudget(cat); setCatBudgetInput(catLimit ? String(catLimit.amount) : ""); }}
+                            className="text-[10px] px-1.5 py-0.5 rounded-md border transition-colors"
+                            style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+                          >
+                            {catLimit ? "✏️" : "+ limit"}
+                          </button>
+                        )}
+                        {catLimit && editingCatBudget !== cat && (
+                          <button onClick={() => deleteCatBudget(cat)} className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>×</button>
+                        )}
                       </div>
                     </div>
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: s.color + "cc" }} />
+                      {limitPct !== null ? (
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${limitPct}%`, backgroundColor: overCatBudget ? "#ef4444cc" : limitPct > 80 ? "#f59e0bcc" : s.color + "cc" }} />
+                      ) : (
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: s.color + "cc" }} />
+                      )}
                     </div>
                   </div>
                 );
@@ -731,7 +839,10 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                         <div key={e.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 border" style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}>
                           <span className="text-xl flex-shrink-0">{s.icon}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-[#ede9ff] truncate">{e.description || s.label}</p>
+                            <p className="text-sm font-medium text-[#ede9ff] truncate">
+                              {e.description || s.label}
+                              {e.isRecurring && <span className="ml-1 text-[10px] text-amber-400/70">🔄</span>}
+                            </p>
                             {e.merchant && <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{e.merchant}</p>}
                           </div>
                           <span className="font-semibold text-sm flex-shrink-0" style={{ color: s.color }}>-€{e.amount.toFixed(2)}</span>
@@ -844,6 +955,24 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
               <input value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Description (optional)" className={inputCls} style={inputStyle} />
               <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className={inputCls} style={inputStyle} />
             </div>
+
+            <button
+              type="button"
+              onClick={() => setFormRecurring(!formRecurring)}
+              className="flex items-center justify-between w-full mb-4 rounded-xl border px-3 py-2.5"
+              style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔄</span>
+                <div className="text-left">
+                  <p className="text-xs font-medium text-[#ede9ff]">Recurring monthly</p>
+                  <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>Auto-copy to next month</p>
+                </div>
+              </div>
+              <div className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 ${formRecurring ? "bg-amber-500" : "bg-[#3b2d6e]"}`}>
+                <div className={`w-4 h-4 rounded-full bg-white m-0.5 transition-transform ${formRecurring ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+            </button>
 
             <div className="flex gap-3">
               <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
