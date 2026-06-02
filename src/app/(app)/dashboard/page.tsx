@@ -69,7 +69,11 @@ export default async function DashboardPage() {
     }).catch(() => []),
   ]);
 
-  const [active, completed, topCatAgg] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const dayStart = new Date(); dayStart.setHours(0,0,0,0);
+  const dayEnd = new Date(dayStart.getTime() + 86400000);
+
+  const [active, completed, topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, habits, weightCount, mealCount] = await Promise.all([
     prisma.goal.count({ where: { userId, status: "active" } }),
     prisma.goal.count({ where: { userId, status: "completed" } }),
     prisma.expense.groupBy({
@@ -79,7 +83,33 @@ export default async function DashboardPage() {
       orderBy: { _sum: { amount: "desc" } },
       take: 1,
     }),
+    prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
+      `SELECT id, title, description, xp, type FROM "DailyChallenge" ORDER BY xp ASC`
+    ).catch(() => [] as { id: string; title: string; description: string; xp: number; type: string }[]),
+    prisma.$queryRawUnsafe<{ challengeId: string; completed: boolean }[]>(
+      `SELECT "challengeId", "completed" FROM "UserDailyChallenge" WHERE "userId" = $1 AND "date" = $2`,
+      userId, today
+    ).catch(() => [] as { challengeId: string; completed: boolean }[]),
+    prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
+    prisma.expense.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
+    prisma.habit.findMany({ where: { userId }, include: { logs: { where: { date: today } } } }).catch(() => [] as { logs: unknown[] }[]),
+    prisma.weightEntry.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
+    prisma.mealLog.count({ where: { userId, date: today } }).catch(() => 0),
   ]);
+
+  const allHabitsDone = habits.length > 0 && habits.every((h: { logs: unknown[] }) => h.logs.length > 0);
+  const conditionMap: Record<string, boolean> = {
+    complete_milestone: milestoneCount >= 1,
+    log_expense: expenseCount >= 1,
+    check_habit: allHabitsDone,
+    log_weight: weightCount >= 1,
+    log_meal: mealCount >= 1,
+  };
+  const initialChallenges = rawChallenges.map(c => ({
+    ...c,
+    completed: challengeCompletions.find(co => co.challengeId === c.id)?.completed ?? false,
+    conditionMet: conditionMap[c.type] ?? false,
+  }));
   const todayFocus = todayFocusRaw.filter((g: { milestones: { id: string }[] }) => g.milestones.length > 0);
   const financeSpent = financeAgg._sum.amount ?? 0;
   const isOverBudget = financeBudget && financeSpent > financeBudget.amount;
@@ -177,7 +207,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Daily challenges */}
-      <DailyChallenges />
+      <DailyChallenges initialChallenges={initialChallenges} />
 
       {/* Today's focus */}
       {todayFocus.length > 0 && (

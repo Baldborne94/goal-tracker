@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 
-type Challenge = {
+export type Challenge = {
   id: string;
   title: string;
   description: string;
@@ -20,19 +20,10 @@ const TYPE_ICONS: Record<string, string> = {
   log_meal: "🍽️",
 };
 
-export default function DailyChallenges() {
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
+export default function DailyChallenges({ initialChallenges }: { initialChallenges: Challenge[] }) {
+  const [challenges, setChallenges] = useState<Challenge[]>(initialChallenges);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [claimedXp, setClaimedXp] = useState<{ id: string; xp: number } | null>(null);
-
-  const fetchChallenges = useCallback(async () => {
-    try {
-      const r = await fetch("/api/challenges");
-      if (r.ok) setChallenges(await r.json());
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => { fetchChallenges(); }, [fetchChallenges]);
 
   async function claim(id: string) {
     setClaiming(id);
@@ -50,9 +41,7 @@ export default function DailyChallenges() {
   }
 
   if (challenges.length === 0) return null;
-
-  const anyAvailable = challenges.some(c => !c.completed);
-  if (!anyAvailable && challenges.every(c => c.completed)) return null;
+  if (challenges.every(c => c.completed)) return null;
 
   const completedCount = challenges.filter(c => c.completed).length;
 
