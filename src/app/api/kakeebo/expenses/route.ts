@@ -15,6 +15,37 @@ export async function GET(req: Request) {
   const start = new Date(year, m - 1, 1);
   const end = new Date(year, m, 1);
 
+  // Backfill: copy any recurring expenses from the previous month that are missing this month
+  const prevStart = new Date(year, m - 2, 1);
+  const prevEnd = new Date(year, m - 1, 1);
+  const prevRecurring = await prisma.expense.findMany({
+    where: { userId: session.user.id, isRecurring: true, date: { gte: prevStart, lt: prevEnd } },
+  });
+  for (const exp of prevRecurring) {
+    const exists = await prisma.expense.findFirst({
+      where: {
+        userId: session.user.id,
+        isRecurring: true,
+        category: exp.category,
+        amount: exp.amount,
+        date: { gte: start, lt: end },
+      },
+    });
+    if (!exists) {
+      await prisma.expense.create({
+        data: {
+          userId: session.user.id,
+          amount: exp.amount,
+          category: exp.category,
+          description: exp.description,
+          merchant: exp.merchant,
+          date: start,
+          isRecurring: true,
+        },
+      });
+    }
+  }
+
   const expenses = await prisma.expense.findMany({
     where: {
       userId: session.user.id,
