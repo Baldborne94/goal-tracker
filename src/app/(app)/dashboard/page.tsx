@@ -91,7 +91,7 @@ export default async function DashboardPage() {
       {/* XP card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
         <div className="absolute top-0 right-0 w-32 h-32 opacity-10" style={{background: "radial-gradient(circle, var(--theme-accent) 0%, transparent 70%)"}}/>
-        <p className="text-amber-300/80 text-sm mb-1">✨ Magic accumulated</p>
+        <p className="text-amber-300/80 text-sm mb-1">✨ Experience accumulated</p>
         <div className="flex items-end gap-2">
           <span className="text-4xl font-bold" style={{color: "var(--theme-accent)"}}>{user?.points ?? 0}</span>
           <span className="text-amber-300/60 mb-1">XP</span>
