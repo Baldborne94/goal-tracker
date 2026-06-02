@@ -10,6 +10,12 @@ const ISYBANK_CAT_MAP: Record<string, string> = {
   "carburanti": "transport",
   "treno, aereo, nave": "transport",
   "taxi/auto a noleggio": "transport",
+  "parcheggi e pedaggi": "transport",
+  "autobus, tram e metro": "transport",
+  "manutenzione auto": "transport",
+  "assicurazioni auto": "transport",
+  "trasporti": "transport",
+  "mobilità": "transport",
   "spese mediche": "health",
   "cura della persona": "health",
   "farmaci e integratori": "health",
@@ -396,10 +402,6 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           <label className="px-3 py-2 rounded-xl text-sm font-medium cursor-pointer active:scale-95 transition-all border" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
             📊 ISYbank
             <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={e => e.target.files?.[0] && parseExcelFile(e.target.files[0])} />
-          </label>
-          <label className="px-3 py-2 rounded-xl text-sm font-medium cursor-pointer active:scale-95 transition-all border" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
-            📥 CSV
-            <input type="file" accept=".csv,text/csv" className="hidden" onChange={e => e.target.files?.[0] && parseCsvFile(e.target.files[0])} />
           </label>
           <button onClick={openAdd} className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold active:scale-95 transition-all">
             + Expense
