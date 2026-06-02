@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import FinanceGuide from "@/components/guides/FinanceGuide";
-import WeightGuide from "@/components/guides/WeightGuide";
-import HabitsGuide from "@/components/guides/HabitsGuide";
 
 type Milestone = { id: string; title: string; completed: boolean; order: number };
 type Tag = { id: string; name: string };
@@ -25,9 +22,6 @@ type Goal = {
   category: Category;
   milestones: Milestone[];
   tags: GoalTag[];
-  guideType: string | null;
-  guideTarget: number | null;
-  guideStart: number | null;
   reminderTime: string | null;
 };
 
@@ -172,11 +166,6 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${priorityColor}`}>
             {priorityLabel}
           </span>
-          {goal.guideType && (
-            <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-900/20 text-amber-300 border border-amber-700/30">
-              {goal.guideType === "finance" ? "💰 Finance" : goal.guideType === "weight" ? "⚖️ Weight" : "🔁 Habits"}
-            </span>
-          )}
           {goal.tags.map(({ tag }) => (
             <span key={tag.id} className="text-xs px-2.5 py-1 rounded-full border" style={{ background: "var(--theme-bg)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}>
               #{tag.name}
@@ -272,32 +261,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         </div>
       )}
 
-      {goal.guideType === "finance" && (
-        <FinanceGuide
-          goalId={goal.id}
-          guideTarget={goal.guideTarget}
-          onProgressUpdate={handleProgressUpdate}
-        />
-      )}
-
-      {goal.guideType === "weight" && (
-        <WeightGuide
-          goalId={goal.id}
-          guideTarget={goal.guideTarget}
-          guideStart={goal.guideStart}
-          onProgressUpdate={handleProgressUpdate}
-        />
-      )}
-
-      {goal.guideType === "habits" && (
-        <HabitsGuide
-          goalId={goal.id}
-          guideTarget={goal.guideTarget}
-          onProgressUpdate={handleProgressUpdate}
-        />
-      )}
-
-      {!isCompleted && !goal.guideType && (
+      {!isCompleted && (
         <div className="space-y-3 mb-4">
           <button
             onClick={markComplete}
