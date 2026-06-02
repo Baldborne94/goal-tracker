@@ -1,46 +1,72 @@
 import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/db";
-import bcrypt from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { strategy: "jwt" },
+  trustHost: true,
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30 days
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   providers: [
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!user || !user.password) return null;
-
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
-        if (!valid) return null;
-
-        return { id: user.id, email: user.email, name: user.name };
-      },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
-      if (user) token.id = user.id;
+    async signIn({ user, account }) {
+      if (account?.provider === "google" && user.email) {
+        try {
+          const existing = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { id: true },
+          });
+          if (!existing) {
+            await prisma.user.create({
+              data: { email: user.email, name: user.name ?? null, image: user.image ?? null },
+            });
+          }
+        } catch {
+          // DB error — still allow sign-in
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      // On first sign-in, resolve the real DB ID from email
+      if (user?.email && account?.provider === "google") {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { id: true },
+          });
+          if (dbUser) token.id = dbUser.id;
+        } catch {
+          // ignore
+        }
+      } else if (user) {
+        token.id = user.id;
+      }
       return token;
     },
-    session({ session, token }) {
-      if (token && session.user) session.user.id = token.id as string;
+    async session({ session, token }) {
+      if (token && session.user) {
+        if (token.id) {
+          session.user.id = token.id as string;
+        } else if (session.user.email) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: session.user.email },
+              select: { id: true },
+            });
+            if (dbUser) session.user.id = dbUser.id;
+          } catch {
+            // ignore
+          }
+        }
+      }
       return session;
     },
   },

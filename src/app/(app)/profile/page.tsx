@@ -7,7 +7,10 @@ export default async function ProfilePage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  const [user, completed, active, streakMilestones] = await Promise.all([
+  const fourWeeksAgo = new Date();
+  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+
+  const [userRaw, completed, active, streakMilestones, goalsForStats, recentMilestones] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -16,16 +19,53 @@ export default async function ProfilePage() {
           orderBy: { earnedAt: "desc" },
         },
       },
-    }),
+    }).catch(() =>
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, email: true, image: true, points: true, createdAt: true },
+      }).then((u) => u ? { ...u, reminderEnabled: false, reminderTime: "09:00", theme: "warrior", onboardingComplete: true, password: null, emailVerified: null, userRewards: [] } : null).catch(() => null)
+    ),
     prisma.goal.count({ where: { userId, status: "completed" } }),
     prisma.goal.count({ where: { userId, status: "active" } }),
     prisma.milestone.findMany({
       where: { goal: { userId }, completed: true, completedAt: { not: null } },
       select: { completedAt: true },
     }),
+    prisma.goal.findMany({
+      where: { userId },
+      select: { status: true, category: { select: { name: true, color: true } } },
+    }),
+    prisma.milestone.findMany({
+      where: { goal: { userId }, completed: true, completedAt: { gte: fourWeeksAgo } },
+      select: { completedAt: true },
+    }),
   ]);
 
+  const user = userRaw;
   const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
+
+  // Category breakdown
+  const catMap = new Map<string, { name: string; color: string; total: number; completed: number }>();
+  for (const g of goalsForStats) {
+    if (!g.category) continue;
+    const key = g.category.name;
+    const existing = catMap.get(key) ?? { name: g.category.name, color: g.category.color, total: 0, completed: 0 };
+    existing.total++;
+    if (g.status === "completed") existing.completed++;
+    catMap.set(key, existing);
+  }
+  const categoryStats = Array.from(catMap.values()).sort((a, b) => b.total - a.total);
+
+  // Weekly milestones (last 4 weeks, oldest→newest)
+  const now = new Date();
+  const weekCounts = [0, 0, 0, 0];
+  for (const m of recentMilestones) {
+    if (!m.completedAt) continue;
+    const daysAgo = Math.floor((now.getTime() - new Date(m.completedAt).getTime()) / 86400000);
+    const weekIdx = Math.floor(daysAgo / 7);
+    if (weekIdx < 4) weekCounts[weekIdx]++;
+  }
+  const weeklyMilestones = [...weekCounts].reverse();
 
   const stats = {
     total: completed + active,
@@ -38,6 +78,10 @@ export default async function ProfilePage() {
       user={JSON.parse(JSON.stringify(user))}
       stats={stats}
       streak={streak}
+      dbReminderEnabled={user?.reminderEnabled ?? false}
+      dbReminderTime={user?.reminderTime ?? "09:00"}
+      categoryStats={categoryStats}
+      weeklyMilestones={weeklyMilestones}
     />
   );
 }

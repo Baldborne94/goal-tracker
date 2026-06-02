@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDate, calculateStreak } from "@/lib/utils";
+import LogoutButton from "@/components/LogoutButton";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -17,13 +18,18 @@ export default async function DashboardPage() {
   const dow = weekStart.getDay();
   weekStart.setDate(weekStart.getDate() - (dow === 0 ? 6 : dow - 1));
 
-  const [user, goals, financeBudget, financeAgg, streakMilestones, weekMilestones, weekGoals] = await Promise.all([
+  const [user, goals, financeBudget, financeAgg, streakMilestones, weekMilestones, weekGoals, todayFocusRaw] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: { userRewards: { include: { reward: true } } },
-    }),
+    }).catch(() =>
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, email: true, image: true, points: true, createdAt: true },
+      }).then((u) => u ? { ...u, emailVerified: null, password: null, userRewards: [] } : null).catch(() => null)
+    ),
     prisma.goal.findMany({
-      where: { userId },
+      where: { userId, status: { in: ["active", "completed"] } },
       include: { category: true, milestones: true },
       orderBy: { createdAt: "desc" },
       take: 5,
@@ -45,11 +51,28 @@ export default async function DashboardPage() {
     prisma.goal.count({
       where: { userId, status: "completed", completedAt: { gte: weekStart } },
     }),
+    prisma.goal.findMany({
+      where: { userId, status: "active", reminderTime: { not: null } },
+      select: {
+        id: true,
+        title: true,
+        reminderTime: true,
+        milestones: {
+          where: { completed: false },
+          orderBy: { order: "asc" },
+          take: 1,
+          select: { id: true, title: true },
+        },
+      },
+      orderBy: { reminderTime: "asc" },
+    }).catch(() => []),
   ]);
 
-  const total = await prisma.goal.count({ where: { userId } });
-  const completed = await prisma.goal.count({ where: { userId, status: "completed" } });
-  const active = total - completed;
+  const [active, completed] = await Promise.all([
+    prisma.goal.count({ where: { userId, status: "active" } }),
+    prisma.goal.count({ where: { userId, status: "completed" } }),
+  ]);
+  const todayFocus = todayFocusRaw.filter((g: { milestones: { id: string }[] }) => g.milestones.length > 0);
   const financeSpent = financeAgg._sum.amount ?? 0;
   const isOverBudget = financeBudget && financeSpent > financeBudget.amount;
   const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
@@ -57,9 +80,12 @@ export default async function DashboardPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       {/* Header */}
-      <div className="mb-6">
-        <p className="text-[#9d8ac7] text-sm">Welcome,</p>
-        <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} ⚔️</h1>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <p className="text-[#9d8ac7] text-sm">Welcome,</p>
+          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} ⚔️</h1>
+        </div>
+        <LogoutButton />
       </div>
 
       {/* XP card */}
@@ -84,20 +110,20 @@ export default async function DashboardPage() {
 
       {/* Weekly recap */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
+        <div className="rounded-2xl border p-4 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-2xl mb-1">✅</div>
           <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekMilestones}</div>
-          <div className="text-xs text-[#9d8ac7]">This week</div>
+          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>This week</div>
         </div>
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 text-center">
+        <div className="rounded-2xl border p-4 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-2xl mb-1">👑</div>
           <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekGoals}</div>
-          <div className="text-xs text-[#9d8ac7]">Quests done</div>
+          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>Quests done</div>
         </div>
       </div>
 
       {/* Streak card */}
-      <div className="rounded-2xl p-4 mb-6 flex items-center gap-4" style={{background: "#16112e", border: "1px solid #3b2d6e"}}>
+      <div className="rounded-2xl p-4 mb-6 flex items-center gap-4" style={{background: "var(--theme-surface)", border: "1px solid var(--theme-surface-border)"}}>
         <div className="text-4xl flex-shrink-0">{streak > 0 ? "🔥" : "💤"}</div>
         <div className="flex-1 min-w-0">
           {streak > 0 ? (
@@ -130,6 +156,32 @@ export default async function DashboardPage() {
         )}
       </div>
 
+      {/* Today's focus */}
+      {todayFocus.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎯 Today&apos;s focus</h2>
+          <div className="space-y-2">
+            {(todayFocus as { id: string; title: string; reminderTime: string | null; milestones: { id: string; title: string }[] }[]).map((g) => (
+              <Link
+                key={g.id}
+                href={`/goals/${g.id}`}
+                className="flex items-center gap-3 rounded-2xl border p-3 transition-colors"
+                style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+              >
+                <div className="w-5 h-5 rounded-full border-2 border-[#3b2d6e] flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[#ede9ff] truncate">{g.milestones[0]?.title}</p>
+                  <p className="text-xs truncate" style={{ color: "var(--theme-text-muted)" }}>{g.title}</p>
+                </div>
+                {g.reminderTime && (
+                  <span className="text-xs text-amber-400/70 flex-shrink-0">🔔 {g.reminderTime}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent rewards */}
       {user?.userRewards && user.userRewards.length > 0 && (
         <div className="mb-6">
@@ -138,7 +190,8 @@ export default async function DashboardPage() {
             {user.userRewards.slice(0, 6).map((ur: { id: string; reward: { icon: string; name: string } }) => (
               <div
                 key={ur.id}
-                className="flex-shrink-0 bg-[#16112e] rounded-xl border border-[#3b2d6e] px-4 py-3 text-center"
+                className="flex-shrink-0 rounded-xl border px-4 py-3 text-center"
+                style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}
               >
                 <div className="text-2xl mb-1">{ur.reward.icon}</div>
                 <div className="text-xs font-medium text-[#c4b5fd] whitespace-nowrap">
@@ -153,24 +206,23 @@ export default async function DashboardPage() {
       {/* Finance widget */}
       <Link
         href="/finance"
-        className={`block rounded-2xl p-4 mb-6 transition-colors hover:border-amber-500/40 border ${
-          isOverBudget
-            ? "bg-red-950/30 border-red-700/40"
-            : "bg-[#16112e] border-[#3b2d6e]"
-        }`}
+        className="block rounded-2xl p-4 mb-6 transition-colors border"
+        style={isOverBudget
+          ? { background: "rgba(127,29,29,0.2)", borderColor: "rgba(185,28,28,0.4)" }
+          : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
       >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">💰 Finance</span>
-          <span className="text-xs text-amber-400">
+          <span className="text-sm font-semibold uppercase tracking-wider" style={{color: "var(--theme-text-muted)"}}>💰 Finance</span>
+          <span className="text-xs" style={{color: "var(--theme-accent)"}}>
             {new Date().toLocaleDateString("en-GB", { month: "long" })} →
           </span>
         </div>
         {financeBudget ? (
           <>
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#9d8ac7]">Spent</span>
+              <span style={{color: "var(--theme-text-muted)"}}>Spent</span>
               <span className={`font-bold ${isOverBudget ? "text-red-400" : "text-[#ede9ff]"}`}>
-                €{financeSpent.toFixed(0)} / €{financeBudget.amount.toFixed(0)}
+                €{financeSpent.toFixed(2)} / €{financeBudget.amount.toFixed(2)}
               </span>
             </div>
             <div className="h-2 bg-[#0f0d22] rounded-full overflow-hidden">
@@ -203,7 +255,7 @@ export default async function DashboardPage() {
       </div>
 
       {goals.length === 0 ? (
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-8 text-center">
+        <div className="rounded-2xl border p-8 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-4xl mb-3">🗡️</div>
           <p className="text-[#9d8ac7] text-sm mb-4">No quests yet</p>
           <Link
@@ -223,7 +275,8 @@ export default async function DashboardPage() {
               <Link
                 key={goal.id}
                 href={`/goals/${goal.id}`}
-                className="block bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4 hover:border-amber-500/40 transition-colors"
+                className="block rounded-2xl border p-4 transition-colors"
+                style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-semibold text-[#ede9ff] line-clamp-1">{goal.title}</h3>

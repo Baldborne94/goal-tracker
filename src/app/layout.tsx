@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "Goal Tracker",
   description: "Traccia i tuoi obiettivi e ottieni ricompense",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.svg",
+    apple: "/icon-192.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
+import { updateProfileName, updateTheme, updateReminder } from "@/app/(app)/profile/actions";
+import NotificationButton from "@/components/NotificationButton";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -16,6 +18,7 @@ type User = {
 };
 
 type Stats = { total: number; completed: number; active: number };
+type CategoryStat = { name: string; color: string; total: number; completed: number };
 
 const LEVEL_THRESHOLDS = [
   { level: 1, label: "Recruit",   icon: "🗡️",  min: 0,   max: 49 },
@@ -29,7 +32,7 @@ function getLevel(points: number) {
   return LEVEL_THRESHOLDS.find((l) => points >= l.min && points <= l.max) || LEVEL_THRESHOLDS[0];
 }
 
-export default function ProfileClient({ user, stats, streak = 0 }: { user: User | null; stats: Stats; streak?: number }) {
+export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00", categoryStats = [], weeklyMilestones = [0, 0, 0, 0] }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string; categoryStats?: CategoryStat[]; weeklyMilestones?: number[] }) {
   const { theme, colors, setTheme } = useTheme();
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -43,16 +46,17 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
   const [nameStatus, setNameStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const [notifPermission, setNotifPermission] = useState<string>("default");
-  const [notifEnabled, setNotifEnabled] = useState(false);
-  const [notifTime, setNotifTime] = useState("09:00");
+  const [notifEnabled, setNotifEnabled] = useState(dbReminderEnabled);
+  const [notifTime, setNotifTime] = useState(dbReminderTime);
   const [notifRequesting, setNotifRequesting] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
     setNotifPermission(Notification.permission);
-    setNotifEnabled(localStorage.getItem("reminder-enabled") === "true");
-    setNotifTime(localStorage.getItem("reminder-time") || "09:00");
-  }, []);
+    // Sync localStorage with DB values on mount
+    localStorage.setItem("reminder-enabled", String(dbReminderEnabled));
+    localStorage.setItem("reminder-time", dbReminderTime);
+  }, [dbReminderEnabled, dbReminderTime]);
 
   useEffect(() => {
     if (!notifEnabled || notifPermission !== "granted") return;
@@ -82,24 +86,22 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
   function toggleReminder(enabled: boolean) {
     setNotifEnabled(enabled);
     localStorage.setItem("reminder-enabled", String(enabled));
+    updateReminder(enabled, notifTime);
   }
 
   function saveReminderTime(time: string) {
     setNotifTime(time);
     localStorage.setItem("reminder-time", time);
+    updateReminder(notifEnabled, time);
   }
 
   async function saveName() {
     if (!nameInput.trim()) return;
     setNameStatus("saving");
     try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nameInput.trim() }),
-      });
-      if (res.ok) {
-        setDisplayName(nameInput.trim());
+      const result = await updateProfileName(nameInput.trim());
+      if (result.ok) {
+        setDisplayName(result.name ?? nameInput.trim());
         setNameStatus("saved");
         setTimeout(() => {
           setEditingName(false);
@@ -210,13 +212,57 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
           { label: "Done", value: stats.completed, icon: "👑" },
           { label: "Streak", value: streak, icon: streak > 0 ? "🔥" : "💤" },
         ].map((s) => (
-          <div key={s.label} className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-3 text-center">
+          <div key={s.label} className="rounded-2xl border p-3 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
             <div className="text-xl mb-1">{s.icon}</div>
-            <div className="text-xl font-bold text-amber-400">{s.value}</div>
-            <div className="text-xs text-[#9d8ac7]">{s.label}</div>
+            <div className="text-xl font-bold" style={{color: "var(--theme-accent)"}}>{s.value}</div>
+            <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>{s.label}</div>
           </div>
         ))}
       </div>
+
+      {/* Weekly activity */}
+      {weeklyMilestones.some((v) => v > 0) && (
+        <div className="rounded-2xl border p-4 mb-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>📅 Weekly milestones</h2>
+          <div className="flex items-end gap-2 h-16">
+            {weeklyMilestones.map((count, i) => {
+              const max = Math.max(...weeklyMilestones, 1);
+              const pct = Math.round((count / max) * 100);
+              const labels = ["3w ago", "2w ago", "Last week", "This week"];
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs font-bold" style={{ color: "var(--theme-accent)" }}>{count > 0 ? count : ""}</span>
+                  <div className="w-full rounded-t-lg transition-all" style={{ height: `${Math.max(pct, 4)}%`, background: i === 3 ? "var(--theme-accent)" : "var(--theme-surface-border)" }} />
+                  <span className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>{labels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Category breakdown */}
+      {categoryStats.length > 0 && (
+        <div className="rounded-2xl border p-4 mb-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>🗂 By category</h2>
+          <div className="space-y-2.5">
+            {categoryStats.map((c) => (
+              <div key={c.name}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-medium text-[#ede9ff]">{c.name}</span>
+                  <span style={{ color: "var(--theme-text-muted)" }}>{c.completed}/{c.total}</span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${Math.round((c.total / categoryStats[0].total) * 100)}%`, backgroundColor: c.color + "99" }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Rewards */}
       <div className="mb-6">
@@ -226,16 +272,17 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
         </h2>
 
         {user.userRewards.length === 0 ? (
-          <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-6 text-center">
+          <div className="rounded-2xl border p-6 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
             <div className="text-3xl mb-2">🏆</div>
-            <p className="text-[#9d8ac7] text-sm">Complete quests to unlock trophies</p>
+            <p className="text-sm" style={{color: "var(--theme-text-muted)"}}>Complete quests to unlock trophies</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {user.userRewards.map((ur) => (
               <div
                 key={ur.id}
-                className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-4"
+                className="rounded-2xl border p-4"
+                style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}
               >
                 <div className="text-3xl mb-2">{ur.reward.icon}</div>
                 <div className="font-semibold text-[#ede9ff] text-sm">{ur.reward.name}</div>
@@ -253,11 +300,11 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
           {(Object.values(THEMES) as (typeof THEMES)[ThemeKey][]).map((t) => (
             <button
               key={t.key}
-              onClick={() => setTheme(t.key as ThemeKey)}
+              onClick={() => { setTheme(t.key as ThemeKey); updateTheme(t.key); }}
               className="flex items-center gap-3 p-3 rounded-2xl border transition-all"
               style={{
-                borderColor: theme === t.key ? t.accent : "#3b2d6e",
-                background: theme === t.key ? t.accent + "15" : "#16112e",
+                borderColor: theme === t.key ? t.accent : "var(--theme-surface-border)",
+                background: theme === t.key ? t.accent + "22" : "var(--theme-surface)",
               }}
             >
               <div className="w-5 h-5 rounded-full flex-shrink-0" style={{ background: t.bar }} />
@@ -271,7 +318,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
       </div>
 
       {/* Daily reminder */}
-      <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-6">
+      <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
         <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">⏰ Daily Reminder</h2>
 
         {notifPermission === "denied" ? (
@@ -293,7 +340,8 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
               <span className="text-sm text-[#ede9ff]">Daily reminder</span>
               <button
                 onClick={() => toggleReminder(!notifEnabled)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${notifEnabled ? "bg-amber-500" : "bg-[#3b2d6e]"}`}
+                className="w-11 h-6 rounded-full transition-colors relative"
+                style={{background: notifEnabled ? "var(--theme-accent)" : "var(--theme-surface-border)"}}
               >
                 <span
                   className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifEnabled ? "translate-x-6" : "translate-x-1"}`}
@@ -307,7 +355,8 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
                   type="time"
                   value={notifTime}
                   onChange={(e) => saveReminderTime(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] text-[#ede9ff] text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                  className="flex-1 px-3 py-2 rounded-xl text-[#ede9ff] text-sm focus:outline-none border"
+                  style={{background: "var(--theme-bg, #0f0d22)", borderColor: "var(--theme-surface-border)"}}
                 />
               </div>
             )}
@@ -316,8 +365,15 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
         )}
       </div>
 
+      {/* Push notifications */}
+      <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">📱 Push Notifications</h2>
+        <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>Receive quest reminders even when the app is closed.</p>
+        <NotificationButton />
+      </div>
+
       {/* Danger zone */}
-      <div className="bg-[#16112e] rounded-2xl border border-red-900/30 p-5 mb-4">
+      <div className="rounded-2xl border border-red-900/30 p-5 mb-4" style={{background: "var(--theme-surface)"}}>
         <h2 className="text-sm font-semibold text-red-400/80 uppercase tracking-wider mb-4">⚠️ Danger zone</h2>
 
         {!confirmReset ? (
@@ -335,7 +391,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmReset(false)}
-                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+                className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
                 Cancel
               </button>
@@ -373,7 +429,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmResetRewards(false)}
-                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+                className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
                 Cancel
               </button>
@@ -396,7 +452,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
       </div>
 
       {/* Wipe everything */}
-      <div className="bg-[#16112e] rounded-2xl border border-red-900/50 p-5 mb-4">
+      <div className="rounded-2xl border border-red-900/50 p-5 mb-4" style={{background: "var(--theme-surface)"}}>
         <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-1">💀 Wipe everything</h2>
         <p className="text-xs text-[#6b5a9e] mb-4">Delete all quests, trophies and reset XP to 0. A clean slate.</p>
 
@@ -415,7 +471,7 @@ export default function ProfileClient({ user, stats, streak = 0 }: { user: User 
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmWipeAll(false)}
-                className="flex-1 py-2.5 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl text-sm"
+                className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
                 Cancel
               </button>

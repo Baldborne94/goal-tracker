@@ -28,6 +28,7 @@ type Goal = {
   guideType: string | null;
   guideTarget: number | null;
   guideStart: number | null;
+  reminderTime: string | null;
 };
 
 type Props = {
@@ -87,6 +88,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           m.id === milestoneId ? { ...m, completed } : m
         ),
       }));
+      router.refresh();
     }
   }
 
@@ -111,32 +113,48 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
   }
 
   const isCompleted = goal.status === "completed";
+  const isArchived = goal.status === "archived";
+
+  async function handleArchive() {
+    const newStatus = isArchived ? "active" : "archived";
+    const res = await fetch(`/api/goals/${goal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      setGoal((prev) => ({ ...prev, status: newStatus }));
+      if (!isArchived) router.push("/goals");
+    }
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <button
-        onClick={() => router.back()}
+        onClick={() => router.push("/goals")}
         className="flex items-center gap-1.5 text-[#9d8ac7] text-sm mb-5 hover:text-amber-400 transition-colors"
       >
         ← Back
       </button>
 
-      <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
+      <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <div className="flex items-start justify-between gap-3 mb-3">
           <h1 className="text-xl font-bold text-[#ede9ff] flex-1">{goal.title}</h1>
           <span
             className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 border ${
               isCompleted
                 ? "bg-amber-900/30 text-amber-300 border-amber-700/40"
+                : isArchived
+                ? "bg-zinc-800/60 text-zinc-400 border-zinc-600/40"
                 : "bg-violet-900/30 text-violet-300 border-violet-700/40"
             }`}
           >
-            {isCompleted ? "👑 Completed" : "⚡ Active"}
+            {isCompleted ? "👑 Completed" : isArchived ? "📦 Archived" : "⚡ Active"}
           </span>
         </div>
 
         {goal.description && (
-          <p className="text-[#9d8ac7] text-sm mb-4 leading-relaxed">{goal.description}</p>
+          <p className="text-sm mb-4 leading-relaxed" style={{ color: "var(--theme-text-muted)" }}>{goal.description}</p>
         )}
 
         <div className="flex flex-wrap gap-2 mb-4">
@@ -160,7 +178,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
             </span>
           )}
           {goal.tags.map(({ tag }) => (
-            <span key={tag.id} className="text-xs px-2.5 py-1 rounded-full bg-[#1e1740] text-[#9d8ac7] border border-[#3b2d6e]">
+            <span key={tag.id} className="text-xs px-2.5 py-1 rounded-full border" style={{ background: "var(--theme-bg)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}>
               #{tag.name}
             </span>
           ))}
@@ -168,10 +186,10 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-[#9d8ac7] font-medium">Progress</span>
+            <span className="font-medium" style={{ color: "var(--theme-text-muted)" }}>Progress</span>
             <span className="font-bold text-amber-400">{goal.progress}%</span>
           </div>
-          <div className="h-3 bg-[#0f0d22] rounded-full overflow-hidden">
+          <div className="h-3 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 goal.progress >= 100
@@ -185,7 +203,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           </div>
         </div>
 
-        <div className="flex gap-4 text-sm text-[#9d8ac7]">
+        <div className="flex gap-4 text-sm flex-wrap" style={{ color: "var(--theme-text-muted)" }}>
           <div className="flex items-center gap-1">
             <span>✨</span>
             <span>{goal.points} XP</span>
@@ -194,6 +212,12 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
             <div className="flex items-center gap-1">
               <span>🌙</span>
               <span>{formattedDate}</span>
+            </div>
+          )}
+          {goal.reminderTime && (
+            <div className="flex items-center gap-1">
+              <span>🔔</span>
+              <span>{goal.reminderTime} daily</span>
             </div>
           )}
         </div>
@@ -210,10 +234,10 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
       </div>
 
       {goal.milestones.length > 0 && (
-        <div className="bg-[#16112e] rounded-2xl border border-[#3b2d6e] p-5 mb-4">
-          <h2 className="font-semibold text-[#c4b5fd] mb-3">
+        <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+          <h2 className="font-semibold text-[#ede9ff] mb-3">
             ⭐ Milestones{" "}
-            <span className="text-sm font-normal text-[#6b5a9e]">
+            <span className="text-sm font-normal" style={{ color: "var(--theme-text-muted)" }}>
               {goal.milestones.filter((m) => m.completed).length}/{goal.milestones.length}
             </span>
           </h2>
@@ -222,16 +246,16 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
               <div
                 key={m.id}
                 className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
-                  m.completed ? "bg-amber-900/20 border border-amber-700/30" : "bg-[#0f0d22] border border-[#2a1f50]"
+                  m.completed ? "bg-amber-900/20 border border-amber-700/30" : "border"
                 }`}
-                onClick={() => !isCompleted && toggleMilestone(m.id, !m.completed)}
+                style={m.completed ? {} : { background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                onClick={() => !isCompleted && !isArchived && toggleMilestone(m.id, !m.completed)}
               >
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors border-2 ${
-                    m.completed
-                      ? "bg-amber-500 border-amber-500 text-black"
-                      : "bg-transparent border-[#3b2d6e]"
+                    m.completed ? "bg-amber-500 border-amber-500 text-black" : "bg-transparent"
                   }`}
+                  style={m.completed ? {} : { borderColor: "var(--theme-surface-border)" }}
                 >
                   {m.completed && (
                     <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -239,7 +263,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
                     </svg>
                   )}
                 </div>
-                <span className={`text-sm flex-1 ${m.completed ? "line-through text-[#6b5a9e]" : "text-[#ede9ff]"}`}>
+                <span className={`text-sm flex-1 ${m.completed ? "line-through" : "text-[#ede9ff]"}`} style={m.completed ? { color: "var(--theme-text-muted)" } : {}}>
                   {m.title}
                 </span>
               </div>
@@ -284,10 +308,11 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         </div>
       )}
 
-      {!isCompleted && (
+      {!isCompleted && !isArchived && (
         <Link
           href={`/goals/${goal.id}/edit`}
-          className="block w-full py-3 border border-[#3b2d6e] text-[#c4b5fd] rounded-xl font-semibold text-center hover:border-violet-500/60 hover:bg-[#1e1740] transition-colors mb-3"
+          className="block w-full py-3 rounded-xl font-semibold text-center border transition-colors mb-3 text-[#ede9ff]"
+          style={{ borderColor: "var(--theme-surface-border)", background: "var(--theme-surface)" }}
         >
           ✏️ Edit
         </Link>
@@ -295,10 +320,21 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
       <button
         onClick={shareTemplate}
-        className="w-full py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold hover:border-violet-500/60 hover:bg-[#1e1740] transition-colors mb-3"
+        className="w-full py-3 rounded-xl font-semibold border transition-colors mb-3"
+        style={{ borderColor: "var(--theme-surface-border)", background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}
       >
         {copied ? "✅ Link copied!" : "📤 Share as template"}
       </button>
+
+      {!isCompleted && (
+        <button
+          onClick={handleArchive}
+          className="w-full py-3 rounded-xl font-semibold border transition-colors mb-3"
+          style={{ borderColor: "var(--theme-surface-border)", background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}
+        >
+          {isArchived ? "📂 Unarchive quest" : "📦 Archive quest"}
+        </button>
+      )}
 
       <button
         onClick={() => setShowDelete(true)}
@@ -309,15 +345,16 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
       {showDelete && (
         <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60] p-4 pb-24">
-          <div className="bg-[#1a1535] rounded-2xl border border-[#3b2d6e] w-full max-w-sm p-6">
+          <div className="rounded-2xl border w-full max-w-sm p-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
             <h3 className="text-lg font-bold text-[#ede9ff] mb-2">Delete quest</h3>
-            <p className="text-[#9d8ac7] text-sm mb-5">
+            <p className="text-sm mb-5" style={{ color: "var(--theme-text-muted)" }}>
               Are you sure? This action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDelete(false)}
-                className="flex-1 py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold"
+                className="flex-1 py-3 rounded-xl font-semibold border"
+                style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
               >
                 Cancel
               </button>

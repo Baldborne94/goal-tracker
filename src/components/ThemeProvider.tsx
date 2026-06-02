@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 
 export const THEMES = {
   warrior: {
@@ -11,6 +11,10 @@ export const THEMES = {
     border: "#4c3880",
     bar: "linear-gradient(90deg, #f59e0b, #fbbf24)",
     glow: "#f59e0b33",
+    bg: "#07051a",
+    surface: "#16112e",
+    surfaceBorder: "#3b2d6e",
+    textMuted: "#9d8ac7",
   },
   ocean: {
     key: "ocean",
@@ -20,6 +24,10 @@ export const THEMES = {
     border: "#1e4a7a",
     bar: "linear-gradient(90deg, #22d3ee, #67e8f9)",
     glow: "#22d3ee33",
+    bg: "#020c1b",
+    surface: "#071a36",
+    surfaceBorder: "#1e4a7a",
+    textMuted: "#7ab8d9",
   },
   forest: {
     key: "forest",
@@ -29,6 +37,10 @@ export const THEMES = {
     border: "#1e5c3e",
     bar: "linear-gradient(90deg, #34d399, #6ee7b7)",
     glow: "#34d39933",
+    bg: "#020e09",
+    surface: "#0a2218",
+    surfaceBorder: "#1e5c3e",
+    textMuted: "#6bb88a",
   },
   crimson: {
     key: "crimson",
@@ -38,6 +50,10 @@ export const THEMES = {
     border: "#6b1a3a",
     bar: "linear-gradient(90deg, #fb7185, #fda4af)",
     glow: "#fb718533",
+    bg: "#0d0208",
+    surface: "#1e0510",
+    surfaceBorder: "#6b1a3a",
+    textMuted: "#b06a80",
   },
 } as const;
 
@@ -57,13 +73,13 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-export default function ThemeProvider({ children }: { children: React.ReactNode }) {
+export default function ThemeProvider({ children, initialTheme }: { children: React.ReactNode; initialTheme?: ThemeKey }) {
   const [theme, setThemeState] = useState<ThemeKey>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("hero-theme") as ThemeKey;
       if (stored && stored in THEMES) return stored;
     }
-    return "warrior";
+    return initialTheme ?? "warrior";
   });
 
   function setTheme(t: ThemeKey) {
@@ -84,6 +100,10 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
             "--theme-accent": colors.accent,
             "--theme-bar": colors.bar,
             "--theme-glow": colors.glow,
+            "--theme-bg": colors.bg,
+            "--theme-surface": colors.surface,
+            "--theme-surface-border": colors.surfaceBorder,
+            "--theme-text-muted": colors.textMuted,
           } as React.CSSProperties
         }
       >
