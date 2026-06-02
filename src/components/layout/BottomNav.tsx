@@ -22,7 +22,9 @@ export default function BottomNav({ points = 0 }: { points?: number }) {
   const NAV_ITEMS = [
     { href: "/dashboard", icon: "🏰", label: "Realm" },
     { href: "/goals",     icon: "⚔️", label: "Quests" },
-    { href: "/profile",  icon: heroIcon(points), label: "Hero" },
+    { href: "/finance",   icon: "💰", label: "Money" },
+    { href: "/vita",      icon: "🥗", label: "Diet" },
+    { href: "/profile",   icon: heroIcon(points), label: "Hero" },
   ];
 
   return (
@@ -34,7 +36,7 @@ export default function BottomNav({ points = 0 }: { points?: number }) {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all"
+              className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all"
               style={{ color: active ? "var(--theme-accent)" : "var(--theme-text-muted)" }}
             >
               <span className={cn("text-2xl transition-transform", active && "scale-110")}>{item.icon}</span>

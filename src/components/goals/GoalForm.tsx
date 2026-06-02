@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 
 type Category = { id: string; name: string; color: string };
 
+type ReminderFrequency = "daily" | "weekly" | "monthly" | "custom";
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 type Props = {
   categories: Category[];
   initialData?: {
@@ -15,6 +19,9 @@ type Props = {
     targetDate: string;
     categoryId: string;
     reminderTime?: string;
+    reminderFrequency?: string;
+    reminderDay?: number | null;
+    reminderDays?: string | null;
     tags: string[];
     milestones: string[];
   };
@@ -52,6 +59,15 @@ export default function GoalForm({ categories, initialData }: Props) {
     categoryId: initialData?.categoryId || "",
     reminderTime: initialData?.reminderTime || "",
   });
+  const [reminderFrequency, setReminderFrequency] = useState<ReminderFrequency>(
+    (initialData?.reminderFrequency as ReminderFrequency) || "daily"
+  );
+  const [reminderDay, setReminderDay] = useState<number>(
+    initialData?.reminderDay ?? (new Date().getDay())
+  );
+  const [reminderDays, setReminderDays] = useState<number[]>(
+    initialData?.reminderDays ? initialData.reminderDays.split(",").map(Number) : [new Date().getDay()]
+  );
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
   const [milestones, setMilestones] = useState<string[]>(initialData?.milestones || []);
@@ -114,7 +130,6 @@ export default function GoalForm({ categories, initialData }: Props) {
 
     setMilestones(generated);
 
-    // auto-set deadline if not already set
     if (!form.targetDate) {
       const deadline = new Date(today);
       deadline.setDate(deadline.getDate() + days - 1);
@@ -145,6 +160,9 @@ export default function GoalForm({ categories, initialData }: Props) {
       body: JSON.stringify({
         ...form,
         reminderTime: form.reminderTime || null,
+        reminderFrequency: form.reminderTime ? reminderFrequency : null,
+        reminderDay: form.reminderTime && reminderFrequency !== "daily" && reminderFrequency !== "custom" ? reminderDay : null,
+        reminderDays: form.reminderTime && reminderFrequency === "custom" ? reminderDays.join(",") : null,
         tags,
         milestones,
         guideType: guideType || null,
@@ -157,15 +175,19 @@ export default function GoalForm({ categories, initialData }: Props) {
       setError(data.error || "Something went wrong");
       setLoading(false);
     } else {
-      const goal = await res.json();
       router.push(`/goals`);
     }
   }
 
   const estimatedXP = calcXP(form.priority, milestones.length, !!form.description.trim(), !!form.targetDate);
-
-  const inputClass = "w-full px-4 py-3 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a]";
   const selectedGuide = GUIDE_OPTIONS.find((g) => g.type === guideType);
+
+  const inputStyle = {
+    background: "var(--theme-bg)",
+    borderColor: "var(--theme-surface-border)",
+    color: "var(--theme-text)",
+  };
+  const inputClass = "w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40 focus:border-[var(--theme-accent)]/40 text-white placeholder-[var(--theme-text-muted)]";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -174,34 +196,37 @@ export default function GoalForm({ categories, initialData }: Props) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Title *</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Title *</label>
         <input
           required
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="What do you want to achieve?"
           className={inputClass}
+          style={inputStyle}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Description</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Description</label>
         <textarea
           rows={3}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           placeholder="Describe your quest..."
           className={`${inputClass} resize-none`}
+          style={inputStyle}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Difficulty</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Difficulty</label>
           <select
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: e.target.value })}
             className={inputClass}
+            style={inputStyle}
           >
             <option value="low">🍃 Low</option>
             <option value="medium">⚡ Medium</option>
@@ -210,49 +235,150 @@ export default function GoalForm({ categories, initialData }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🌙 Deadline</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🌙 Deadline</label>
           <input
             type="date"
             value={form.targetDate}
             onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
             className={inputClass}
+            style={inputStyle}
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🔔 Daily reminder</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🔔 Reminder</label>
+
+        {/* Frequency tabs */}
+        <div className="grid grid-cols-4 gap-1 mb-2 p-1 rounded-xl" style={{ background: "var(--theme-bg)" }}>
+          {(["daily", "weekly", "monthly", "custom"] as ReminderFrequency[]).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setReminderFrequency(f)}
+              className="py-1.5 rounded-lg text-xs font-medium transition-colors capitalize"
+              style={
+                reminderFrequency === f
+                  ? { background: "var(--theme-accent)", color: "#000" }
+                  : { color: "var(--theme-text-muted)" }
+              }
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Day picker for weekly */}
+        {reminderFrequency === "weekly" && (
+          <div className="flex gap-1 mb-2">
+            {WEEKDAYS.map((day, i) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => setReminderDay(i)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={
+                  reminderDay === i
+                    ? { background: "var(--theme-accent)", color: "#000" }
+                    : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", border: "1px solid" }
+                }
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Day picker for monthly */}
+        {reminderFrequency === "monthly" && (
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Day of month</label>
+            <select
+              value={reminderDay}
+              onChange={(e) => setReminderDay(parseInt(e.target.value))}
+              className="flex-1 px-3 py-2 rounded-xl border text-white text-sm focus:outline-none"
+              style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+            >
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Multi-day picker for custom */}
+        {reminderFrequency === "custom" && (
+          <div className="mb-2">
+            <p className="text-xs mb-1.5" style={{ color: "var(--theme-text-muted)" }}>Pick one or more days</p>
+            <div className="flex gap-1">
+              {WEEKDAYS.map((day, i) => {
+                const selected = reminderDays.includes(i);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => {
+                      if (selected && reminderDays.length === 1) return; // keep at least one
+                      setReminderDays(selected ? reminderDays.filter((d) => d !== i) : [...reminderDays, i].sort((a, b) => a - b));
+                    }}
+                    className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    style={
+                      selected
+                        ? { background: "var(--theme-accent)", color: "#000" }
+                        : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", border: "1px solid" }
+                    }
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Time picker */}
         <div className="flex items-center gap-3">
           <input
             type="time"
             value={form.reminderTime}
             onChange={(e) => setForm({ ...form, reminderTime: e.target.value })}
             className={`flex-1 ${inputClass}`}
+            style={inputStyle}
           />
           {form.reminderTime && (
             <button
               type="button"
               onClick={() => setForm({ ...form, reminderTime: "" })}
-              className="text-xs text-[#6b5a9e] hover:text-red-400 transition-colors px-3 py-3 rounded-xl border border-[#3b2d6e] hover:border-red-800/50"
+              className="text-xs px-3 py-3 rounded-xl border hover:text-red-400 transition-colors"
+              style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
             >
               Clear
             </button>
           )}
         </div>
-        <p className="text-xs text-[#4a3a7a] mt-1">Browser will notify you at this time every day while this quest is active.</p>
+        <p className="text-xs mt-1" style={{ color: "var(--theme-text-muted)" }}>
+          {reminderFrequency === "weekly"
+            ? `Every ${WEEKDAYS[reminderDay]}${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            : reminderFrequency === "monthly"
+            ? `Day ${reminderDay} of each month${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            : reminderFrequency === "custom"
+            ? `Every ${reminderDays.map((d) => WEEKDAYS[d]).join(", ")}${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            : `Every day${form.reminderTime ? ` at ${form.reminderTime}` : ""}`}
+        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-2">Category</label>
+        <label className="block text-sm font-medium mb-2" style={{ color: "var(--theme-text-muted)" }}>Category</label>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setForm({ ...form, categoryId: "" })}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+            className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors border"
+            style={
               form.categoryId === ""
-                ? "bg-[#ede9ff] text-[#0c0a1a] border-[#ede9ff]"
-                : "bg-[#16112e] border-[#3b2d6e] text-[#9d8ac7]"
-            }`}
+                ? { background: "var(--theme-accent)", borderColor: "var(--theme-accent)", color: "#000" }
+                : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }
+            }
           >
             None
           </button>
@@ -261,13 +387,11 @@ export default function GoalForm({ categories, initialData }: Props) {
               key={c.id}
               type="button"
               onClick={() => setForm({ ...form, categoryId: c.id })}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                form.categoryId === c.id ? "text-black" : "bg-[#16112e] text-[#9d8ac7]"
-              }`}
+              className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors border"
               style={
                 form.categoryId === c.id
-                  ? { backgroundColor: c.color, borderColor: c.color }
-                  : { borderColor: "#3b2d6e" }
+                  ? { backgroundColor: c.color, borderColor: c.color, color: "#000" }
+                  : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }
               }
             >
               {c.name}
@@ -277,19 +401,21 @@ export default function GoalForm({ categories, initialData }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#c4b5fd] mb-1">Tags</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Tags</label>
         <div className="flex gap-2 mb-2">
           <input
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
             placeholder="Add tag..."
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a] text-sm"
+            className="flex-1 px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40 text-white placeholder-[var(--theme-text-muted)] text-sm"
+            style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
           />
           <button
             type="button"
             onClick={addTag}
-            className="px-4 py-2.5 bg-[#1e1740] text-[#c4b5fd] rounded-xl text-sm font-medium border border-[#3b2d6e] hover:border-amber-500/40"
+            className="px-4 py-2.5 rounded-xl text-sm font-medium border hover:border-[var(--theme-accent)]/40 transition-colors"
+            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
           >
             +
           </button>
@@ -297,9 +423,13 @@ export default function GoalForm({ categories, initialData }: Props) {
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((t) => (
-              <span key={t} className="flex items-center gap-1 text-xs bg-[#1e1740] text-[#9d8ac7] px-3 py-1 rounded-full border border-[#3b2d6e]">
+              <span
+                key={t}
+                className="flex items-center gap-1 text-xs px-3 py-1 rounded-full border"
+                style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+              >
                 #{t}
-                <button type="button" onClick={() => setTags(tags.filter((x) => x !== t))} className="ml-0.5 text-[#6b5a9e] hover:text-red-400">×</button>
+                <button type="button" onClick={() => setTags(tags.filter((x) => x !== t))} className="ml-0.5 hover:text-red-400">×</button>
               </span>
             ))}
           </div>
@@ -309,12 +439,13 @@ export default function GoalForm({ categories, initialData }: Props) {
       {!isEditing && (
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-sm font-medium text-[#c4b5fd]">⭐ Milestones / Sub-goals</label>
+            <label className="block text-sm font-medium" style={{ color: "var(--theme-text-muted)" }}>⭐ Milestones / Sub-goals</label>
             {milestones.length > 0 && (
               <button
                 type="button"
                 onClick={() => setMilestones([])}
-                className="text-xs text-[#6b5a9e] hover:text-red-400 transition-colors"
+                className="text-xs hover:text-red-400 transition-colors"
+                style={{ color: "var(--theme-text-muted)" }}
               >
                 Clear all ({milestones.length})
               </button>
@@ -326,12 +457,14 @@ export default function GoalForm({ categories, initialData }: Props) {
               onChange={(e) => setMilestoneInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMilestone(); } }}
               placeholder="Add a milestone..."
-              className="flex-1 px-4 py-2.5 rounded-xl bg-[#0f0d22] border border-[#3b2d6e] focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-[#ede9ff] placeholder-[#4a3a7a] text-sm"
+              className="flex-1 px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40 text-white placeholder-[var(--theme-text-muted)] text-sm"
+              style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
             />
             <button
               type="button"
               onClick={addMilestone}
-              className="px-4 py-2.5 bg-[#1e1740] text-[#c4b5fd] rounded-xl text-sm font-medium border border-[#3b2d6e] hover:border-amber-500/40"
+              className="px-4 py-2.5 rounded-xl text-sm font-medium border hover:border-[var(--theme-accent)]/40 transition-colors"
+              style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
             >
               +
             </button>
@@ -339,14 +472,18 @@ export default function GoalForm({ categories, initialData }: Props) {
           {milestones.length > 0 && (
             <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
               {milestones.map((m, i) => (
-                <div key={i} className="flex items-center justify-between bg-[#0f0d22] border border-[#2a1f50] rounded-xl px-3 py-2 text-sm text-[#ede9ff]">
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-xl px-3 py-2 text-sm border"
+                  style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+                >
                   <span className="flex items-center gap-2 min-w-0">
-                    <span className="w-5 h-5 rounded-full bg-amber-900/40 text-amber-400 text-xs flex items-center justify-center font-semibold border border-amber-700/40 flex-shrink-0">
+                    <span className="w-5 h-5 rounded-full text-xs flex items-center justify-center font-semibold border flex-shrink-0 text-amber-400 bg-amber-900/40 border-amber-700/40">
                       {i + 1}
                     </span>
-                    <span className="truncate">{m}</span>
+                    <span className="truncate text-white">{m}</span>
                   </span>
-                  <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="text-[#6b5a9e] hover:text-red-400 ml-2 flex-shrink-0">×</button>
+                  <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="hover:text-red-400 ml-2 flex-shrink-0">×</button>
                 </div>
               ))}
             </div>
@@ -356,30 +493,31 @@ export default function GoalForm({ categories, initialData }: Props) {
 
       {!isEditing && (
         <div>
-          <label className="block text-sm font-medium text-[#c4b5fd] mb-1">🧭 Guide</label>
-          <p className="text-xs text-[#6b5a9e] mb-3">Pick a tracker to help you reach this quest automatically.</p>
+          <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🧭 Guide</label>
+          <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>Pick a tracker to help you reach this quest automatically.</p>
           <div className="grid grid-cols-2 gap-2 mb-3">
             {GUIDE_OPTIONS.map((g) => (
               <button
                 key={String(g.type)}
                 type="button"
                 onClick={() => { setGuideType(g.type); setGuideTarget(""); }}
-                className={`p-3 rounded-xl border text-left transition-colors ${
+                className="p-3 rounded-xl border text-left transition-colors"
+                style={
                   guideType === g.type
-                    ? "border-amber-500/60 bg-amber-900/20"
-                    : "border-[#3b2d6e] bg-[#16112e] hover:border-[#4a3a7a]"
-                }`}
+                    ? { borderColor: "var(--theme-accent)", background: "var(--theme-accent-bg, color-mix(in srgb, var(--theme-accent) 15%, transparent))" }
+                    : { borderColor: "var(--theme-surface-border)", background: "var(--theme-surface)" }
+                }
               >
                 <div className="text-xl mb-1">{g.icon}</div>
-                <div className="text-sm font-medium text-[#ede9ff]">{g.name}</div>
-                <div className="text-xs text-[#6b5a9e]">{g.desc}</div>
+                <div className="text-sm font-medium text-white">{g.name}</div>
+                <div className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{g.desc}</div>
               </button>
             ))}
           </div>
 
           {guideType && selectedGuide?.targetLabel && (
             <div>
-              <label className="block text-sm font-medium text-[#c4b5fd] mb-1">
+              <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>
                 {selectedGuide.targetLabel}
               </label>
               <input
@@ -390,12 +528,13 @@ export default function GoalForm({ categories, initialData }: Props) {
                 min="0"
                 step="0.01"
                 className={inputClass}
+                style={inputStyle}
               />
 
               {guideType === "habits" && guideTarget && parseInt(guideTarget) > 0 && (
-                <div className="mt-3 p-4 bg-[#0f0d22] rounded-xl border border-[#2a1f50] space-y-3">
-                  <p className="text-xs font-medium text-[#c4b5fd]">🗓 Auto-generate sub-quests</p>
-                  <p className="text-xs text-[#6b5a9e]">
+                <div className="mt-3 p-4 rounded-xl border space-y-3" style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}>
+                  <p className="text-xs font-medium" style={{ color: "var(--theme-text-muted)" }}>🗓 Auto-generate sub-quests</p>
+                  <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
                     Specify how often you want to do this — a checkbox will be created for each occurrence.
                   </p>
                   <div className="flex items-center gap-2">
@@ -405,19 +544,21 @@ export default function GoalForm({ categories, initialData }: Props) {
                       onChange={(e) => setHabitFreqCount(Math.max(1, parseInt(e.target.value) || 1))}
                       min="1"
                       max="24"
-                      className="w-16 px-2 py-2.5 rounded-xl bg-[#16112e] border border-[#3b2d6e] text-[#ede9ff] text-sm text-center focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      className="w-16 px-2 py-2.5 rounded-xl border text-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40"
+                      style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
                     />
-                    <span className="text-[#9d8ac7] text-sm">times per</span>
+                    <span className="text-sm" style={{ color: "var(--theme-text-muted)" }}>times per</span>
                     <select
                       value={habitFreqType}
                       onChange={(e) => setHabitFreqType(e.target.value as "day" | "week")}
-                      className="flex-1 px-3 py-2.5 rounded-xl bg-[#16112e] border border-[#3b2d6e] text-[#ede9ff] text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      className="flex-1 px-3 py-2.5 rounded-xl border text-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40"
+                      style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
                     >
                       <option value="day">day</option>
                       <option value="week">week</option>
                     </select>
                   </div>
-                  <p className="text-xs text-[#6b5a9e]">
+                  <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
                     → {habitTotalMilestones} checkboxes will be generated
                     {habitFreqType === "day"
                       ? ` (${habitFreqCount}×/day × ${parseInt(guideTarget)} days)`
@@ -453,7 +594,8 @@ export default function GoalForm({ categories, initialData }: Props) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex-1 py-3 border border-[#3b2d6e] text-[#9d8ac7] rounded-xl font-semibold hover:bg-[#1e1740] transition-colors"
+          className="flex-1 py-3 rounded-xl font-semibold border transition-colors"
+          style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
         >
           Cancel
         </button>
