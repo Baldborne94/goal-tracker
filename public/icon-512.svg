@@ -1,7 +1,130 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#0f0826"/>
-  <rect x="236" y="48" width="40" height="320" rx="10" fill="#f59e0b"/>
-  <rect x="160" y="210" width="192" height="36" rx="10" fill="#c4b5fd"/>
-  <rect x="228" y="388" width="56" height="76" rx="10" fill="#9d8ac7"/>
-  <polygon points="256,48 236,110 276,110" fill="#fbbf24"/>
+  <defs>
+    <radialGradient id="bgG" cx="50%" cy="38%">
+      <stop offset="0%" stop-color="#1a0a3e"/>
+      <stop offset="100%" stop-color="#07021a"/>
+    </radialGradient>
+    <linearGradient id="shieldG" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#2d1270"/>
+      <stop offset="100%" stop-color="#120838"/>
+    </linearGradient>
+    <linearGradient id="bladeG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="35%" stop-color="#e0e7ff"/>
+      <stop offset="65%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <radialGradient id="glowG" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gemG" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#f0abfc"/>
+      <stop offset="45%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </radialGradient>
+    <radialGradient id="orbG" cx="40%" cy="40%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="url(#bgG)"/>
+
+  <!-- Star field -->
+  <circle cx="70" cy="68" r="3.2" fill="white" opacity="0.7"/>
+  <circle cx="448" cy="54" r="2.4" fill="white" opacity="0.5"/>
+  <circle cx="465" cy="155" r="3.7" fill="#c4b5fd" opacity="0.55"/>
+  <circle cx="42" cy="240" r="2.4" fill="white" opacity="0.4"/>
+  <circle cx="472" cy="316" r="3.2" fill="#fde68a" opacity="0.55"/>
+  <circle cx="54" cy="406" r="2.7" fill="white" opacity="0.5"/>
+  <circle cx="438" cy="448" r="3.5" fill="white" opacity="0.4"/>
+  <circle cx="112" cy="460" r="2.4" fill="#c4b5fd" opacity="0.45"/>
+  <circle cx="406" cy="75" r="2.7" fill="#fde68a" opacity="0.5"/>
+  <circle cx="88" cy="135" r="2" fill="white" opacity="0.35"/>
+  <circle cx="430" cy="180" r="1.8" fill="#c4b5fd" opacity="0.4"/>
+
+  <!-- Shield outer -->
+  <path d="M256 43 L435 125 L435 288 Q435 427 256 475 Q77 427 77 288 L77 125 Z"
+        fill="url(#shieldG)" stroke="#6d28d9" stroke-width="6.5" stroke-linejoin="round"/>
+
+  <!-- Shield inner border (gold) -->
+  <path d="M256 78 L403 149 L403 293 Q403 400 256 440 Q109 400 109 293 L109 149 Z"
+        fill="none" stroke="#f59e0b" stroke-width="3.5" opacity="0.5" stroke-linejoin="round"/>
+
+  <!-- Shield inner border (subtle violet) -->
+  <path d="M256 96 L387 163 L387 299 Q387 390 256 422 Q125 390 125 299 L125 163 Z"
+        fill="none" stroke="#8b5cf6" stroke-width="2" opacity="0.3" stroke-linejoin="round"/>
+
+  <!-- Glow behind sword -->
+  <ellipse cx="256" cy="240" rx="43" ry="139" fill="url(#glowG)"/>
+
+  <!-- Sword blade -->
+  <rect x="245" y="56" width="22" height="280" rx="5" fill="url(#bladeG)"/>
+  <!-- Blade center shine -->
+  <rect x="251" y="56" width="8" height="253" rx="4" fill="white" opacity="0.22"/>
+
+  <!-- Sword tip -->
+  <polygon points="256,29 237,90 275,90" fill="#dde5f0"/>
+  <polygon points="256,29 252,90 260,90" fill="white" opacity="0.5"/>
+
+  <!-- Cross guard body -->
+  <rect x="160" y="221" width="192" height="40" rx="15" fill="#d97706"/>
+  <rect x="160" y="221" width="192" height="17" rx="15" fill="#fde68a" opacity="0.45"/>
+
+  <!-- Guard left orb -->
+  <circle cx="160" cy="241" r="24" fill="#b45309"/>
+  <circle cx="160" cy="241" r="18.5" fill="url(#orbG)"/>
+  <circle cx="153" cy="234" r="6" fill="white" opacity="0.55"/>
+
+  <!-- Guard right orb -->
+  <circle cx="352" cy="241" r="24" fill="#b45309"/>
+  <circle cx="352" cy="241" r="18.5" fill="url(#orbG)"/>
+  <circle cx="345" cy="234" r="6" fill="white" opacity="0.55"/>
+
+  <!-- Central gem -->
+  <circle cx="256" cy="241" r="27" fill="#3b0764"/>
+  <circle cx="256" cy="241" r="21" fill="url(#gemG)"/>
+  <circle cx="248" cy="233" r="7.5" fill="white" opacity="0.6"/>
+  <circle cx="264" cy="249" r="3.2" fill="white" opacity="0.2"/>
+
+  <!-- Sword handle -->
+  <rect x="241" y="277" width="30" height="91" rx="9" fill="#92400e"/>
+  <!-- Handle wrapping bands -->
+  <rect x="241" y="293" width="30" height="6.5" rx="2.5" fill="#f59e0b" opacity="0.7"/>
+  <rect x="241" y="311" width="30" height="6.5" rx="2.5" fill="#f59e0b" opacity="0.7"/>
+  <rect x="241" y="329" width="30" height="6.5" rx="2.5" fill="#f59e0b" opacity="0.7"/>
+  <rect x="241" y="347" width="30" height="6.5" rx="2.5" fill="#f59e0b" opacity="0.7"/>
+
+  <!-- Pommel -->
+  <ellipse cx="256" cy="376" rx="31" ry="21" fill="#b45309"/>
+  <ellipse cx="256" cy="373" rx="21" ry="15" fill="url(#orbG)"/>
+  <circle cx="256" cy="371" r="6.5" fill="white" opacity="0.35"/>
+
+  <!-- Crown at top of shield -->
+  <rect x="214" y="101" width="15" height="29" rx="4" fill="#f59e0b" opacity="0.85"/>
+  <rect x="249" y="88" width="15" height="42" rx="4" fill="#f59e0b"/>
+  <rect x="284" y="101" width="15" height="29" rx="4" fill="#f59e0b" opacity="0.85"/>
+  <circle cx="221" cy="98" r="8" fill="#fbbf24"/>
+  <circle cx="256" cy="85" r="9.5" fill="#fbbf24"/>
+  <circle cx="291" cy="98" r="8" fill="#fbbf24"/>
+
+  <!-- Side diamond decorations -->
+  <polygon points="130,187 144,203 130,219 116,203" fill="#c4b5fd" opacity="0.45"/>
+  <polygon points="382,187 396,203 382,219 368,203" fill="#c4b5fd" opacity="0.45"/>
+  <polygon points="130,299 143,313 130,327 117,313" fill="#c4b5fd" opacity="0.3"/>
+  <polygon points="382,299 395,313 382,327 369,313" fill="#c4b5fd" opacity="0.3"/>
+
+  <!-- Sparkle accents -->
+  <line x1="122" y1="154" x2="122" y2="176" stroke="#fde68a" stroke-width="3.2" opacity="0.5"/>
+  <line x1="111" y1="165" x2="133" y2="165" stroke="#fde68a" stroke-width="3.2" opacity="0.5"/>
+  <line x1="390" y1="154" x2="390" y2="176" stroke="#fde68a" stroke-width="3.2" opacity="0.5"/>
+  <line x1="379" y1="165" x2="401" y2="165" stroke="#fde68a" stroke-width="3.2" opacity="0.5"/>
+
+  <!-- Additional corner sparkles (bottom) -->
+  <line x1="128" y1="352" x2="128" y2="368" stroke="#fde68a" stroke-width="2.5" opacity="0.35"/>
+  <line x1="120" y1="360" x2="136" y2="360" stroke="#fde68a" stroke-width="2.5" opacity="0.35"/>
+  <line x1="384" y1="352" x2="384" y2="368" stroke="#fde68a" stroke-width="2.5" opacity="0.35"/>
+  <line x1="376" y1="360" x2="392" y2="360" stroke="#fde68a" stroke-width="2.5" opacity="0.35"/>
 </svg>
