@@ -72,8 +72,6 @@ export async function PATCH(
         categoryId: goal.categoryId,
         userId: session.user.id,
         points: goal.points,
-        guideType: goal.guideType,
-        guideTarget: goal.guideTarget,
         reminderTime: goal.reminderTime,
         reminderFrequency: (goal as { reminderFrequency?: string }).reminderFrequency,
         reminderDay: (goal as { reminderDay?: number }).reminderDay,
