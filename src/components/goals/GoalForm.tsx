@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 type Category = { id: string; name: string; color: string };
 
-type ReminderFrequency = "daily" | "weekly" | "monthly";
+type ReminderFrequency = "daily" | "weekly" | "monthly" | "custom";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -21,6 +21,7 @@ type Props = {
     reminderTime?: string;
     reminderFrequency?: string;
     reminderDay?: number | null;
+    reminderDays?: string | null;
     tags: string[];
     milestones: string[];
   };
@@ -63,6 +64,9 @@ export default function GoalForm({ categories, initialData }: Props) {
   );
   const [reminderDay, setReminderDay] = useState<number>(
     initialData?.reminderDay ?? (new Date().getDay())
+  );
+  const [reminderDays, setReminderDays] = useState<number[]>(
+    initialData?.reminderDays ? initialData.reminderDays.split(",").map(Number) : [new Date().getDay()]
   );
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
@@ -157,7 +161,8 @@ export default function GoalForm({ categories, initialData }: Props) {
         ...form,
         reminderTime: form.reminderTime || null,
         reminderFrequency: form.reminderTime ? reminderFrequency : null,
-        reminderDay: form.reminderTime && reminderFrequency !== "daily" ? reminderDay : null,
+        reminderDay: form.reminderTime && reminderFrequency !== "daily" && reminderFrequency !== "custom" ? reminderDay : null,
+        reminderDays: form.reminderTime && reminderFrequency === "custom" ? reminderDays.join(",") : null,
         tags,
         milestones,
         guideType: guideType || null,
@@ -245,13 +250,13 @@ export default function GoalForm({ categories, initialData }: Props) {
         <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🔔 Reminder</label>
 
         {/* Frequency tabs */}
-        <div className="flex gap-1 mb-2 p-1 rounded-xl" style={{ background: "var(--theme-bg)" }}>
-          {(["daily", "weekly", "monthly"] as ReminderFrequency[]).map((f) => (
+        <div className="grid grid-cols-4 gap-1 mb-2 p-1 rounded-xl" style={{ background: "var(--theme-bg)" }}>
+          {(["daily", "weekly", "monthly", "custom"] as ReminderFrequency[]).map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setReminderFrequency(f)}
-              className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize"
+              className="py-1.5 rounded-lg text-xs font-medium transition-colors capitalize"
               style={
                 reminderFrequency === f
                   ? { background: "var(--theme-accent)", color: "#000" }
@@ -301,6 +306,36 @@ export default function GoalForm({ categories, initialData }: Props) {
           </div>
         )}
 
+        {/* Multi-day picker for custom */}
+        {reminderFrequency === "custom" && (
+          <div className="mb-2">
+            <p className="text-xs mb-1.5" style={{ color: "var(--theme-text-muted)" }}>Pick one or more days</p>
+            <div className="flex gap-1">
+              {WEEKDAYS.map((day, i) => {
+                const selected = reminderDays.includes(i);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => {
+                      if (selected && reminderDays.length === 1) return; // keep at least one
+                      setReminderDays(selected ? reminderDays.filter((d) => d !== i) : [...reminderDays, i].sort((a, b) => a - b));
+                    }}
+                    className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    style={
+                      selected
+                        ? { background: "var(--theme-accent)", color: "#000" }
+                        : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", border: "1px solid" }
+                    }
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Time picker */}
         <div className="flex items-center gap-3">
           <input
@@ -323,10 +358,12 @@ export default function GoalForm({ categories, initialData }: Props) {
         </div>
         <p className="text-xs mt-1" style={{ color: "var(--theme-text-muted)" }}>
           {reminderFrequency === "weekly"
-            ? `Push notification every ${WEEKDAYS[reminderDay]}${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            ? `Every ${WEEKDAYS[reminderDay]}${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
             : reminderFrequency === "monthly"
-            ? `Push notification on day ${reminderDay} of each month${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
-            : `Push notification every day${form.reminderTime ? ` at ${form.reminderTime}` : ""}`}
+            ? `Day ${reminderDay} of each month${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            : reminderFrequency === "custom"
+            ? `Every ${reminderDays.map((d) => WEEKDAYS[d]).join(", ")}${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            : `Every day${form.reminderTime ? ` at ${form.reminderTime}` : ""}`}
         </p>
       </div>
 

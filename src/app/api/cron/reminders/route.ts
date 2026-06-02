@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       pushSubscriptions: { select: { endpoint: true, p256dh: true, auth: true } },
       goals: {
         where: { status: "active" },
-        select: { id: true, title: true, reminderTime: true, reminderFrequency: true, reminderDay: true, targetDate: true },
+        select: { id: true, title: true, reminderTime: true, reminderFrequency: true, reminderDay: true, reminderDays: true, targetDate: true },
       },
     },
   });
@@ -71,10 +71,12 @@ export async function GET(req: Request) {
     // Reminder notifications (daily / weekly / monthly)
     for (const goal of user.goals.filter((g) => g.reminderTime === userTime)) {
       const freq = goal.reminderFrequency ?? "daily";
+      const customDays = goal.reminderDays ? goal.reminderDays.split(",").map(Number) : [];
       const shouldFire =
         freq === "daily" ||
         (freq === "weekly" && goal.reminderDay === dayOfWeek) ||
-        (freq === "monthly" && goal.reminderDay === dayOfMonth);
+        (freq === "monthly" && goal.reminderDay === dayOfMonth) ||
+        (freq === "custom" && customDays.includes(dayOfWeek));
 
       if (!shouldFire) continue;
 
