@@ -38,7 +38,7 @@ export default async function EditGoalPage({
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">✏️ Edit quest</h1>
+      <h1 className="text-2xl font-bold text-white mb-6">✏️ Edit quest</h1>
       <GoalForm categories={categories} initialData={initialData} />
     </div>
   );
