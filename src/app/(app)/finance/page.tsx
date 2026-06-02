@@ -34,9 +34,9 @@ export default async function FinancePage() {
     }
   }
 
-  // Last 6 months trend (always relative to now)
+  // Last 12 months trend (always relative to now)
   const trend = [];
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 11; i >= 0; i--) {
     const d = new Date(year, m - 1 - i, 1);
     const s = new Date(d.getFullYear(), d.getMonth(), 1);
     const e = new Date(d.getFullYear(), d.getMonth() + 1, 1);

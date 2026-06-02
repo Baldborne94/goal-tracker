@@ -121,6 +121,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
   const [savingBudget, setSavingBudget] = useState(false);
+  const [filterCat, setFilterCat] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clearingMonth, setClearingMonth] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -236,6 +237,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     setMonth(newMonth);
     setBudget(bData);
     setExpenses(eData);
+    setFilterCat(null);
     setLoading(false);
   }
 
@@ -596,16 +598,19 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         </div>
       )}
 
-      {/* 6-month trend */}
+      {/* 12-month trend */}
       <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-        <h2 className="font-semibold text-[#c4b5fd] mb-3 text-sm">📈 6-month trend</h2>
+        <h2 className="font-semibold text-[#c4b5fd] mb-3 text-sm">📈 12-month trend</h2>
         {trendDiff !== null && (
           <div className={`flex items-center gap-2 text-xs mb-4 px-3 py-2 rounded-xl ${trendDiff > 0 ? "bg-red-950/30 border border-red-800/30 text-red-400" : "bg-green-950/30 border border-green-800/30 text-green-400"}`}>
             <span>{trendDiff > 0 ? "↑" : "↓"}</span>
-            <span>{trendPct !== null ? `${trendPct}%` : "—"} vs last month — €{Math.abs(trendDiff).toFixed(2)} {trendDiff > 0 ? "more" : "less"} spent</span>
+            <span>
+              {trendDiff > 0 ? "Spent" : "Saved"} €{Math.abs(trendDiff).toFixed(2)} {trendDiff > 0 ? "more" : "less"} than last month
+              {trendPct !== null ? ` · ${trendPct}% ${trendDiff > 0 ? "increase" : "decrease"}` : ""}
+            </span>
           </div>
         )}
-        <div className="flex items-end gap-2 mb-2" style={{ height: "96px" }}>
+        <div className="flex items-end gap-1 mb-2" style={{ height: "96px" }}>
           {trend.map(t => {
             const height = maxTrend > 0 ? (t.spent / maxTrend) * 80 : 0;
             const isSel = t.month === month;
@@ -659,6 +664,33 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           </div>
         </div>
 
+        {/* Category filter chips */}
+        {expenses.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            <button
+              onClick={() => setFilterCat(null)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${filterCat === null ? "border-amber-500/60 bg-amber-900/20 text-amber-400" : ""}`}
+              style={filterCat !== null ? { borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" } : {}}
+            >
+              All
+            </button>
+            {catBreakdown.map(({ cat }) => {
+              const s = CATS[cat] ?? CATS.other;
+              const active = filterCat === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCat(active ? null : cat)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${active ? "border-amber-500/60 bg-amber-900/20 text-amber-400" : ""}`}
+                  style={active ? {} : { borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+                >
+                  {s.icon} {s.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {loading ? (
           <p className="text-sm text-center py-4" style={{ color: "var(--theme-text-muted)" }}>Loading...</p>
         ) : expenses.length === 0 ? (
@@ -669,11 +701,12 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         ) : (
           <div className="space-y-4">
             {(() => {
+              const filtered = filterCat ? expenses.filter(e => e.category === filterCat) : expenses;
               const todayKey = toDateKey(new Date());
               const yestDate = new Date(); yestDate.setDate(yestDate.getDate() - 1);
               const yesterKey = toDateKey(yestDate);
               const byDay: { dateKey: string; label: string; total: number; items: typeof expenses }[] = [];
-              for (const e of expenses) {
+              for (const e of filtered) {
                 const dateKey = e.date.slice(0, 10);
                 const existing = byDay.find(d => d.dateKey === dateKey);
                 if (existing) { existing.items.push(e); existing.total += e.amount; }
