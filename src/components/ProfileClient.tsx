@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
 import { updateProfileName, updateTheme, updateReminder } from "@/app/(app)/profile/actions";
+import NotificationButton from "@/components/NotificationButton";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -362,6 +363,13 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             <p className="text-xs text-[#4a3a7a]">Works while the app is open in your browser.</p>
           </div>
         )}
+      </div>
+
+      {/* Push notifications */}
+      <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">📱 Push Notifications</h2>
+        <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>Receive quest reminders even when the app is closed.</p>
+        <NotificationButton />
       </div>
 
       {/* Danger zone */}
