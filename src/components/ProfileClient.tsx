@@ -152,15 +152,15 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                 <button
                   onClick={saveName}
                   disabled={nameStatus === "saving" || nameStatus === "saved"}
-                  className={`text-xs font-bold px-2 py-1 rounded border disabled:opacity-50 flex-shrink-0 transition-colors ${
+                  className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border transition-all flex-shrink-0 disabled:opacity-60 ${
                     nameStatus === "saved"
-                      ? "bg-green-900/40 border-green-600/50 text-green-400"
+                      ? "bg-green-900/40 border-green-600/60 text-green-400"
                       : nameStatus === "error"
-                      ? "bg-red-900/40 border-red-600/50 text-red-400"
+                      ? "bg-red-900/40 border-red-600/60 text-red-400"
                       : "bg-amber-900/30 border-amber-700/40 text-amber-400"
                   }`}
                 >
-                  {nameStatus === "saving" ? "..." : nameStatus === "saved" ? "✓ Saved!" : nameStatus === "error" ? "✗ Error" : "✓"}
+                  {nameStatus === "saving" ? "..." : nameStatus === "saved" ? "✓ Saved!" : nameStatus === "error" ? "✗ Error" : "Save"}
                 </button>
                 <button
                   onClick={() => { setEditingName(false); setNameInput(displayName); }}
