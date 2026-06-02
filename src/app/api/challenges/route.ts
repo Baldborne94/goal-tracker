@@ -8,9 +8,30 @@ export async function GET() {
   const userId = session.user.id;
   const today = new Date().toISOString().slice(0, 10);
 
-  const challenges = await prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
+  const DEFAULT_CHALLENGES = [
+    { id: `ch_milestone`, title: "Early Bird", description: "Complete at least 1 milestone today", xp: 15, type: "complete_milestone" },
+    { id: `ch_expense`,   title: "Budget Tracker", description: "Log at least 1 expense today", xp: 10, type: "log_expense" },
+    { id: `ch_habit`,     title: "Habit Warrior", description: "Complete all your habits today", xp: 20, type: "check_habit" },
+    { id: `ch_weight`,    title: "Iron Scale", description: "Log your weight today", xp: 10, type: "log_weight" },
+    { id: `ch_meal`,      title: "Mindful Eater", description: "Log a meal today", xp: 10, type: "log_meal" },
+  ];
+
+  let challenges = await prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
     `SELECT id, title, description, xp, type FROM "DailyChallenge" ORDER BY xp ASC`
   );
+
+  // Auto-seed if table is empty (seed.ts may have failed silently in production)
+  if (challenges.length === 0) {
+    for (const ch of DEFAULT_CHALLENGES) {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "DailyChallenge" ("id","title","description","xp","type") VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
+        ch.id, ch.title, ch.description, ch.xp, ch.type
+      );
+    }
+    challenges = await prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
+      `SELECT id, title, description, xp, type FROM "DailyChallenge" ORDER BY xp ASC`
+    );
+  }
 
   if (challenges.length === 0) return NextResponse.json([]);
 
