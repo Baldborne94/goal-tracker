@@ -37,7 +37,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay, reminderDays } = body;
+  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType } = body;
 
   const existing = await prisma.goal.findFirst({
     where: { id, userId: session.user.id },
@@ -68,6 +68,10 @@ export async function PATCH(
       reminderDays: reminderTime !== undefined
         ? (reminderTime && reminderFrequency === "custom" ? (reminderDays || null) : null)
         : (existing as typeof existing & { reminderDays?: string | null }).reminderDays,
+      isRecurring: isRecurring !== undefined ? !!isRecurring : existing.isRecurring,
+      recurrenceType: isRecurring !== undefined
+        ? (isRecurring ? (recurrenceType || "monthly") : null)
+        : existing.recurrenceType,
       completedAt:
         isNowComplete && !wasCompleted ? new Date() : existing.completedAt,
     },
