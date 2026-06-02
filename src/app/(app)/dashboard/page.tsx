@@ -176,6 +176,9 @@ export default async function DashboardPage() {
         )}
       </div>
 
+      {/* Daily challenges */}
+      <DailyChallenges />
+
       {/* Today's focus */}
       {todayFocus.length > 0 && (
         <div className="mb-6">
@@ -272,9 +275,6 @@ export default async function DashboardPage() {
           </p>
         )}
       </Link>
-
-      {/* Daily challenges */}
-      <DailyChallenges />
 
       {/* Recent goals */}
       <div className="flex items-center justify-between mb-3">
