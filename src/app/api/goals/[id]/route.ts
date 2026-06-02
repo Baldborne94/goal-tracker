@@ -37,7 +37,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay } = body;
+  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay, reminderDays } = body;
 
   const existing = await prisma.goal.findFirst({
     where: { id, userId: session.user.id },
@@ -65,6 +65,9 @@ export async function PATCH(
       reminderDay: reminderTime !== undefined
         ? (reminderTime && reminderDay != null ? parseInt(String(reminderDay)) : null)
         : existing.reminderDay,
+      reminderDays: reminderTime !== undefined
+        ? (reminderTime && reminderFrequency === "custom" ? (reminderDays || null) : null)
+        : (existing as typeof existing & { reminderDays?: string | null }).reminderDays,
       completedAt:
         isNowComplete && !wasCompleted ? new Date() : existing.completedAt,
     },
