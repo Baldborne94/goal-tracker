@@ -2,6 +2,35 @@
 
 import { useState, useMemo } from "react";
 
+const ISYBANK_CAT_MAP: Record<string, string> = {
+  "ristoranti e bar": "eating_out",
+  "bar, caffè e gelaterie": "eating_out",
+  "bar, caffe e gelaterie": "eating_out",
+  "generi alimentari e supermercato": "groceries",
+  "carburanti": "transport",
+  "treno, aereo, nave": "transport",
+  "taxi/auto a noleggio": "transport",
+  "spese mediche": "health",
+  "cura della persona": "health",
+  "farmaci e integratori": "health",
+  "domiciliazioni e utenze": "utilities",
+  "utenze": "utilities",
+  "bollette": "utilities",
+  "casa varie": "housing",
+  "affitto e mutuo": "housing",
+  "cellulare": "subscriptions",
+  "abbonamenti e streaming": "subscriptions",
+  "abbigliamento e accessori": "other",
+  "regali": "gifts",
+  "viaggi e vacanze": "travel",
+  "hotel e alloggi": "travel",
+  "cultura e intrattenimento": "culture",
+  "hobby": "hobby",
+  "istruzione": "culture",
+  "addebiti vari": "other",
+  "altre uscite": "other",
+};
+
 const CATS: Record<string, { icon: string; color: string; label: string }> = {
   groceries:     { icon: "🛒", color: "#f59e0b", label: "Groceries" },
   eating_out:    { icon: "🍽️", color: "#f97316", label: "Eating out" },
@@ -96,7 +125,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [closingMonth, setClosingMonth] = useState(false);
   const [closeResult, setCloseResult] = useState<{ success?: boolean } | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [csvRows, setCsvRows] = useState<{ date: string; amount: number; category: string; description: string }[]>([]);
+  const [csvRows, setCsvRows] = useState<{ date: string; amount: number; category: string; description: string; merchant?: string }[]>([]);
   const [importing, setImporting] = useState(false);
   const [importDone, setImportDone] = useState(0);
 
@@ -274,6 +303,44 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     reader.readAsText(file);
   }
 
+  async function parseExcelFile(file: File) {
+    const { read, utils } = await import("xlsx");
+    const buffer = await file.arrayBuffer();
+    const wb = read(buffer, { type: "array" });
+    const sheet = wb.Sheets["Lista Operazioni"] ?? wb.Sheets[wb.SheetNames[0]];
+    if (!sheet) return;
+    // Row 1-2: metadata, row 3: headers, row 4+: data
+    const raw: string[][] = utils.sheet_to_json(sheet, { header: 1, defval: "" }) as string[][];
+    // Find header row (contains "Tipologia")
+    const headerIdx = raw.findIndex(r => r.some(c => String(c).trim() === "Tipologia"));
+    if (headerIdx < 0) return;
+    const headers = raw[headerIdx].map(h => String(h).trim());
+    const iType = headers.indexOf("Tipologia");
+    const iCat = headers.indexOf("Dettaglio Categoria");
+    const iDate = headers.indexOf("Data");
+    const iOp = headers.indexOf("Operazione");
+    const iImporto = headers.indexOf("Importo");
+    const rows = raw.slice(headerIdx + 1)
+      .map(r => {
+        const tipo = String(r[iType] ?? "").trim();
+        if (tipo !== "Uscite") return null;
+        const importo = parseFloat(String(r[iImporto] ?? "").replace(",", "."));
+        if (isNaN(importo) || importo >= 0) return null;
+        const amount = Math.abs(importo);
+        const rawDate = String(r[iDate] ?? "").trim(); // dd/MM/yyyy
+        const parts = rawDate.split("/");
+        const date = parts.length === 3 ? `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}` : rawDate;
+        const detCat = String(r[iCat] ?? "").trim().toLowerCase();
+        const category = ISYBANK_CAT_MAP[detCat] ?? "other";
+        const merchant = String(r[iOp] ?? "").trim() || undefined;
+        return { date, amount, category, description: merchant ?? "", merchant };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+    setCsvRows(rows);
+    setImportDone(0);
+    setShowImport(true);
+  }
+
   async function confirmImport() {
     setImporting(true);
     let done = 0;
@@ -311,6 +378,10 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-[#ede9ff]">💰 Finance</h1>
         <div className="flex gap-2">
+          <label className="px-3 py-2 rounded-xl text-sm font-medium cursor-pointer active:scale-95 transition-all border" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
+            📊 ISYbank
+            <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={e => e.target.files?.[0] && parseExcelFile(e.target.files[0])} />
+          </label>
           <label className="px-3 py-2 rounded-xl text-sm font-medium cursor-pointer active:scale-95 transition-all border" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
             📥 CSV
             <input type="file" accept=".csv,text/csv" className="hidden" onChange={e => e.target.files?.[0] && parseCsvFile(e.target.files[0])} />
