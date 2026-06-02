@@ -24,7 +24,7 @@ export default async function EditGoalPage({
 
   if (!goal) notFound();
 
-  const g = goal as typeof goal & { reminderTime?: string | null; reminderFrequency?: string | null; reminderDay?: number | null; reminderDays?: string | null };
+  const g = goal as typeof goal & { reminderTime?: string | null; reminderFrequency?: string | null; reminderDay?: number | null; reminderDays?: string | null; isRecurring?: boolean; recurrenceType?: string | null };
   const initialData = {
     id: goal.id,
     title: goal.title,
@@ -36,6 +36,8 @@ export default async function EditGoalPage({
     reminderFrequency: g.reminderFrequency || "daily",
     reminderDay: g.reminderDay ?? undefined,
     reminderDays: g.reminderDays ?? null,
+    isRecurring: g.isRecurring ?? false,
+    recurrenceType: g.recurrenceType ?? null,
     tags: goal.tags.map((gt: { tag: { name: string } }) => gt.tag.name),
     milestones: goal.milestones.map((m: { title: string }) => m.title),
   };
