@@ -35,6 +35,9 @@ async function ensureTables() {
       CONSTRAINT "UserDailyChallenge_challengeId_fkey" FOREIGN KEY ("challengeId") REFERENCES "DailyChallenge"("id") ON DELETE CASCADE ON UPDATE CASCADE
     )
   `);
+  // Remove any old challenges with random IDs (from seed.ts random generation)
+  const fixedIds = DEFAULT_CHALLENGES.map(c => `'${c.id}'`).join(",");
+  await prisma.$executeRawUnsafe(`DELETE FROM "DailyChallenge" WHERE id NOT IN (${fixedIds})`);
   for (const ch of DEFAULT_CHALLENGES) {
     await prisma.$executeRawUnsafe(
       `INSERT INTO "DailyChallenge" ("id","title","description","xp","type") VALUES ($1,$2,$3,$4,$5) ON CONFLICT ("id") DO NOTHING`,
