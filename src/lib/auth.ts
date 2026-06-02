@@ -14,6 +14,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      checks: ["state"], // PKCE disabled: on Android PWA the code_verifier cookie is not shared between the PWA web view and the Chrome Custom Tab that handles the OAuth redirect, causing the first login attempt to always fail
     }),
   ],
   callbacks: {
