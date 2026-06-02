@@ -98,7 +98,9 @@ model Goal {
   guideType    String?   // "finance" | "weight" | "habits"
   guideTarget  Float?
   guideStart   Float?
-  reminderTime String?   // "HH:MM" e.g. "09:00"
+  reminderTime      String?   // "HH:MM" e.g. "09:00"
+  reminderFrequency String?   // "daily" | "weekly" | "monthly"
+  reminderDay       Int?      // weekly: 0-6 (Sun=0), monthly: 1-31
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
