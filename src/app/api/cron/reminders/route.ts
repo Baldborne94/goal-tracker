@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       pushSubscriptions: { select: { endpoint: true, p256dh: true, auth: true } },
       goals: {
         where: { status: "active" },
-        select: { id: true, title: true, reminderTime: true, targetDate: true },
+        select: { id: true, title: true, reminderTime: true, reminderFrequency: true, reminderDay: true, targetDate: true },
       },
     },
   });
@@ -64,18 +64,30 @@ export async function GET(req: Request) {
       hour12: false,
     }).format(now);
 
-    // Daily reminder notifications
+    const todayLocal = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(now);
+    const dayOfWeek = new Date(now.toLocaleString("en-US", { timeZone: tz })).getDay(); // 0=Sun
+    const dayOfMonth = parseInt(todayLocal.split("-")[2]);
+
+    // Reminder notifications (daily / weekly / monthly)
     for (const goal of user.goals.filter((g) => g.reminderTime === userTime)) {
+      const freq = goal.reminderFrequency ?? "daily";
+      const shouldFire =
+        freq === "daily" ||
+        (freq === "weekly" && goal.reminderDay === dayOfWeek) ||
+        (freq === "monthly" && goal.reminderDay === dayOfMonth);
+
+      if (!shouldFire) continue;
+
+      const freqLabel = freq === "weekly" ? "weekly" : freq === "monthly" ? "monthly" : "daily";
       sent += await sendPush(webpush, user.pushSubscriptions, {
         title: `⚔️ Quest reminder: ${goal.title}`,
-        body: "Time to work on your quest!",
+        body: `Your ${freqLabel} reminder — time to work on your quest!`,
         tag: `goal-${goal.id}`,
       });
     }
 
     // Deadline warning: fire once when the user's local time is 09:00 and deadline is in 3 days
     if (userTime === "09:00") {
-      const todayLocal = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(now); // YYYY-MM-DD
       const [y, mo, d] = todayLocal.split("-").map(Number);
       const deadlineDate = new Date(y, mo - 1, d + 3);
       const deadlineStr = `${deadlineDate.getFullYear()}-${String(deadlineDate.getMonth() + 1).padStart(2, "0")}-${String(deadlineDate.getDate()).padStart(2, "0")}`;
