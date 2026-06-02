@@ -46,17 +46,21 @@ async function ensureTables() {
   }
 }
 
+let tablesReady = false;
+
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = session.user.id;
   const today = new Date().toISOString().slice(0, 10);
 
-  // Ensure tables exist and challenges are seeded (idempotent, safe on every call)
-  try {
-    await ensureTables();
-  } catch {
-    return NextResponse.json([]);
+  if (!tablesReady) {
+    try {
+      await ensureTables();
+      tablesReady = true;
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 
   const challenges = await prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
