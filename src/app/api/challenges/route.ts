@@ -71,23 +71,31 @@ export async function GET() {
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dayEnd = new Date(dayStart.getTime() + 86400000);
 
-  const [milestoneCount, expenseCount, habits, weightCount, mealCount] = await Promise.all([
-    prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } }),
-    prisma.expense.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }),
-    prisma.habit.findMany({ where: { userId }, include: { logs: { where: { date: today } } } }),
-    prisma.weightEntry.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }),
-    prisma.mealLog.count({ where: { userId, date: today } }),
-  ]);
-
-  const allHabitsDone = habits.length > 0 && habits.every((h) => h.logs.length > 0);
-
-  const conditionMap: Record<string, boolean> = {
-    complete_milestone: milestoneCount >= 1,
-    log_expense: expenseCount >= 1,
-    check_habit: allHabitsDone,
-    log_weight: weightCount >= 1,
-    log_meal: mealCount >= 1,
+  let conditionMap: Record<string, boolean> = {
+    complete_milestone: false,
+    log_expense: false,
+    check_habit: false,
+    log_weight: false,
+    log_meal: false,
   };
+
+  try {
+    const [milestoneCount, expenseCount, habits, weightCount, mealCount] = await Promise.all([
+      prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } }),
+      prisma.expense.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }),
+      prisma.habit.findMany({ where: { userId }, include: { logs: { where: { date: today } } } }),
+      prisma.weightEntry.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }),
+      prisma.mealLog.count({ where: { userId, date: today } }),
+    ]);
+    const allHabitsDone = habits.length > 0 && habits.every((h: { logs: unknown[] }) => h.logs.length > 0);
+    conditionMap = {
+      complete_milestone: milestoneCount >= 1,
+      log_expense: expenseCount >= 1,
+      check_habit: allHabitsDone,
+      log_weight: weightCount >= 1,
+      log_meal: mealCount >= 1,
+    };
+  } catch { /* challenges show as locked if condition checks fail */ }
 
   const result = challenges.map((c) => {
     const completion = completions.find((co) => co.challengeId === c.id);
