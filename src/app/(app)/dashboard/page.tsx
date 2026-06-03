@@ -5,6 +5,7 @@ import { formatDate, calculateStreak } from "@/lib/utils";
 import { getLevelProgress } from "@/lib/levels";
 import LogoutButton from "@/components/LogoutButton";
 import DailyChallenges from "@/components/DailyChallenges";
+import OnboardingScreen from "@/components/OnboardingScreen";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -161,6 +162,11 @@ export default async function DashboardPage() {
         </div>
         <LogoutButton />
       </div>
+
+      {/* Onboarding — shown when user has no quests yet */}
+      {active === 0 && completed === 0 ? (
+        <OnboardingScreen name={user?.name} />
+      ) : (<>
 
       {/* XP card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
@@ -484,6 +490,7 @@ export default async function DashboardPage() {
       >
         +
       </Link>
+      </>)}
     </div>
   );
 }
