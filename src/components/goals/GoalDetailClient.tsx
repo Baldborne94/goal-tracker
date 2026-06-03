@@ -171,6 +171,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
   const isCompleted = goal.status === "completed";
   const isArchived = goal.status === "archived";
+  const isOverdue = !isCompleted && !isArchived && !!goal.targetDate && goal.targetDate.slice(0, 10) < todayStr;
 
   async function handleArchive() {
     const newStatus = isArchived ? "active" : "archived";
@@ -284,6 +285,17 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           </div>
         )}
       </div>
+
+      {/* Overdue banner */}
+      {isOverdue && (
+        <div className="rounded-2xl border border-red-800/50 bg-red-950/30 px-4 py-3 mb-4 flex items-center gap-3">
+          <span className="text-xl">⚠️</span>
+          <div>
+            <p className="text-sm font-semibold text-red-400">Quest scaduta</p>
+            <p className="text-xs text-red-400/60">Deadline superata il {formattedDate}. Completa o archivia.</p>
+          </div>
+        </div>
+      )}
 
       {/* Daily check-in card */}
       {goal.dailyCheckIn && (

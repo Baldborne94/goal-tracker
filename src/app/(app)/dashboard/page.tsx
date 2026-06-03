@@ -410,13 +410,14 @@ export default async function DashboardPage() {
           {goals.map((goal: { id: string; title: string; status: string; progress: number; targetDate: Date | null; category: { name: string; color: string } | null; milestones: { completed: boolean }[] }) => {
             const milestonesDone = goal.milestones.filter((m) => m.completed).length;
             const milestonesTotal = goal.milestones.length;
+            const goalOverdue = goal.status === "active" && !!goal.targetDate && new Date(goal.targetDate) < new Date(today);
 
             return (
               <Link
                 key={goal.id}
                 href={`/goals/${goal.id}`}
                 className="block rounded-2xl border p-4 transition-colors"
-                style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}
+                style={{background: "var(--theme-surface)", borderColor: goalOverdue ? "rgba(239,68,68,0.35)" : "var(--theme-surface-border)"}}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-semibold text-[#ede9ff] line-clamp-1">{goal.title}</h3>
@@ -424,10 +425,12 @@ export default async function DashboardPage() {
                     className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium border ${
                       goal.status === "completed"
                         ? "bg-amber-900/30 text-amber-300 border-amber-700/40"
+                        : goalOverdue
+                        ? "bg-red-900/30 text-red-400 border-red-800/40"
                         : "bg-violet-900/30 text-violet-300 border-violet-700/40"
                     }`}
                   >
-                    {goal.status === "completed" ? "👑 Done" : "⚡ Active"}
+                    {goal.status === "completed" ? "👑 Done" : goalOverdue ? "⚠️ Overdue" : "⚡ Active"}
                   </span>
                 </div>
 
