@@ -423,12 +423,23 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
       {!isCompleted && (
         <div className="space-y-3 mb-4">
-          <button
-            onClick={markComplete}
-            className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all shadow-lg shadow-amber-900/30"
-          >
-            👑 Complete quest
-          </button>
+          {goal.dailyCheckIn && goal.progress < 100 ? (
+            <button
+              disabled
+              className="w-full py-3 rounded-xl font-bold opacity-40 cursor-not-allowed"
+              style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
+              title="Complete all check-ins to finish this quest"
+            >
+              👑 Complete quest ({goal.progress}% done)
+            </button>
+          ) : (
+            <button
+              onClick={markComplete}
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all shadow-lg shadow-amber-900/30"
+            >
+              👑 Complete quest
+            </button>
+          )}
         </div>
       )}
 
