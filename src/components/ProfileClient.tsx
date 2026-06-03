@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
-import { updateProfileName, updateTheme, updateReminder } from "@/app/(app)/profile/actions";
+import { updateProfileName, updateTheme, updateReminder, updateHeroClass } from "@/app/(app)/profile/actions";
 import NotificationButton from "@/components/NotificationButton";
 import { getLevel, getLevelProgress, LEVEL_THRESHOLDS } from "@/lib/levels";
+import { CLASSES, CLASS_GROUPS, getClassDef } from "@/lib/classes";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -21,8 +22,12 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 type CategoryStat = { name: string; color: string; total: number; completed: number };
 
-export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00", categoryStats = [], weeklyMilestones = [0, 0, 0, 0] }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string; categoryStats?: CategoryStat[]; weeklyMilestones?: number[] }) {
+export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00", categoryStats = [], weeklyMilestones = [0, 0, 0, 0], heroClass: initialHeroClass = null }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; heroClass?: string | null }) {
   const { theme, colors, setTheme } = useTheme();
+  const [heroClass, setHeroClass] = useState<string | null>(initialHeroClass);
+  const [classExpanded, setClassExpanded] = useState(false);
+  const [savingClass, setSavingClass] = useState(false);
+
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [confirmResetRewards, setConfirmResetRewards] = useState(false);
@@ -106,9 +111,23 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
     }
   }
 
+  async function saveClass(key: string) {
+    setSavingClass(true);
+    try {
+      const cls = CLASSES.find((c) => c.key === key)!;
+      await updateHeroClass(key);
+      await updateTheme(cls.theme);
+      setTheme(cls.theme);
+      localStorage.setItem("hero-theme", cls.theme);
+      setHeroClass(key);
+      setClassExpanded(false);
+    } catch { /* ignore */ }
+    setSavingClass(false);
+  }
+
   if (!user) return null;
 
-  const { current: level, next: nextLevel, progress: progressToNext, xpNeeded } = getLevelProgress(user.points);
+  const { current: level, next: nextLevel, progress: progressToNext, xpNeeded } = getLevelProgress(user.points, heroClass);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -276,6 +295,79 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                 <div className="text-xs text-[#9d8ac7] mt-0.5">{ur.reward.description}</div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Hero Class */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">🧬 Hero Class</h2>
+          <button
+            onClick={() => setClassExpanded(!classExpanded)}
+            className="text-xs font-semibold px-3 py-1 rounded-lg border transition-colors"
+            style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
+          >
+            {classExpanded ? "Cancel" : "Change"}
+          </button>
+        </div>
+
+        {/* Current class display */}
+        {heroClass && !classExpanded && (() => {
+          const cls = getClassDef(heroClass);
+          const currentTier = getLevel(user.points, heroClass);
+          return (
+            <div
+              className="rounded-2xl border p-4 flex items-center gap-4"
+              style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+            >
+              <span className="text-3xl flex-shrink-0">{cls.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#ede9ff]">{cls.name}</p>
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{cls.description}</p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-lg">{currentTier.icon}</p>
+                <p className="text-xs font-semibold text-amber-400">{currentTier.label}</p>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Class picker grid */}
+        {classExpanded && (
+          <div className="space-y-4">
+            {CLASS_GROUPS.map((group) => {
+              const groupClasses = CLASSES.filter((c) => c.group === group.key);
+              return (
+                <div key={group.key}>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>
+                    {group.label}
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {groupClasses.map((cls) => {
+                      const isSelected = heroClass === cls.key;
+                      return (
+                        <button
+                          key={cls.key}
+                          onClick={() => !savingClass && saveClass(cls.key)}
+                          disabled={savingClass}
+                          className="rounded-2xl border p-3 text-center transition-all active:scale-95 disabled:opacity-50"
+                          style={{
+                            background: isSelected ? group.color + "18" : "var(--theme-surface)",
+                            borderColor: isSelected ? group.color : "var(--theme-surface-border)",
+                            boxShadow: isSelected ? `0 0 0 1px ${group.color}` : "none",
+                          }}
+                        >
+                          <div className="text-2xl mb-1">{cls.icon}</div>
+                          <p className="text-xs font-bold text-[#ede9ff] leading-tight">{cls.name}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

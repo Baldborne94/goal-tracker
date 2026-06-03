@@ -18,6 +18,7 @@ model User {
   reminderEnabled     Boolean @default(false)
   reminderTime        String  @default("09:00")
   onboardingComplete  Boolean @default(false)
+  heroClass           String?
   timezone            String  @default("UTC")
   createdAt           DateTime @default(now())
 

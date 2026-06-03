@@ -1,32 +1,37 @@
-export const LEVEL_THRESHOLDS = [
-  { level: 1, label: "Recruit",  icon: "🗡️", min: 0,     max: 199 },
-  { level: 2, label: "Warrior",  icon: "⚔️", min: 200,   max: 599 },
-  { level: 3, label: "Knight",   icon: "🛡️", min: 600,   max: 1499 },
-  { level: 4, label: "Warlord",  icon: "🏰", min: 1500,  max: 2999 },
-  { level: 5, label: "King",     icon: "👑", min: 3000,  max: 5999 },
-  { level: 6, label: "Emperor",  icon: "⚜️", min: 6000,  max: 9999 },
-  { level: 7, label: "Legend",   icon: "🔱", min: 10000, max: 19999 },
-  { level: 8, label: "Divine",   icon: "✨", min: 20000, max: Infinity },
-] as const;
+import { CLASSES, getClassDef } from "@/lib/classes";
+import type { HeroClass } from "@/lib/classes";
 
-export type LevelEntry = (typeof LEVEL_THRESHOLDS)[number];
-
-export function getLevel(points: number): LevelEntry {
-  return (
-    LEVEL_THRESHOLDS.find((l) => points >= l.min && points <= l.max) ??
-    LEVEL_THRESHOLDS[0]
-  );
+export interface LevelEntry {
+  level: number;
+  label: string;
+  icon: string;
+  min: number;
+  max: number;
 }
 
-export function getLevelProgress(points: number): {
+export function getTiers(heroClass?: HeroClass | string | null): LevelEntry[] {
+  const cls = getClassDef(heroClass);
+  return cls.tiers.map((t, i) => ({ level: i + 1, ...t }));
+}
+
+export function getLevel(points: number, heroClass?: HeroClass | string | null): LevelEntry {
+  const tiers = getTiers(heroClass);
+  return tiers.find((t) => points >= t.min && points <= t.max) ?? tiers[0];
+}
+
+export function getLevelProgress(
+  points: number,
+  heroClass?: HeroClass | string | null
+): {
   current: LevelEntry;
   next: LevelEntry | null;
   progress: number;
   xpNeeded: number;
 } {
-  const current = getLevel(points);
-  const nextIdx = LEVEL_THRESHOLDS.findIndex((l) => l.level === current.level) + 1;
-  const next = nextIdx < LEVEL_THRESHOLDS.length ? LEVEL_THRESHOLDS[nextIdx] : null;
+  const tiers = getTiers(heroClass);
+  const current = getLevel(points, heroClass);
+  const currentIdx = tiers.findIndex((t) => t.level === current.level);
+  const next = currentIdx + 1 < tiers.length ? tiers[currentIdx + 1] : null;
 
   if (!next) return { current, next: null, progress: 100, xpNeeded: 0 };
 
@@ -39,3 +44,6 @@ export function getLevelProgress(points: number): {
     xpNeeded: next.min - points,
   };
 }
+
+// Backward-compat alias (Fighter tiers)
+export const LEVEL_THRESHOLDS = getTiers("fighter");

@@ -12,15 +12,16 @@ export default async function TutorialPage() {
   });
 
   let isFirstTime = true;
+  let heroClass: string | null = null;
   try {
-    const oc = await prisma.$queryRawUnsafe<{ onboardingComplete: boolean | null }[]>(
-      `SELECT "onboardingComplete" FROM "User" WHERE id = $1`,
-      userId
+    const row = await prisma.$queryRawUnsafe<{ onboardingComplete: boolean | null; heroClass: string | null }[]>(
+      `SELECT "onboardingComplete", "heroClass" FROM "User" WHERE id = $1`, userId
     );
-    isFirstTime = !(oc[0]?.onboardingComplete ?? false);
+    isFirstTime = !(row[0]?.onboardingComplete ?? false);
+    heroClass = row[0]?.heroClass ?? null;
   } catch {
     isFirstTime = false;
   }
 
-  return <TutorialClient name={user?.name} isFirstTime={isFirstTime} />;
+  return <TutorialClient name={user?.name} isFirstTime={isFirstTime} heroClass={heroClass} />;
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { markOnboardingComplete } from "@/app/(app)/profile/actions";
+import { getClassDef } from "@/lib/classes";
 
 const SECTIONS = [
   {
@@ -68,23 +69,14 @@ const SECTIONS = [
   },
 ];
 
-const LEVEL_TIERS = [
-  { icon: "🗡️", label: "Recruit",  xp: "0" },
-  { icon: "⚔️", label: "Warrior",  xp: "200" },
-  { icon: "🛡️", label: "Knight",   xp: "600" },
-  { icon: "🏰", label: "Warlord",  xp: "1 500" },
-  { icon: "👑", label: "King",     xp: "3 000" },
-  { icon: "⚜️", label: "Emperor", xp: "6 000" },
-  { icon: "🔱", label: "Legend",   xp: "10 000" },
-  { icon: "✨", label: "Divine",   xp: "20 000" },
-];
-
 export default function TutorialClient({
   name,
   isFirstTime,
+  heroClass,
 }: {
   name?: string | null;
   isFirstTime: boolean;
+  heroClass?: string | null;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -98,6 +90,9 @@ export default function TutorialClient({
     }
     router.push("/dashboard");
   }
+
+  const cls = getClassDef(heroClass);
+  const levelTiers = cls.tiers;
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-4 pb-10">
@@ -163,15 +158,18 @@ export default function TutorialClient({
         className="rounded-2xl border p-5 mb-8"
         style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
       >
-        <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "var(--theme-text-muted)" }}>
-          🏅 Level tiers
-        </p>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-lg">{cls.icon}</span>
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>
+            {cls.name} level path
+          </p>
+        </div>
         <div className="grid grid-cols-4 gap-2">
-          {LEVEL_TIERS.map((t) => (
+          {levelTiers.map((t) => (
             <div key={t.label} className="text-center">
               <div className="text-xl mb-0.5">{t.icon}</div>
               <p className="text-xs font-semibold text-[#ede9ff]">{t.label}</p>
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{t.xp} XP</p>
+              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{t.min.toLocaleString()} XP</p>
             </div>
           ))}
         </div>
