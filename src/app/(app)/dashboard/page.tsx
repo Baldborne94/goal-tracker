@@ -70,6 +70,7 @@ export default async function DashboardPage() {
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
+  const todayDayIdx = new Date().getDay();
   const dayStart = new Date(); dayStart.setHours(0,0,0,0);
   const dayEnd = new Date(dayStart.getTime() + 86400000);
 
@@ -96,6 +97,25 @@ export default async function DashboardPage() {
     prisma.weightEntry.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
     prisma.mealLog.count({ where: { userId, date: today } }).catch(() => 0),
   ]);
+
+  // Check-in quests scheduled for today
+  const checkInGoalsRaw = await prisma.$queryRawUnsafe<{ id: string; title: string; checkInXP: number; checkInDays: string | null }[]>(
+    `SELECT id, title, "checkInXP", "checkInDays" FROM "Goal" WHERE "userId" = $1 AND status = 'active' AND "dailyCheckIn" = true`,
+    userId
+  ).catch(() => [] as { id: string; title: string; checkInXP: number; checkInDays: string | null }[]);
+
+  const checkInToday = checkInGoalsRaw.filter(
+    (g) => !g.checkInDays || g.checkInDays.split(",").map(Number).includes(todayDayIdx)
+  );
+
+  let checkedInTodayIds = new Set<string>();
+  if (checkInToday.length > 0) {
+    const doneToday = await prisma.$queryRawUnsafe<{ goalId: string }[]>(
+      `SELECT "goalId" FROM "QuestCheckIn" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [] as { goalId: string }[]);
+    checkedInTodayIds = new Set(doneToday.map((d) => d.goalId));
+  }
 
   const allHabitsDone = habits.length > 0 && habits.every((h: { logs: unknown[] }) => h.logs.length > 0);
   const conditionMap: Record<string, boolean> = {
@@ -205,6 +225,40 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Today's check-ins */}
+      {checkInToday.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">📅 Today&apos;s check-ins</h2>
+          <div className="space-y-2">
+            {checkInToday.map((g) => {
+              const done = checkedInTodayIds.has(g.id);
+              return (
+                <a
+                  key={g.id}
+                  href={`/goals/${g.id}`}
+                  className="flex items-center gap-3 rounded-2xl border p-3 transition-colors"
+                  style={{ background: done ? "var(--theme-surface)" : "var(--theme-surface)", borderColor: done ? "rgba(146,64,14,0.4)" : "var(--theme-surface-border)" }}
+                >
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold border-2 transition-colors ${
+                      done ? "bg-amber-500 border-amber-500 text-black" : "border-[#3b2d6e] text-transparent"
+                    }`}
+                  >
+                    ✓
+                  </div>
+                  <p className={`flex-1 text-sm font-medium truncate ${done ? "line-through" : "text-[#ede9ff]"}`} style={done ? { color: "var(--theme-text-muted)" } : {}}>
+                    {g.title}
+                  </p>
+                  {!done && (
+                    <span className="text-xs font-bold text-amber-400 flex-shrink-0">+{g.checkInXP} XP</span>
+                  )}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Daily challenges */}
       <DailyChallenges initialChallenges={initialChallenges} />
