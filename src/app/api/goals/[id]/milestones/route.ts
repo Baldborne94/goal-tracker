@@ -69,7 +69,11 @@ export async function PATCH(
         })()
       : null;
 
-    await prisma.goal.create({
+    const [ci] = await prisma.$queryRawUnsafe<{ dailyCheckIn: boolean; checkInXP: number; checkInDays: string | null }[]>(
+      `SELECT "dailyCheckIn", "checkInXP", "checkInDays" FROM "Goal" WHERE id = $1`, goalId
+    ).catch(() => [] as { dailyCheckIn: boolean; checkInXP: number; checkInDays: string | null }[]);
+
+    const newGoal = await prisma.goal.create({
       data: {
         title: goal.title,
         description: goal.description,
@@ -89,6 +93,13 @@ export async function PATCH(
         },
       },
     });
+
+    if (ci?.dailyCheckIn) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "Goal" SET "dailyCheckIn" = $1, "checkInXP" = $2, "checkInDays" = $3 WHERE id = $4`,
+        ci.dailyCheckIn, ci.checkInXP, ci.checkInDays, newGoal.id
+      );
+    }
   }
 
   revalidatePath("/goals");
