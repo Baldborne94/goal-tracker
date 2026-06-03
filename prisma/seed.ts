@@ -100,6 +100,8 @@ const MIGRATIONS = [
   `ALTER TABLE "QuestCheckIn" ENABLE ROW LEVEL SECURITY`,
   // Remove Alchemy-dependent challenges that can never be completed
   `DELETE FROM "DailyChallenge" WHERE "type" IN ('check_habit', 'log_weight', 'log_meal')`,
+  // Onboarding flag for new users (existing users get false and will see the tutorial once)
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "onboardingComplete" BOOLEAN NOT NULL DEFAULT false`,
 ];
 
 async function main() {

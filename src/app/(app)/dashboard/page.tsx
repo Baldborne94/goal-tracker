@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
@@ -5,11 +6,26 @@ import { formatDate, calculateStreak } from "@/lib/utils";
 import { getLevelProgress } from "@/lib/levels";
 import LogoutButton from "@/components/LogoutButton";
 import DailyChallenges from "@/components/DailyChallenges";
-import OnboardingScreen from "@/components/OnboardingScreen";
 
 export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user!.id!;
+
+  // Redirect first-time users (0 quests + onboarding not yet done) to the tutorial
+  const [earlyActive, earlyCompleted] = await Promise.all([
+    prisma.goal.count({ where: { userId, status: "active" } }),
+    prisma.goal.count({ where: { userId, status: "completed" } }),
+  ]);
+  if (earlyActive === 0 && earlyCompleted === 0) {
+    let onboardingDone = false;
+    try {
+      const oc = await prisma.$queryRawUnsafe<{ onboardingComplete: boolean | null }[]>(
+        `SELECT "onboardingComplete" FROM "User" WHERE id = $1`, userId
+      );
+      onboardingDone = oc[0]?.onboardingComplete ?? false;
+    } catch { onboardingDone = true; }
+    if (!onboardingDone) redirect("/tutorial");
+  }
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [yr, mo] = currentMonth.split("-").map(Number);
@@ -76,9 +92,10 @@ export default async function DashboardPage() {
   const dayStart = new Date(); dayStart.setHours(0,0,0,0);
   const dayEnd = new Date(dayStart.getTime() + 86400000);
 
-  const [active, completed, topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, questCheckinTodayRaw, completedQuestCount] = await Promise.all([
-    prisma.goal.count({ where: { userId, status: "active" } }),
-    prisma.goal.count({ where: { userId, status: "completed" } }),
+  const active = earlyActive;
+  const completed = earlyCompleted;
+
+  const [topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, questCheckinTodayRaw, completedQuestCount] = await Promise.all([
     prisma.expense.groupBy({
       by: ["category"],
       where: { userId, date: { gte: monthStart, lt: monthEnd } },
@@ -160,13 +177,20 @@ export default async function DashboardPage() {
           <p className="text-[#9d8ac7] text-sm">Welcome,</p>
           <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} ⚔️</h1>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/tutorial"
+            className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold transition-colors hover:border-amber-500/40"
+            style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
+            title="How to play"
+          >
+            ?
+          </Link>
+          <LogoutButton />
+        </div>
       </div>
 
-      {/* Onboarding — shown when user has no quests yet */}
-      {active === 0 && completed === 0 ? (
-        <OnboardingScreen name={user?.name} />
-      ) : (<>
+      <>
 
       {/* XP card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
@@ -490,7 +514,7 @@ export default async function DashboardPage() {
       >
         +
       </Link>
-      </>)}
+      </>
     </div>
   );
 }
