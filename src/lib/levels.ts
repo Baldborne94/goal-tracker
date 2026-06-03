@@ -1,9 +1,12 @@
 export const LEVEL_THRESHOLDS = [
-  { level: 1, label: "Recruit",  icon: "🗡️", min: 0,   max: 49 },
-  { level: 2, label: "Warrior",  icon: "⚔️", min: 50,  max: 149 },
-  { level: 3, label: "Knight",   icon: "🛡️", min: 150, max: 349 },
-  { level: 4, label: "Warlord",  icon: "🏰", min: 350, max: 699 },
-  { level: 5, label: "King",     icon: "👑", min: 700, max: Infinity },
+  { level: 1, label: "Recruit",  icon: "🗡️", min: 0,     max: 199 },
+  { level: 2, label: "Warrior",  icon: "⚔️", min: 200,   max: 599 },
+  { level: 3, label: "Knight",   icon: "🛡️", min: 600,   max: 1499 },
+  { level: 4, label: "Warlord",  icon: "🏰", min: 1500,  max: 2999 },
+  { level: 5, label: "King",     icon: "👑", min: 3000,  max: 5999 },
+  { level: 6, label: "Emperor",  icon: "⚜️", min: 6000,  max: 9999 },
+  { level: 7, label: "Legend",   icon: "🔱", min: 10000, max: 19999 },
+  { level: 8, label: "Divine",   icon: "✨", min: 20000, max: Infinity },
 ] as const;
 
 export type LevelEntry = (typeof LEVEL_THRESHOLDS)[number];

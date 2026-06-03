@@ -5,11 +5,14 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const LEVEL_ICONS = [
-  { min: 700, icon: "👑" },
-  { min: 350, icon: "🏰" },
-  { min: 150, icon: "🛡️" },
-  { min: 50,  icon: "⚔️" },
-  { min: 0,   icon: "🗡️" },
+  { min: 20000, icon: "✨" },
+  { min: 10000, icon: "🔱" },
+  { min: 6000,  icon: "⚜️" },
+  { min: 3000,  icon: "👑" },
+  { min: 1500,  icon: "🏰" },
+  { min: 600,   icon: "🛡️" },
+  { min: 200,   icon: "⚔️" },
+  { min: 0,     icon: "🗡️" },
 ];
 
 function heroIcon(points: number): string {
