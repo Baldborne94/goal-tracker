@@ -180,7 +180,7 @@ export default async function DashboardPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <p className="text-[#9d8ac7] text-sm">Welcome,</p>
-          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} {classDef.icon}</h1>
+          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} {levelInfo.current.icon}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Link
