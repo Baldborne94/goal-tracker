@@ -15,15 +15,14 @@ export default function ClassSelectClient() {
   async function confirm() {
     if (!selected) return;
     setLoading(true);
+    const cls = CLASSES.find((c) => c.key === selected)!;
+    // Apply theme immediately so the user sees feedback right away
+    setTheme(cls.theme);
+    localStorage.setItem("hero-theme", cls.theme);
     try {
-      const cls = CLASSES.find((c) => c.key === selected)!;
-      // Save class + recommended theme to DB
       await updateHeroClass(selected);
       await updateTheme(cls.theme);
-      // Update theme in client immediately
-      setTheme(cls.theme);
-      localStorage.setItem("hero-theme", cls.theme);
-    } catch { /* ignore */ }
+    } catch { /* ignore — self-healing action will retry on next request */ }
     router.push("/tutorial");
   }
 
