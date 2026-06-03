@@ -309,12 +309,13 @@ export default function GoalsList({ goals, categories }: Props) {
 function GoalCard({ goal }: { goal: Goal }) {
   const milestonesDone = goal.milestones.filter((m) => m.completed).length;
   const milestonesTotal = goal.milestones.length;
+  const isOverdue = goal.status === "active" && !!goal.targetDate && goal.targetDate < new Date().toISOString().slice(0, 10);
 
   return (
     <Link
       href={`/goals/${goal.id}`}
       className="block rounded-2xl border p-4 hover:border-amber-500/40 transition-colors"
-      style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+      style={{ background: "var(--theme-surface)", borderColor: isOverdue ? "rgba(239,68,68,0.35)" : "var(--theme-surface-border)" }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <h3 className="font-semibold text-[#ede9ff] line-clamp-2 flex-1">{goal.title}</h3>
@@ -374,8 +375,8 @@ function GoalCard({ goal }: { goal: Goal }) {
       {(goal.targetDate || goal.reminderTime || goal.dailyCheckIn) && (
         <div className="flex items-center gap-2 flex-wrap mt-2">
           {goal.targetDate && (
-            <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
-              🌙 {formatDate(goal.targetDate)}
+            <p className={`text-xs ${isOverdue ? "text-red-400 font-semibold" : ""}`} style={isOverdue ? {} : { color: "var(--theme-text-muted)" }}>
+              {isOverdue ? "⚠️" : "🌙"} {formatDate(goal.targetDate)}
             </p>
           )}
           {goal.reminderTime && (
