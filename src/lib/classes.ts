@@ -46,7 +46,7 @@ export const CLASSES: ClassDef[] = [
     description: "Holy warrior bound by a sacred oath",
     theme: "warrior", group: "warrior",
     tiers: mk(
-      ["Initiate", "Aspirant", "Templar", "Paladin", "Holy Knight", "Sacred Guard", "Divine Champion", "Avatar of Light"],
+      ["Initiate", "Aspirant", "Templar", "Crusader", "Holy Knight", "Sacred Guard", "Divine Champion", "Avatar of Light"],
       ["🕯️", "✝️", "🛡️", "⚔️", "🌟", "👼", "☀️", "✨"]
     ),
   },
@@ -65,7 +65,7 @@ export const CLASSES: ClassDef[] = [
     description: "Hunter and explorer of the untamed wild",
     theme: "forest", group: "nature",
     tiers: mk(
-      ["Scout", "Hunter", "Tracker", "Ranger", "Strider", "Pathfinder", "Shadow Walker", "Legend of the Wild"],
+      ["Scout", "Hunter", "Tracker", "Warden", "Strider", "Pathfinder", "Shadow Walker", "Legend of the Wild"],
       ["👁️", "🏹", "🐾", "🌲", "🧭", "🌙", "🌿", "✨"]
     ),
   },
@@ -74,8 +74,8 @@ export const CLASSES: ClassDef[] = [
     description: "Shapeshifter attuned to the forces of nature",
     theme: "forest", group: "nature",
     tiers: mk(
-      ["Seedling", "Grove Ward", "Shaman", "Druid", "Elder Druid", "Circle Master", "Voice of Nature", "World Tree"],
-      ["🌱", "🍃", "🌿", "🌳", "🌲", "🌙", "🌍", "✨"]
+      ["Seedling", "Grove Ward", "Shaman", "Shapechanger", "Forest Elder", "Circle Master", "Voice of Nature", "World Tree"],
+      ["🌱", "🍃", "🌿", "🌳", "🦋", "🌙", "🌍", "✨"]
     ),
   },
   // ── Arcane ───────────────────────────────────────────────
@@ -102,8 +102,8 @@ export const CLASSES: ClassDef[] = [
     description: "Born with raw untamed magical power",
     theme: "crimson", group: "arcane",
     tiers: mk(
-      ["Touched", "Spark", "Flare", "Sorcerer", "Wild Mage", "Arcane Soul", "Chaos Lord", "Primordial Force"],
-      ["💫", "⚡", "🔥", "✨", "🌀", "💎", "🌪️", "🌌"]
+      ["Touched", "Spark", "Flare", "Channeler", "Wild Mage", "Arcane Soul", "Chaos Lord", "Primordial Force"],
+      ["💫", "⚡", "🔥", "🌟", "🌀", "💎", "🌪️", "🌌"]
     ),
   },
   {
@@ -111,8 +111,8 @@ export const CLASSES: ClassDef[] = [
     description: "Master of death, undeath and dark power",
     theme: "crimson", group: "arcane",
     tiers: mk(
-      ["Bone Collector", "Grave Caller", "Corpse Keeper", "Necromancer", "Death Mage", "Soul Reaper", "Lich", "Dark Sovereign"],
-      ["🦴", "💀", "⚰️", "🕯️", "💀", "⚰️", "👑", "🌑"]
+      ["Bone Collector", "Grave Caller", "Corpse Keeper", "Dread Lord", "Death Mage", "Soul Reaper", "Lich", "Dark Sovereign"],
+      ["🦴", "💀", "⚰️", "🕯️", "🌑", "🪦", "👑", "☠️"]
     ),
   },
   // ── Holy ─────────────────────────────────────────────────
@@ -121,8 +121,8 @@ export const CLASSES: ClassDef[] = [
     description: "Divine spellcaster and healer of the gods",
     theme: "ocean", group: "holy",
     tiers: mk(
-      ["Acolyte", "Deacon", "Priest", "Cleric", "High Priest", "Oracle", "Divine Vessel", "Saint"],
-      ["🕯️", "✝️", "🙏", "✝️", "👼", "🌟", "☀️", "✨"]
+      ["Acolyte", "Deacon", "Priest", "Confessor", "High Priest", "Oracle", "Divine Vessel", "Saint"],
+      ["🕯️", "✝️", "🙏", "📿", "👼", "🌟", "☀️", "✨"]
     ),
   },
   {
@@ -130,7 +130,7 @@ export const CLASSES: ClassDef[] = [
     description: "Performer who weaves magic through art",
     theme: "ocean", group: "holy",
     tiers: mk(
-      ["Minstrel", "Troubadour", "Skald", "Bard", "Lorekeeper", "Voice of Ages", "Grand Storyteller", "Living Legend"],
+      ["Minstrel", "Troubadour", "Skald", "Virtuoso", "Lorekeeper", "Voice of Ages", "Grand Storyteller", "Living Legend"],
       ["🎵", "🎶", "🎸", "🎭", "📚", "🎼", "🌟", "✨"]
     ),
   },
