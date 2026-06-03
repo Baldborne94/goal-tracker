@@ -19,6 +19,9 @@ type Goal = {
   points: number;
   targetDate: string | null;
   reminderTime: string | null;
+  dailyCheckIn?: boolean;
+  checkInDays?: string | null;
+  checkInXP?: number;
   category: Category | null;
   milestones: Milestone[];
   tags: GoalTag[];
@@ -113,6 +116,7 @@ const SUGGESTIONS: Record<string, Suggestion[]> = {
 
 export default function GoalsList({ goals, categories }: Props) {
   const [filter, setFilter] = useState<"all" | "active" | "completed" | "archived">("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "low" | "medium" | "high">("all");
   const [categoryId, setCategoryId] = useState<string>("all");
   const [sort, setSort] = useState<"newest" | "deadline" | "progress" | "xp">("newest");
   const [showSuggestions, setShowSuggestions] = useState(goals.length === 0);
@@ -124,6 +128,7 @@ export default function GoalsList({ goals, categories }: Props) {
       if (filter === "completed" && g.status !== "completed") return false;
       if (filter === "archived" && g.status !== "archived") return false;
       if (categoryId !== "all" && g.category?.id !== categoryId) return false;
+      if (priorityFilter !== "all" && g.priority !== priorityFilter) return false;
       return true;
     })
     .sort((a, b) => {
@@ -181,6 +186,25 @@ export default function GoalsList({ goals, categories }: Props) {
             }
           >
             {s === "newest" ? "🕐 Newest" : s === "deadline" ? "🌙 Deadline" : "📊 Progress"}
+          </button>
+        ))}
+      </div>
+
+      {/* Priority filter */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        <span className="flex-shrink-0 text-xs self-center" style={{ color: "var(--theme-text-muted)" }}>Priority:</span>
+        {(["all", "high", "medium", "low"] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPriorityFilter(p)}
+            className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors border"
+            style={
+              priorityFilter === p
+                ? { background: "var(--theme-surface-border)", color: "#ede9ff", borderColor: "var(--theme-surface-border)" }
+                : { background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }
+            }
+          >
+            {p === "all" ? "All" : p === "high" ? "🔥 High" : p === "medium" ? "⚡ Medium" : "🍃 Low"}
           </button>
         ))}
       </div>
@@ -347,8 +371,8 @@ function GoalCard({ goal }: { goal: Goal }) {
         </div>
       </div>
 
-      {(goal.targetDate || goal.reminderTime) && (
-        <div className="flex items-center gap-3 mt-2">
+      {(goal.targetDate || goal.reminderTime || goal.dailyCheckIn) && (
+        <div className="flex items-center gap-2 flex-wrap mt-2">
           {goal.targetDate && (
             <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
               🌙 {formatDate(goal.targetDate)}
@@ -357,6 +381,13 @@ function GoalCard({ goal }: { goal: Goal }) {
           {goal.reminderTime && (
             <span className="text-xs px-1.5 py-0.5 rounded-full border border-amber-700/30 bg-amber-900/20 text-amber-400/80">
               🔔 {goal.reminderTime}
+            </span>
+          )}
+          {goal.dailyCheckIn && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full border border-violet-700/30 bg-violet-900/20 text-violet-300/80">
+              📅 {goal.checkInDays
+                ? `${goal.checkInDays.split(",").length}×/week`
+                : "Every day"}
             </span>
           )}
         </div>
