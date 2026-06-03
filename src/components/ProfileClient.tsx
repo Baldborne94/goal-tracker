@@ -5,6 +5,7 @@ import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
 import { updateProfileName, updateTheme, updateReminder } from "@/app/(app)/profile/actions";
 import NotificationButton from "@/components/NotificationButton";
+import { getLevel, getLevelProgress, LEVEL_THRESHOLDS } from "@/lib/levels";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -19,18 +20,6 @@ type User = {
 
 type Stats = { total: number; completed: number; active: number };
 type CategoryStat = { name: string; color: string; total: number; completed: number };
-
-const LEVEL_THRESHOLDS = [
-  { level: 1, label: "Recruit",   icon: "🗡️",  min: 0,   max: 49 },
-  { level: 2, label: "Warrior",   icon: "⚔️",  min: 50,  max: 149 },
-  { level: 3, label: "Knight",    icon: "🛡️",  min: 150, max: 349 },
-  { level: 4, label: "Warlord",   icon: "🏰",  min: 350, max: 699 },
-  { level: 5, label: "King",      icon: "👑",  min: 700, max: Infinity },
-];
-
-function getLevel(points: number) {
-  return LEVEL_THRESHOLDS.find((l) => points >= l.min && points <= l.max) || LEVEL_THRESHOLDS[0];
-}
 
 export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00", categoryStats = [], weeklyMilestones = [0, 0, 0, 0] }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string; categoryStats?: CategoryStat[]; weeklyMilestones?: number[] }) {
   const { theme, colors, setTheme } = useTheme();
@@ -119,11 +108,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
 
   if (!user) return null;
 
-  const level = getLevel(user.points);
-  const nextLevel = LEVEL_THRESHOLDS.find((l) => l.level === level.level + 1);
-  const progressToNext = nextLevel
-    ? Math.round(((user.points - level.min) / (nextLevel.min - level.min)) * 100)
-    : 100;
+  const { current: level, next: nextLevel, progress: progressToNext, xpNeeded } = getLevelProgress(user.points);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -189,7 +174,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
           <div className="flex justify-between text-sm mb-1.5">
             <span className="text-sm opacity-80" style={{color: "var(--theme-accent)"}}>✨ {user.points} XP</span>
             {nextLevel && (
-              <span className="text-[#9d8ac7] text-xs">Next: {nextLevel.min} XP</span>
+              <span className="text-[#9d8ac7] text-xs">{xpNeeded} XP to {nextLevel.label}</span>
             )}
           </div>
           <div className="h-2.5 rounded-full overflow-hidden" style={{background: "#0f0826"}}>
@@ -198,8 +183,10 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
               style={{ width: `${progressToNext}%`, background: "var(--theme-bar)" }}
             />
           </div>
-          {nextLevel && (
-            <p className="text-xs text-[#6b5a9e] mt-1">{progressToNext}% towards {nextLevel.label}</p>
+          {nextLevel ? (
+            <p className="text-xs text-[#6b5a9e] mt-1">{progressToNext}% towards {nextLevel.icon} {nextLevel.label}</p>
+          ) : (
+            <p className="text-xs text-amber-400 mt-1">👑 Max level — Legendary!</p>
           )}
         </div>
       </div>

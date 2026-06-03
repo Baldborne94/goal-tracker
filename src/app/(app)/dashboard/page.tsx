@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDate, calculateStreak } from "@/lib/utils";
+import { getLevelProgress } from "@/lib/levels";
 import LogoutButton from "@/components/LogoutButton";
 import DailyChallenges from "@/components/DailyChallenges";
 
@@ -141,6 +142,8 @@ export default async function DashboardPage() {
     ? (financeBudget.amount - financeSpent) / daysLeft
     : null;
 
+  const levelInfo = getLevelProgress(user?.points ?? 0);
+
   const CAT_ICONS: Record<string, string> = {
     groceries: "🛒", eating_out: "🍽️", transport: "🚗", housing: "🏠",
     utilities: "💡", health: "💊", subscriptions: "📱", hobby: "🎨",
@@ -161,12 +164,34 @@ export default async function DashboardPage() {
       {/* XP card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
         <div className="absolute top-0 right-0 w-32 h-32 opacity-10" style={{background: "radial-gradient(circle, var(--theme-accent) 0%, transparent 70%)"}}/>
-        <p className="text-amber-300/80 text-sm mb-1">✨ Experience accumulated</p>
-        <div className="flex items-end gap-2">
+        <div className="flex items-start justify-between mb-1">
+          <p className="text-amber-300/80 text-sm">✨ Experience</p>
+          <span className="text-sm font-bold" style={{color: "var(--theme-accent)"}}>
+            {levelInfo.current.icon} {levelInfo.current.label}
+          </span>
+        </div>
+        <div className="flex items-end gap-2 mb-3">
           <span className="text-4xl font-bold" style={{color: "var(--theme-accent)"}}>{user?.points ?? 0}</span>
           <span className="text-amber-300/60 mb-1">XP</span>
         </div>
-        <div className="mt-3 flex gap-4 text-sm">
+        {/* Level progress bar */}
+        {levelInfo.next ? (
+          <>
+            <div className="h-2.5 rounded-full overflow-hidden mb-1.5" style={{background: "rgba(0,0,0,0.35)"}}>
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{width: `${levelInfo.progress}%`, background: "var(--theme-accent)"}}
+              />
+            </div>
+            <div className="flex justify-between text-xs" style={{color: "rgba(251,191,36,0.55)"}}>
+              <span>{levelInfo.progress}%</span>
+              <span>{levelInfo.next.icon} {levelInfo.next.label} — {levelInfo.xpNeeded} XP to go</span>
+            </div>
+          </>
+        ) : (
+          <p className="text-xs font-semibold text-amber-400">👑 Max level — Legendary!</p>
+        )}
+        <div className="mt-3 flex gap-4 text-sm border-t border-white/10 pt-3">
           <div>
             <span className="text-[#9d8ac7]">⚡ Active: </span>
             <span className="font-semibold text-[#ede9ff]">{active}</span>
