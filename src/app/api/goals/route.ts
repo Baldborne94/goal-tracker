@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, tags, milestones, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType } = body;
+  const { title, description, priority, targetDate, categoryId, tags, milestones, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType, dailyCheckIn, checkInXP, checkInDays } = body;
 
   if (!title)
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -49,6 +49,7 @@ export async function POST(req: Request) {
   );
 
   const goal = await prisma.goal.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: {
       title,
       description,
@@ -57,6 +58,9 @@ export async function POST(req: Request) {
       categoryId: categoryId || null,
       userId: session.user.id,
       points,
+      dailyCheckIn: !!dailyCheckIn,
+      checkInXP: dailyCheckIn ? (parseInt(String(checkInXP)) || 5) : 5,
+      checkInDays: dailyCheckIn ? (checkInDays || null) : null,
       reminderTime: reminderTime || null,
       reminderFrequency: reminderTime ? (reminderFrequency || "daily") : null,
       reminderDay: reminderTime && reminderDay != null ? parseInt(String(reminderDay)) : null,
@@ -83,7 +87,8 @@ export async function POST(req: Request) {
             })),
           }
         : undefined,
-    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
     include: {
       category: true,
       milestones: true,

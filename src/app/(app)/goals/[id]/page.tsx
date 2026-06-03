@@ -23,12 +23,25 @@ export default async function GoalDetailPage({
 
   if (!goal) notFound();
 
+  type CheckIn = { id: string; date: string; note: string | null; xpAwarded: number };
+  let checkIns: CheckIn[] = [];
+
+  if ((goal as typeof goal & { dailyCheckIn?: boolean }).dailyCheckIn) {
+    try {
+      checkIns = await prisma.$queryRawUnsafe<CheckIn[]>(
+        `SELECT id, date, note, "xpAwarded" FROM "QuestCheckIn" WHERE "goalId" = $1 AND "userId" = $2 ORDER BY date DESC LIMIT 90`,
+        id, session!.user!.id!
+      );
+    } catch { /* table not yet created — first check-in call will create it */ }
+  }
+
   return (
     <GoalDetailClient
       goal={JSON.parse(JSON.stringify(goal))}
       priorityLabel={getPriorityLabel(goal.priority)}
       priorityColor={getPriorityColor(goal.priority)}
       formattedDate={goal.targetDate ? formatDate(goal.targetDate) : null}
+      checkIns={checkIns}
     />
   );
 }

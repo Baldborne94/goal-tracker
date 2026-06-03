@@ -57,8 +57,14 @@ export async function PATCH(
       ? (() => {
           const d = new Date(goal.targetDate);
           const rt = (goal as { recurrenceType?: string }).recurrenceType;
-          if (rt === "weekly") d.setDate(d.getDate() + 7);
-          else d.setMonth(d.getMonth() + 1);
+          if (rt === "weekly") {
+            d.setDate(d.getDate() + 7);
+          } else {
+            const originalDay = d.getDate();
+            d.setMonth(d.getMonth() + 1);
+            // Clamp overflow: Jan 31 + 1 month → Feb 31 overflows to Mar → clamp to Feb 28/29
+            if (d.getDate() !== originalDay) d.setDate(0);
+          }
           return d;
         })()
       : null;
