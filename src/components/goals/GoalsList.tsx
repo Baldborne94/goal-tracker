@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatDate, getPriorityColor, getPriorityLabel } from "@/lib/utils";
+import { getClassDef } from "@/lib/classes";
 
 type Category = { id: string; name: string; color: string };
 type Tag = { id: string; name: string };
@@ -30,6 +31,7 @@ type Goal = {
 type Props = {
   goals: Goal[];
   categories: Category[];
+  heroClass?: string | null;
 };
 
 type Suggestion = {
@@ -114,7 +116,7 @@ const SUGGESTIONS: Record<string, Suggestion[]> = {
   ],
 };
 
-export default function GoalsList({ goals, categories }: Props) {
+export default function GoalsList({ goals, categories, heroClass }: Props) {
   const [filter, setFilter] = useState<"all" | "active" | "completed" | "archived">("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "low" | "medium" | "high">("all");
   const [categoryId, setCategoryId] = useState<string>("all");
@@ -242,7 +244,7 @@ export default function GoalsList({ goals, categories }: Props) {
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border p-8 text-center mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-          <div className="text-4xl mb-3">🗡️</div>
+          <div className="text-4xl mb-3">{getClassDef(heroClass).icon}</div>
           <p className="text-sm mb-4" style={{ color: "var(--theme-text-muted)" }}>No quests found</p>
           <Link
             href="/goals/new"

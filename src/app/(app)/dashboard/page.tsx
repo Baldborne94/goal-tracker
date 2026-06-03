@@ -431,7 +431,7 @@ export default async function DashboardPage() {
 
       {goals.length === 0 ? (
         <div className="rounded-2xl border p-8 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
-          <div className="text-4xl mb-3">🗡️</div>
+          <div className="text-4xl mb-3">{classDef.icon}</div>
           <p className="text-[#9d8ac7] text-sm mb-4">No quests yet</p>
           <Link
             href="/goals/new"
