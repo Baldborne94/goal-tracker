@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
 import { updateProfileName, updateTheme, updateReminder, updateHeroClass } from "@/app/(app)/profile/actions";
@@ -23,6 +24,7 @@ type Stats = { total: number; completed: number; active: number };
 type CategoryStat = { name: string; color: string; total: number; completed: number };
 
 export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00", categoryStats = [], weeklyMilestones = [0, 0, 0, 0], heroClass: initialHeroClass = null }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; heroClass?: string | null }) {
+  const router = useRouter();
   const { theme, colors, setTheme } = useTheme();
   const [heroClass, setHeroClass] = useState<string | null>(initialHeroClass);
   const [classExpanded, setClassExpanded] = useState(false);
@@ -112,19 +114,19 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
   }
 
   async function saveClass(key: string) {
-    const cls = CLASSES.find((c) => c.key === key)!;
-    // Optimistic update — UI reacts immediately
-    setHeroClass(key);
     setSavingClass(true);
+    const cls = CLASSES.find((c) => c.key === key)!;
+    // Optimistic: update UI immediately
+    setHeroClass(key);
+    setTheme(cls.theme);
+    localStorage.setItem("hero-theme", cls.theme);
+    setClassExpanded(false);
     try {
       await updateHeroClass(key);
       await updateTheme(cls.theme);
-      setTheme(cls.theme);
-      localStorage.setItem("hero-theme", cls.theme);
-      setClassExpanded(false);
+      router.refresh(); // re-runs layout so BottomNav picks up the new heroClass
     } catch {
-      // Revert if save failed
-      setHeroClass(initialHeroClass);
+      setHeroClass(initialHeroClass); // revert on failure
     }
     setSavingClass(false);
   }
