@@ -103,8 +103,9 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         body: JSON.stringify({ note: todayNote || null }),
       });
       if (res.ok) {
-        const { id, date, xp } = await res.json();
+        const { id, date, xp, progress } = await res.json();
         setCheckIns((prev) => [{ id, date, note: todayNote || null, xpAwarded: xp }, ...prev]);
+        if (progress !== undefined) setGoal((prev) => ({ ...prev, progress }));
         setTodayNote("");
       }
     } finally {

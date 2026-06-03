@@ -72,11 +72,6 @@ export async function PATCH(
       recurrenceType: isRecurring !== undefined
         ? (isRecurring ? (recurrenceType || "monthly") : null)
         : existing.recurrenceType,
-      ...(dailyCheckIn !== undefined && {
-        dailyCheckIn: !!dailyCheckIn,
-        checkInXP: dailyCheckIn ? (parseInt(String(checkInXP)) || 5) : 5,
-        checkInDays: dailyCheckIn ? (checkInDays || null) : null,
-      }),
       completedAt:
         isNowComplete && !wasCompleted ? new Date() : existing.completedAt,
     },
@@ -86,6 +81,17 @@ export async function PATCH(
       tags: { include: { tag: true } },
     },
   });
+
+  // Update dailyCheckIn fields via raw SQL (bypasses Prisma type limitations for newer columns)
+  if (dailyCheckIn !== undefined) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Goal" SET "dailyCheckIn" = $1, "checkInXP" = $2, "checkInDays" = $3 WHERE id = $4`,
+      !!dailyCheckIn,
+      dailyCheckIn ? (parseInt(String(checkInXP)) || 5) : 5,
+      dailyCheckIn ? (checkInDays ?? null) : null,
+      id
+    );
+  }
 
   // Handle milestone edits
   if (milestonesKept !== undefined || milestonesAdded?.length > 0) {

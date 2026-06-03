@@ -64,8 +64,8 @@ export async function POST(
     catch { return NextResponse.json({ error: "DB error" }, { status: 500 }); }
   }
 
-  const goals = await prisma.$queryRawUnsafe<{ checkInXP: number }[]>(
-    `SELECT "checkInXP" FROM "Goal" WHERE id = $1 AND "userId" = $2 AND "dailyCheckIn" = true LIMIT 1`,
+  const goals = await prisma.$queryRawUnsafe<{ checkInXP: number; createdAt: Date; targetDate: Date | null; checkInDays: string | null }[]>(
+    `SELECT "checkInXP", "createdAt", "targetDate", "checkInDays" FROM "Goal" WHERE id = $1 AND "userId" = $2 AND "dailyCheckIn" = true LIMIT 1`,
     goalId, session.user.id
   );
   if (goals.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -89,5 +89,33 @@ export async function POST(
     data: { points: { increment: xp } },
   });
 
-  return NextResponse.json({ id, date: today, xp });
+  // Update progress for milestone-less quests
+  let newProgress: number | undefined;
+  const milestoneCount = await prisma.milestone.count({ where: { goalId } });
+  if (milestoneCount === 0) {
+    const { createdAt, targetDate, checkInDays: scheduleDays } = goals[0];
+    const endDate = targetDate ? new Date(targetDate) : new Date(new Date(createdAt).getTime() + 90 * 86400000);
+    const scheduledDays = scheduleDays ? scheduleDays.split(",").map(Number) : [0, 1, 2, 3, 4, 5, 6];
+
+    // Count expected check-ins from createdAt to today (inclusive), capped at endDate
+    let expected = 0;
+    const cursor = new Date(createdAt);
+    cursor.setHours(0, 0, 0, 0);
+    const todayDate = new Date(today + "T00:00:00");
+    const limitDate = todayDate < endDate ? todayDate : endDate;
+    while (cursor <= limitDate) {
+      if (scheduledDays.includes(cursor.getDay())) expected++;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const counts = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "QuestCheckIn" WHERE "goalId" = $1 AND "userId" = $2`,
+      goalId, session.user.id
+    );
+    const done = Number(counts[0]?.count ?? 1);
+    newProgress = expected > 0 ? Math.min(100, Math.round((done / expected) * 100)) : 0;
+    await prisma.$executeRawUnsafe(`UPDATE "Goal" SET progress = $1 WHERE id = $2`, newProgress, goalId);
+  }
+
+  return NextResponse.json({ id, date: today, xp, ...(newProgress !== undefined && { progress: newProgress }) });
 }
