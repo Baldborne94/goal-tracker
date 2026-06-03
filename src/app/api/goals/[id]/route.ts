@@ -41,6 +41,7 @@ export async function PATCH(
 
   const existing = await prisma.goal.findFirst({
     where: { id, userId: session.user.id },
+    include: { milestones: { orderBy: { order: "asc" } } },
   });
   if (!existing)
     return NextResponse.json({ error: "Goal not found" }, { status: 404 });
@@ -123,6 +124,55 @@ export async function PATCH(
       data: { points: { increment: existing.points } },
     });
     await checkAndAwardRewards(session.user.id);
+
+    // Auto-clone recurring quests on manual completion
+    const isRec = (existing as typeof existing & { isRecurring?: boolean }).isRecurring;
+    const recType = (existing as typeof existing & { recurrenceType?: string }).recurrenceType;
+    if (isRec) {
+      const nextTargetDate = existing.targetDate ? (() => {
+        const d = new Date(existing.targetDate!);
+        if (recType === "weekly") {
+          d.setDate(d.getDate() + 7);
+        } else {
+          const od = d.getDate();
+          d.setMonth(d.getMonth() + 1);
+          if (d.getDate() !== od) d.setDate(0);
+        }
+        return d;
+      })() : null;
+
+      const [ci] = await prisma.$queryRawUnsafe<{ dailyCheckIn: boolean; checkInXP: number; checkInDays: string | null }[]>(
+        `SELECT "dailyCheckIn", "checkInXP", "checkInDays" FROM "Goal" WHERE id = $1`, id
+      ).catch(() => [] as { dailyCheckIn: boolean; checkInXP: number; checkInDays: string | null }[]);
+
+      const newGoal = await prisma.goal.create({
+        data: {
+          title: existing.title,
+          description: existing.description,
+          priority: existing.priority,
+          targetDate: nextTargetDate,
+          categoryId: existing.categoryId,
+          userId: session.user.id,
+          points: existing.points,
+          reminderTime: existing.reminderTime,
+          reminderFrequency: (existing as typeof existing & { reminderFrequency?: string }).reminderFrequency,
+          reminderDay: (existing as typeof existing & { reminderDay?: number }).reminderDay,
+          reminderDays: (existing as typeof existing & { reminderDays?: string }).reminderDays,
+          isRecurring: true,
+          recurrenceType: recType,
+          milestones: {
+            create: existing.milestones.map((m, i) => ({ title: m.title, order: i })),
+          },
+        },
+      });
+
+      if (ci?.dailyCheckIn) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Goal" SET "dailyCheckIn" = $1, "checkInXP" = $2, "checkInDays" = $3 WHERE id = $4`,
+          ci.dailyCheckIn, ci.checkInXP, ci.checkInDays, newGoal.id
+        );
+      }
+    }
   }
 
   return NextResponse.json(goal);
