@@ -49,6 +49,16 @@ export async function PATCH(
   const wasCompleted = existing.status === "completed";
   const isNowComplete = status === "completed" || progress === 100;
 
+  // Block manual completion of daily check-in quests that haven't reached 100%
+  if (isNowComplete && !wasCompleted) {
+    const [ciRow] = await prisma.$queryRawUnsafe<{ dailyCheckIn: boolean; progress: number }[]>(
+      `SELECT "dailyCheckIn", progress FROM "Goal" WHERE id = $1`, id
+    ).catch(() => [] as { dailyCheckIn: boolean; progress: number }[]);
+    if (ciRow?.dailyCheckIn && ciRow.progress < 100) {
+      return NextResponse.json({ error: "Complete all check-ins before finishing this quest" }, { status: 400 });
+    }
+  }
+
   const goal = await prisma.goal.update({
     where: { id },
     data: {

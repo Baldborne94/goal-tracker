@@ -153,6 +153,8 @@ describe("PATCH /api/goals/[id] — completion", () => {
 
   it("awards XP when completing an active goal", async () => {
     prismaMock.goal.findFirst.mockResolvedValueOnce(activeGoal);
+    // guard query: dailyCheckIn=false → no restriction
+    prismaMock.$queryRawUnsafe.mockResolvedValueOnce([{ dailyCheckIn: false, progress: 0 }]);
     prismaMock.goal.update.mockResolvedValueOnce({ ...activeGoal, status: "completed", milestones: [], tags: [], category: null });
     prismaMock.user.update.mockResolvedValueOnce({});
 
