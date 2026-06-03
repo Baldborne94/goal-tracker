@@ -39,20 +39,24 @@ type Props = {
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function calcStreak(checkIns: CheckIn[]): number {
-  const dates = checkIns.map((c) => c.date).sort().reverse();
-  const today = new Date().toISOString().slice(0, 10);
+function calcStreak(checkIns: CheckIn[], checkInDays: string | null): number {
+  if (checkIns.length === 0) return 0;
+  const checked = new Set(checkIns.map((c) => c.date));
+  const scheduledDays = checkInDays ? checkInDays.split(",").map(Number) : [0, 1, 2, 3, 4, 5, 6];
+  const todayStr = new Date().toISOString().slice(0, 10);
   let streak = 0;
-  let current = today;
-  for (const d of dates) {
-    if (d === current) {
-      streak++;
-      const prev = new Date(current + "T12:00:00");
-      prev.setDate(prev.getDate() - 1);
-      current = prev.toISOString().slice(0, 10);
-    } else if (d < current) {
-      break;
+  const cursor = new Date(todayStr + "T12:00:00");
+  for (let i = 0; i < 365; i++) {
+    const dateStr = cursor.toISOString().slice(0, 10);
+    if (scheduledDays.includes(cursor.getDay())) {
+      if (checked.has(dateStr)) {
+        streak++;
+      } else if (dateStr < todayStr) {
+        break; // missed a scheduled day in the past
+      }
+      // today not yet checked in → don't break
     }
+    cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
 }
@@ -81,7 +85,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayCheckedIn = checkIns.some((c) => c.date === todayStr);
-  const streak = calcStreak(checkIns);
+  const streak = calcStreak(checkIns, goal.checkInDays);
   const scheduledToday = isTodayScheduled(goal.checkInDays);
 
   const last14 = Array.from({ length: 14 }, (_, i) => {
