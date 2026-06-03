@@ -3,31 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { getLevel } from "@/lib/levels";
 
-const LEVEL_ICONS = [
-  { min: 20000, icon: "✨" },
-  { min: 10000, icon: "🔱" },
-  { min: 6000,  icon: "⚜️" },
-  { min: 3000,  icon: "👑" },
-  { min: 1500,  icon: "🏰" },
-  { min: 600,   icon: "🛡️" },
-  { min: 200,   icon: "⚔️" },
-  { min: 0,     icon: "🗡️" },
-];
-
-function heroIcon(points: number): string {
-  return LEVEL_ICONS.find((l) => points >= l.min)?.icon ?? "🗡️";
-}
-
-export default function BottomNav({ points = 0 }: { points?: number }) {
+export default function BottomNav({ points = 0, heroClass }: { points?: number; heroClass?: string | null }) {
   const path = usePathname();
+  const tier = getLevel(points, heroClass);
 
   const NAV_ITEMS = [
     { href: "/dashboard", icon: "🏰", label: "Realm" },
     { href: "/goals",     icon: "⚔️", label: "Quests" },
     { href: "/finance",   icon: "💎", label: "Treasury" },
     { href: "/vita",      icon: "⚗️", label: "Alchemy" },
-    { href: "/profile",   icon: heroIcon(points), label: "Hero" },
+    { href: "/profile",   icon: tier.icon, label: "Hero" },
   ];
 
   return (
@@ -43,9 +30,7 @@ export default function BottomNav({ points = 0 }: { points?: number }) {
               style={{ color: active ? "var(--theme-accent)" : "var(--theme-text-muted)" }}
             >
               <span className={cn("text-2xl transition-transform", active && "scale-110")}>{item.icon}</span>
-              <span className="text-xs font-medium">
-                {item.label}
-              </span>
+              <span className="text-xs font-medium">{item.label}</span>
             </Link>
           );
         })}

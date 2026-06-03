@@ -44,6 +44,14 @@ export default async function ProfilePage() {
   const user = userRaw;
   const streak = calculateStreak(streakMilestones.map((m) => m.completedAt));
 
+  let heroClass: string | null = null;
+  try {
+    const hc = await prisma.$queryRawUnsafe<{ heroClass: string | null }[]>(
+      `SELECT "heroClass" FROM "User" WHERE id = $1`, userId
+    );
+    heroClass = hc[0]?.heroClass ?? null;
+  } catch { /* column not yet in DB */ }
+
   // Category breakdown
   const catMap = new Map<string, { name: string; color: string; total: number; completed: number }>();
   for (const g of goalsForStats) {
@@ -82,6 +90,7 @@ export default async function ProfilePage() {
       dbReminderTime={user?.reminderTime ?? "09:00"}
       categoryStats={categoryStats}
       weeklyMilestones={weeklyMilestones}
+      heroClass={heroClass}
     />
   );
 }

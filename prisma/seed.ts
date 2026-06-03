@@ -102,6 +102,8 @@ const MIGRATIONS = [
   `DELETE FROM "DailyChallenge" WHERE "type" IN ('check_habit', 'log_weight', 'log_meal')`,
   // Onboarding flag for new users (existing users get false and will see the tutorial once)
   `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "onboardingComplete" BOOLEAN NOT NULL DEFAULT false`,
+  // Hero class chosen during onboarding (nullable = not yet chosen)
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "heroClass" TEXT`,
 ];
 
 async function main() {

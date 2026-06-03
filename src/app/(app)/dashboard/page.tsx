@@ -11,21 +11,24 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  // Redirect first-time users (0 quests + onboarding not yet done) to the tutorial
+  // Fetch user flags + redirect checks
+  let heroClass: string | null = null;
+  let onboardingComplete = true;
+  try {
+    const flags = await prisma.$queryRawUnsafe<{ heroClass: string | null; onboardingComplete: boolean | null }[]>(
+      `SELECT "heroClass", "onboardingComplete" FROM "User" WHERE id = $1`, userId
+    );
+    heroClass = flags[0]?.heroClass ?? null;
+    onboardingComplete = flags[0]?.onboardingComplete ?? false;
+  } catch { heroClass = "fighter"; onboardingComplete = true; }
+
+  if (!heroClass) redirect("/class-select");
+
   const [earlyActive, earlyCompleted] = await Promise.all([
     prisma.goal.count({ where: { userId, status: "active" } }),
     prisma.goal.count({ where: { userId, status: "completed" } }),
   ]);
-  if (earlyActive === 0 && earlyCompleted === 0) {
-    let onboardingDone = false;
-    try {
-      const oc = await prisma.$queryRawUnsafe<{ onboardingComplete: boolean | null }[]>(
-        `SELECT "onboardingComplete" FROM "User" WHERE id = $1`, userId
-      );
-      onboardingDone = oc[0]?.onboardingComplete ?? false;
-    } catch { onboardingDone = true; }
-    if (!onboardingDone) redirect("/tutorial");
-  }
+  if (earlyActive === 0 && earlyCompleted === 0 && !onboardingComplete) redirect("/tutorial");
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [yr, mo] = currentMonth.split("-").map(Number);
@@ -161,7 +164,7 @@ export default async function DashboardPage() {
     ? (financeBudget.amount - financeSpent) / daysLeft
     : null;
 
-  const levelInfo = getLevelProgress(user?.points ?? 0);
+  const levelInfo = getLevelProgress(user?.points ?? 0, heroClass);
 
   const CAT_ICONS: Record<string, string> = {
     groceries: "🛒", eating_out: "🍽️", transport: "🚗", housing: "🏠",
