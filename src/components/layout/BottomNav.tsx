@@ -11,7 +11,7 @@ export default function BottomNav({ points = 0, heroClass }: { points?: number; 
 
   const NAV_ITEMS = [
     { href: "/dashboard", icon: "🏰", label: "Realm" },
-    { href: "/goals",     icon: "⚔️", label: "Quests" },
+    { href: "/goals",     icon: "📜", label: "Quests" },
     { href: "/finance",   icon: "💎", label: "Treasury" },
     { href: "/vita",      icon: "⚗️", label: "Alchemy" },
     { href: "/profile",   icon: tier.icon, label: "Hero" },

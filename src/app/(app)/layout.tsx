@@ -18,14 +18,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     );
     if (u[0]) dbUser = u[0];
   } catch {
+    // heroClass column may not exist yet — add it and retry
     try {
-      const basic = await prisma.user.findUnique({
-        where: { id: session.user!.id! },
-        select: { points: true },
-      });
-      if (basic) dbUser = { points: basic.points, theme: "warrior", heroClass: null };
+      await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "heroClass" TEXT`);
+      const u = await prisma.$queryRawUnsafe<{ points: number; theme: string; heroClass: string | null }[]>(
+        `SELECT points, theme, "heroClass" FROM "User" WHERE id = $1`, session.user!.id!
+      );
+      if (u[0]) dbUser = u[0];
     } catch {
-      // ignore
+      try {
+        const basic = await prisma.user.findUnique({
+          where: { id: session.user!.id! },
+          select: { points: true, theme: true },
+        });
+        if (basic) dbUser = { points: basic.points, theme: basic.theme ?? "warrior", heroClass: null };
+      } catch {
+        // ignore
+      }
     }
   }
 
