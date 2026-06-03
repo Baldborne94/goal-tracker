@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDate, calculateStreak } from "@/lib/utils";
 import { getLevelProgress } from "@/lib/levels";
+import { getClassDef } from "@/lib/classes";
 import LogoutButton from "@/components/LogoutButton";
 import DailyChallenges from "@/components/DailyChallenges";
 
@@ -165,6 +166,7 @@ export default async function DashboardPage() {
     : null;
 
   const levelInfo = getLevelProgress(user?.points ?? 0, heroClass);
+  const classDef = getClassDef(heroClass);
 
   const CAT_ICONS: Record<string, string> = {
     groceries: "🛒", eating_out: "🍽️", transport: "🚗", housing: "🏠",
@@ -178,7 +180,7 @@ export default async function DashboardPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <p className="text-[#9d8ac7] text-sm">Welcome,</p>
-          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} ⚔️</h1>
+          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} {classDef.icon}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Link
