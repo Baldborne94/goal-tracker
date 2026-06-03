@@ -112,16 +112,20 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
   }
 
   async function saveClass(key: string) {
+    const cls = CLASSES.find((c) => c.key === key)!;
+    // Optimistic update — UI reacts immediately
+    setHeroClass(key);
     setSavingClass(true);
     try {
-      const cls = CLASSES.find((c) => c.key === key)!;
       await updateHeroClass(key);
       await updateTheme(cls.theme);
       setTheme(cls.theme);
       localStorage.setItem("hero-theme", cls.theme);
-      setHeroClass(key);
       setClassExpanded(false);
-    } catch { /* ignore */ }
+    } catch {
+      // Revert if save failed
+      setHeroClass(initialHeroClass);
+    }
     setSavingClass(false);
   }
 
