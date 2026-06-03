@@ -137,7 +137,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">{getClassDef(heroClass).icon} Hero Profile</h1>
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">{level.icon} Hero Profile</h1>
 
       {/* Hero card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
