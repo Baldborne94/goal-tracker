@@ -36,3 +36,12 @@ export async function updateReminder(enabled: boolean, time: string): Promise<vo
     data: { reminderEnabled: enabled, reminderTime: time },
   });
 }
+
+export async function markOnboardingComplete(): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) return;
+  await prisma.$executeRawUnsafe(
+    `UPDATE "User" SET "onboardingComplete" = true WHERE id = $1`,
+    session.user.id
+  );
+}

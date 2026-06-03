@@ -10,27 +10,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await auth();
   if (!session) redirect("/login");
 
-  let dbUser: { points: number; theme: string; onboardingComplete: boolean } | null = null;
+  let dbUser: { points: number; theme: string } | null = null;
 
   try {
     dbUser = await prisma.user.findUnique({
       where: { id: session.user!.id! },
-      select: { points: true, theme: true, onboardingComplete: true },
+      select: { points: true, theme: true },
     });
   } catch {
-    // New columns not yet in DB — skip onboarding redirect and use defaults
     try {
       const basic = await prisma.user.findUnique({
         where: { id: session.user!.id! },
         select: { points: true },
       });
-      if (basic) dbUser = { points: basic.points, theme: "warrior", onboardingComplete: true };
+      if (basic) dbUser = { points: basic.points, theme: "warrior" };
     } catch {
       // ignore
     }
   }
-
-  if (dbUser && !dbUser.onboardingComplete) redirect("/onboarding");
 
   return (
     <SessionProvider>
