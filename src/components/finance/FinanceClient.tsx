@@ -65,11 +65,13 @@ type Expense = {
 };
 type CatBudget = { id: string; category: string; amount: number };
 type TrendPoint = { month: string; label: string; spent: number; budget: number | null };
+type RecurringBill = { id: string; title: string; amount: number; dueDay: number; category: string; notifyDaysBefore: number; active: boolean };
 type Props = {
   initialMonth: string;
   initialBudget: Budget;
   initialExpenses: Expense[];
   trend: TrendPoint[];
+  initialBills?: RecurringBill[];
 };
 
 function toDateKey(d: Date) {
@@ -110,7 +112,19 @@ function DonutChart({ breakdown }: { breakdown: { cat: string; pct: number }[] }
   );
 }
 
-export default function FinanceClient({ initialMonth, initialBudget, initialExpenses, trend }: Props) {
+function getDaysUntilDue(dueDay: number): number {
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  if (dueDay >= dayOfMonth) return dueDay - dayOfMonth;
+  return (daysInMonth - dayOfMonth) + dueDay;
+}
+
+function ordinal(n: number) {
+  return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th");
+}
+
+export default function FinanceClient({ initialMonth, initialBudget, initialExpenses, trend, initialBills = [] }: Props) {
   const [month, setMonth] = useState(initialMonth);
   const [budget, setBudget] = useState(initialBudget);
   const [expenses, setExpenses] = useState(initialExpenses);
@@ -143,6 +157,17 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
   const [catBudgets, setCatBudgets] = useState<CatBudget[]>([]);
   const [editingCatBudget, setEditingCatBudget] = useState<string | null>(null);
   const [catBudgetInput, setCatBudgetInput] = useState("");
+
+  // Recurring bills
+  const [bills, setBills] = useState<RecurringBill[]>(initialBills);
+  const [showBillForm, setShowBillForm] = useState(false);
+  const [billFormTitle, setBillFormTitle] = useState("");
+  const [billFormAmount, setBillFormAmount] = useState("");
+  const [billFormCat, setBillFormCat] = useState("utilities");
+  const [billFormDueDay, setBillFormDueDay] = useState(1);
+  const [billFormNotify, setBillFormNotify] = useState(3);
+  const [savingBill, setSavingBill] = useState(false);
+  const [deletingBillId, setDeletingBillId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/kakeebo/category-budget?month=${month}`)
@@ -188,6 +213,51 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     const daysLeft = Math.max(1, daysInMonth - now.getDate() + 1);
     return { amount: remaining / daysLeft, daysLeft };
   }, [budget, remaining, isCurrentMonth, now]);
+
+  function openBillForm(prefill?: { title?: string; amount?: number; category?: string }) {
+    setBillFormTitle(prefill?.title ?? "");
+    setBillFormAmount(prefill?.amount ? String(prefill.amount) : "");
+    setBillFormCat(prefill?.category ?? "utilities");
+    setBillFormDueDay(1);
+    setBillFormNotify(3);
+    setShowBillForm(true);
+  }
+
+  async function saveBill() {
+    const val = parseFloat(billFormAmount);
+    if (!billFormTitle.trim() || !billFormAmount || val <= 0) return;
+    setSavingBill(true);
+    const r = await fetch("/api/bills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: billFormTitle.trim(), amount: val, dueDay: billFormDueDay, category: billFormCat, notifyDaysBefore: billFormNotify }),
+    });
+    if (r.ok) {
+      const bill = await r.json();
+      setBills(prev => [...prev, bill].sort((a, b) => a.dueDay - b.dueDay));
+      setShowBillForm(false);
+    }
+    setSavingBill(false);
+  }
+
+  async function deleteBill(id: string) {
+    setDeletingBillId(id);
+    const r = await fetch(`/api/bills/${id}`, { method: "DELETE" });
+    if (r.ok) setBills(prev => prev.filter(b => b.id !== id));
+    setDeletingBillId(null);
+  }
+
+  async function toggleBillActive(id: string, active: boolean) {
+    const r = await fetch(`/api/bills/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active }),
+    });
+    if (r.ok) {
+      const updated = await r.json();
+      setBills(prev => prev.map(b => b.id === id ? { ...b, ...updated } : b));
+    }
+  }
 
   function openAdd() {
     setFormMode("add");
@@ -641,6 +711,62 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         )
       )}
 
+      {/* Recurring bills */}
+      <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-[#c4b5fd] text-sm">📌 Fixed payments</h2>
+          <button
+            onClick={() => openBillForm()}
+            className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95 transition-all"
+          >
+            + Add bill
+          </button>
+        </div>
+
+        {bills.length === 0 ? (
+          <p className="text-sm text-center py-4" style={{ color: "var(--theme-text-muted)" }}>
+            No fixed payments yet — add rent, utilities, subscriptions, etc.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {bills.map(bill => {
+              const s = CATS[bill.category] ?? CATS.other;
+              const daysUntil = getDaysUntilDue(bill.dueDay);
+              const badgeColor = daysUntil <= 3 ? "text-red-400 bg-red-950/40 border-red-700/40" : daysUntil <= 7 ? "text-amber-400 bg-amber-950/30 border-amber-700/30" : "text-green-400 bg-green-950/30 border-green-700/30";
+              return (
+                <div key={bill.id} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${!bill.active ? "opacity-50" : ""}`} style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}>
+                  <span className="text-xl flex-shrink-0">{s.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#ede9ff] truncate">{bill.title}</p>
+                    <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Every {ordinal(bill.dueDay)} · notify {bill.notifyDaysBefore}d before</p>
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${badgeColor}`}>
+                    {daysUntil === 0 ? "today" : `${daysUntil}d`}
+                  </span>
+                  <span className="font-semibold text-sm flex-shrink-0" style={{ color: s.color }}>€{bill.amount.toFixed(2)}</span>
+                  <button
+                    onClick={() => toggleBillActive(bill.id, !bill.active)}
+                    className="text-sm flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg border transition-colors"
+                    style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+                    title={bill.active ? "Pause bill" : "Activate bill"}
+                  >
+                    {bill.active ? "⏸" : "▶"}
+                  </button>
+                  <button
+                    onClick={() => deleteBill(bill.id)}
+                    disabled={deletingBillId === bill.id}
+                    className="text-xl leading-none flex-shrink-0 disabled:opacity-40 hover:text-red-400 transition-colors"
+                    style={{ color: "var(--theme-surface-border)" }}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Category breakdown */}
       {catBreakdown.length > 0 && (
         <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
@@ -854,6 +980,14 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                             ✏️
                           </button>
                           <button
+                            onClick={() => openBillForm({ title: e.description ?? undefined, amount: e.amount, category: e.category })}
+                            className="text-xs flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border transition-colors"
+                            style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+                            title="Pin as recurring bill"
+                          >
+                            📌
+                          </button>
+                          <button
                             onClick={() => deleteExpense(e.id)}
                             disabled={deletingId === e.id}
                             className="text-xl leading-none flex-shrink-0 disabled:opacity-40 hover:text-red-400 transition-colors"
@@ -920,6 +1054,97 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
               <button onClick={() => { setShowImport(false); setCsvRows([]); }} disabled={importing} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border disabled:opacity-50" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
               <button onClick={confirmImport} disabled={importing || csvRows.length === 0} className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95">
                 {importing ? `${importDone}/${csvRows.length}...` : `Import ${csvRows.length}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add bill bottom sheet */}
+      {showBillForm && (
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]">
+          <div className="rounded-t-2xl border w-full max-w-lg px-5 pt-5 pb-20 max-h-[90vh] overflow-y-auto" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+            <h3 className="font-bold text-[#ede9ff] mb-4">📌 Add recurring bill</h3>
+
+            <div className="space-y-3 mb-4">
+              <input
+                value={billFormTitle}
+                onChange={e => setBillFormTitle(e.target.value)}
+                placeholder="Bill name (e.g. Rent, Netflix, Car payment)"
+                className={inputCls}
+                style={inputStyle}
+              />
+              <input
+                type="number"
+                value={billFormAmount}
+                onChange={e => setBillFormAmount(e.target.value)}
+                placeholder="Amount (€)"
+                min="0"
+                step="0.01"
+                className={inputCls}
+                style={inputStyle}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>Category</label>
+              <div className="grid grid-cols-4 gap-2">
+                {Object.entries(CATS).map(([key, s]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setBillFormCat(key)}
+                    className={`flex flex-col items-center p-2.5 rounded-xl border text-xs transition-colors ${billFormCat === key ? "border-amber-500/60 bg-amber-900/20 text-[#ede9ff]" : ""}`}
+                    style={billFormCat === key ? {} : { borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+                  >
+                    <span className="text-xl mb-0.5">{s.icon}</span>
+                    <span className="leading-tight text-center">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border p-4 mb-4 space-y-4" style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>Due day of month</label>
+                  <span className="text-sm font-bold text-amber-400">{ordinal(billFormDueDay)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={28}
+                  value={billFormDueDay}
+                  onChange={e => setBillFormDueDay(Number(e.target.value))}
+                  className="w-full accent-amber-500"
+                />
+                <div className="flex justify-between text-[10px] mt-1" style={{ color: "var(--theme-text-muted)" }}>
+                  <span>1st</span><span>15th</span><span>28th</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>Notify days before</label>
+                  <span className="text-sm font-bold text-amber-400">{billFormNotify} day{billFormNotify !== 1 ? "s" : ""}</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={7}
+                  value={billFormNotify}
+                  onChange={e => setBillFormNotify(Number(e.target.value))}
+                  className="w-full accent-amber-500"
+                />
+                <div className="flex justify-between text-[10px] mt-1" style={{ color: "var(--theme-text-muted)" }}>
+                  <span>1 day</span><span>4 days</span><span>7 days</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setShowBillForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
+              <button onClick={saveBill} disabled={savingBill || !billFormTitle.trim() || !billFormAmount} className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all">
+                {savingBill ? "..." : "Save bill"}
               </button>
             </div>
           </div>

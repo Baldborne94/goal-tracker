@@ -35,6 +35,7 @@ model User {
   categoryBudgets   CategoryBudget[]
   dailyChallenges   UserDailyChallenge[]
   questCheckIns     QuestCheckIn[]
+  recurringBills    RecurringBill[]
 }
 
 model Account {
@@ -309,4 +310,18 @@ model QuestCheckIn {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([goalId, userId, date])
+}
+
+model RecurringBill {
+  id               String   @id @default(cuid())
+  userId           String
+  title            String
+  amount           Float
+  dueDay           Int
+  category         String
+  notifyDaysBefore Int      @default(3)
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

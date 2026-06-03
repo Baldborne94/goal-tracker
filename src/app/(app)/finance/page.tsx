@@ -11,7 +11,7 @@ export default async function FinancePage() {
   const start = new Date(year, m - 1, 1);
   const end = new Date(year, m, 1);
 
-  const [budget, expenses] = await Promise.all([
+  const [budget, expenses, bills] = await Promise.all([
     prisma.monthlyBudget.findUnique({
       where: { userId_month: { userId, month: currentMonth } },
     }),
@@ -19,6 +19,12 @@ export default async function FinancePage() {
       where: { userId, date: { gte: start, lt: end } },
       orderBy: { date: "desc" },
     }),
+    prisma.$queryRawUnsafe<{
+      id: string; title: string; amount: number; dueDay: number; category: string; notifyDaysBefore: number; active: boolean;
+    }[]>(
+      `SELECT id, title, amount, "dueDay", category, "notifyDaysBefore", active FROM "RecurringBill" WHERE "userId" = $1 ORDER BY "dueDay" ASC`,
+      userId
+    ).catch(() => []),
   ]);
 
   // Check if the current month has been closed (reward already claimed)
@@ -64,6 +70,7 @@ export default async function FinancePage() {
       initialBudget={budget ? { id: budget.id, month: budget.month, amount: budget.amount, closed: budgetClosed } : null}
       initialExpenses={JSON.parse(JSON.stringify(expenses))}
       trend={trend}
+      initialBills={bills}
     />
   );
 }

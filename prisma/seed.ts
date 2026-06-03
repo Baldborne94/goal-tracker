@@ -104,6 +104,21 @@ const MIGRATIONS = [
   `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "onboardingComplete" BOOLEAN NOT NULL DEFAULT false`,
   // Hero class chosen during onboarding (nullable = not yet chosen)
   `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "heroClass" TEXT`,
+  // Recurring bills with push notification reminders
+  `CREATE TABLE IF NOT EXISTS "RecurringBill" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "dueDay" INTEGER NOT NULL,
+    "category" TEXT NOT NULL,
+    "notifyDaysBefore" INTEGER NOT NULL DEFAULT 3,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "RecurringBill_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "RecurringBill_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "RecurringBill" ENABLE ROW LEVEL SECURITY`,
 ];
 
 async function main() {

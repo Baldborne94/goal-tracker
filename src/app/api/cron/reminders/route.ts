@@ -108,6 +108,31 @@ export async function GET(req: Request) {
         }
       }
 
+      // Bill payment reminders
+      {
+        const bills = await prisma.$queryRawUnsafe<{
+          id: string; title: string; amount: number; dueDay: number; notifyDaysBefore: number;
+        }[]>(
+          `SELECT id, title, amount, "dueDay", "notifyDaysBefore" FROM "RecurringBill" WHERE "userId" = $1 AND active = true`,
+          user.id
+        ).catch(() => []);
+
+        const daysInMonth = new Date(y, mo, 0).getDate();
+        for (const bill of bills) {
+          const daysUntilDue = bill.dueDay >= dayOfMonth
+            ? bill.dueDay - dayOfMonth
+            : (daysInMonth - dayOfMonth) + bill.dueDay;
+          if (daysUntilDue === bill.notifyDaysBefore) {
+            const suffix = bill.dueDay === 1 ? "st" : bill.dueDay === 2 ? "nd" : bill.dueDay === 3 ? "rd" : "th";
+            sent += await sendPush(webpush, user.pushSubscriptions, {
+              title: `💳 Payment in ${bill.notifyDaysBefore} day${bill.notifyDaysBefore === 1 ? "" : "s"}: ${bill.title}`,
+              body: `€${bill.amount.toFixed(2)} due on the ${bill.dueDay}${suffix} — make sure funds are ready!`,
+              tag: `bill-${bill.id}-${todayLocal.slice(0, 7)}`,
+            });
+          }
+        }
+      }
+
       // On the 1st of each month at 09:00 local time: create recurring expenses
       if (dayOfMonth === 1) {
         const prevMonth = new Date(y, mo - 2, 1);
