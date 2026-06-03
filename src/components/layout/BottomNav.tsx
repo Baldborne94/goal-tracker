@@ -13,7 +13,7 @@ export default function BottomNav({ points = 0, heroClass }: { points?: number; 
     { href: "/dashboard", icon: "🏰", label: "Realm" },
     { href: "/goals",     icon: "📜", label: "Quests" },
     { href: "/finance",   icon: "💎", label: "Treasury" },
-    { href: "/vita",      icon: "🍗", label: "Vita" },
+    { href: "/vita",      icon: "🍗", label: "Meals" },
     { href: "/profile",   icon: tier.icon, label: "Hero" },
   ];
 
