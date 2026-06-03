@@ -75,7 +75,7 @@ export default async function DashboardPage() {
   const dayStart = new Date(); dayStart.setHours(0,0,0,0);
   const dayEnd = new Date(dayStart.getTime() + 86400000);
 
-  const [active, completed, topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, habits, weightCount, mealCount] = await Promise.all([
+  const [active, completed, topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, questCheckinTodayRaw, completedQuestCount] = await Promise.all([
     prisma.goal.count({ where: { userId, status: "active" } }),
     prisma.goal.count({ where: { userId, status: "completed" } }),
     prisma.expense.groupBy({
@@ -94,9 +94,11 @@ export default async function DashboardPage() {
     ).catch(() => [] as { challengeId: string; completed: boolean }[]),
     prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
     prisma.expense.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
-    prisma.habit.findMany({ where: { userId }, include: { logs: { where: { date: today } } } }).catch(() => [] as { logs: unknown[] }[]),
-    prisma.weightEntry.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
-    prisma.mealLog.count({ where: { userId, date: today } }).catch(() => 0),
+    prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "QuestCheckIn" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]),
+    prisma.goal.count({ where: { userId, status: "completed", completedAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
   ]);
 
   // Check-in quests scheduled for today
@@ -118,13 +120,12 @@ export default async function DashboardPage() {
     checkedInTodayIds = new Set(doneToday.map((d) => d.goalId));
   }
 
-  const allHabitsDone = habits.length > 0 && habits.every((h: { logs: unknown[] }) => h.logs.length > 0);
   const conditionMap: Record<string, boolean> = {
-    complete_milestone: milestoneCount >= 1,
-    log_expense: expenseCount >= 1,
-    check_habit: allHabitsDone,
-    log_weight: weightCount >= 1,
-    log_meal: mealCount >= 1,
+    complete_milestone:    milestoneCount >= 1,
+    log_expense:           expenseCount >= 1,
+    daily_checkin:         Number(questCheckinTodayRaw[0]?.count ?? 0) >= 1,
+    complete_3_milestones: milestoneCount >= 3,
+    complete_quest:        completedQuestCount >= 1,
   };
   const initialChallenges = rawChallenges.map(c => ({
     ...c,

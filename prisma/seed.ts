@@ -14,11 +14,11 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const DAILY_CHALLENGES = [
-  { title: "Early Bird", description: "Complete at least 1 milestone today", xp: 15, type: "complete_milestone" },
-  { title: "Budget Tracker", description: "Log at least 1 expense today", xp: 10, type: "log_expense" },
-  { title: "Habit Warrior", description: "Complete all your habits today", xp: 20, type: "check_habit" },
-  { title: "Iron Scale", description: "Log your weight today", xp: 10, type: "log_weight" },
-  { title: "Mindful Eater", description: "Log a meal today", xp: 10, type: "log_meal" },
+  { title: "Early Bird",    description: "Complete at least 1 milestone today",    xp: 15, type: "complete_milestone" },
+  { title: "Budget Tracker",description: "Log at least 1 expense today",           xp: 10, type: "log_expense" },
+  { title: "Check-in Hero", description: "Do a daily check-in on any quest today", xp: 15, type: "daily_checkin" },
+  { title: "Momentum",      description: "Complete 3 milestones today",            xp: 20, type: "complete_3_milestones" },
+  { title: "Quest Closer",  description: "Mark a quest as complete today",         xp: 25, type: "complete_quest" },
 ];
 
 // Applies schema changes that can't go through prisma db push on pooled connections.
@@ -98,6 +98,8 @@ const MIGRATIONS = [
   `ALTER TABLE "DailyChallenge" ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE "UserDailyChallenge" ENABLE ROW LEVEL SECURITY`,
   `ALTER TABLE "QuestCheckIn" ENABLE ROW LEVEL SECURITY`,
+  // Remove Alchemy-dependent challenges that can never be completed
+  `DELETE FROM "DailyChallenge" WHERE "type" IN ('check_habit', 'log_weight', 'log_meal')`,
 ];
 
 async function main() {

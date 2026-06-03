@@ -13,11 +13,11 @@ export type Challenge = {
 };
 
 const TYPE_ICONS: Record<string, string> = {
-  complete_milestone: "⚔️",
-  log_expense: "💰",
-  check_habit: "🔁",
-  log_weight: "⚖️",
-  log_meal: "🍽️",
+  complete_milestone:    "⚔️",
+  log_expense:           "💰",
+  daily_checkin:         "📅",
+  complete_3_milestones: "🔥",
+  complete_quest:        "👑",
 };
 
 export default function DailyChallenges({ initialChallenges }: { initialChallenges: Challenge[] }) {
