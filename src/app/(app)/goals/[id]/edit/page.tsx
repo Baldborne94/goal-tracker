@@ -24,7 +24,18 @@ export default async function EditGoalPage({
 
   if (!goal) notFound();
 
-  const g = goal as typeof goal & { reminderTime?: string | null; reminderFrequency?: string | null; reminderDay?: number | null; reminderDays?: string | null; isRecurring?: boolean; recurrenceType?: string | null };
+  const g = goal as typeof goal & {
+    reminderTime?: string | null;
+    reminderFrequency?: string | null;
+    reminderDay?: number | null;
+    reminderDays?: string | null;
+    isRecurring?: boolean;
+    recurrenceType?: string | null;
+    dailyCheckIn?: boolean;
+    checkInXP?: number;
+    checkInDays?: string | null;
+  };
+
   const initialData = {
     id: goal.id,
     title: goal.title,
@@ -38,8 +49,15 @@ export default async function EditGoalPage({
     reminderDays: g.reminderDays ?? null,
     isRecurring: g.isRecurring ?? false,
     recurrenceType: g.recurrenceType ?? null,
+    dailyCheckIn: g.dailyCheckIn ?? false,
+    checkInXP: g.checkInXP ?? 5,
+    checkInDays: g.checkInDays ?? null,
     tags: goal.tags.map((gt: { tag: { name: string } }) => gt.tag.name),
-    milestones: goal.milestones.map((m: { title: string }) => m.title),
+    milestones: goal.milestones.map((m: { id: string; title: string; completed: boolean }) => ({
+      id: m.id,
+      title: m.title,
+      completed: m.completed,
+    })),
   };
 
   return (

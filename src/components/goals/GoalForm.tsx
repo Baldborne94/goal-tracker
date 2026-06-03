@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Category = { id: string; name: string; color: string };
-
 type ReminderFrequency = "daily" | "weekly" | "monthly" | "custom";
+type MilestoneInit = { id: string; title: string; completed: boolean };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -24,8 +24,11 @@ type Props = {
     reminderDays?: string | null;
     isRecurring?: boolean;
     recurrenceType?: string | null;
+    dailyCheckIn?: boolean;
+    checkInXP?: number;
+    checkInDays?: string | null;
     tags: string[];
-    milestones: string[];
+    milestones: string[] | MilestoneInit[];
   };
 };
 
@@ -37,11 +40,6 @@ function calcXP(priority: string, milestonesCount: number, hasDescription: boole
   if (hasDescription) pts += 5;
   return pts;
 }
-
-function fmtDate(d: Date): string {
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
-
 
 export default function GoalForm({ categories, initialData }: Props) {
   const router = useRouter();
@@ -59,19 +57,34 @@ export default function GoalForm({ categories, initialData }: Props) {
     (initialData?.reminderFrequency as ReminderFrequency) || "daily"
   );
   const [reminderDay, setReminderDay] = useState<number>(
-    initialData?.reminderDay ?? (new Date().getDay())
+    initialData?.reminderDay ?? new Date().getDay()
   );
   const [reminderDays, setReminderDays] = useState<number[]>(
     initialData?.reminderDays ? initialData.reminderDays.split(",").map(Number) : [new Date().getDay()]
   );
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState("");
-  const [milestones, setMilestones] = useState<string[]>(initialData?.milestones || []);
+
+  // Milestones: in edit mode existingMilestones holds the current DB milestones;
+  // milestones holds newly added ones (both modes).
+  const [existingMilestones, setExistingMilestones] = useState<MilestoneInit[]>(
+    isEditing ? (initialData?.milestones as MilestoneInit[] || []) : []
+  );
+  const [milestones, setMilestones] = useState<string[]>(
+    !isEditing ? (initialData?.milestones as string[] || []) : []
+  );
   const [milestoneInput, setMilestoneInput] = useState("");
+
   const [isRecurring, setIsRecurring] = useState(initialData?.isRecurring ?? false);
   const [recurrenceType, setRecurrenceType] = useState<"weekly" | "monthly">(
     (initialData?.recurrenceType as "weekly" | "monthly") ?? "monthly"
   );
+
+  // Daily check-in settings
+  const [dailyCheckIn, setDailyCheckIn] = useState(initialData?.dailyCheckIn ?? false);
+  const [checkInXP, setCheckInXP] = useState(initialData?.checkInXP ?? 5);
+  const [checkInDays, setCheckInDays] = useState<string | null>(initialData?.checkInDays ?? null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -85,6 +98,18 @@ export default function GoalForm({ categories, initialData }: Props) {
     const m = milestoneInput.trim();
     if (m) setMilestones([...milestones, m]);
     setMilestoneInput("");
+  }
+
+  function toggleCheckInDay(dayIdx: number) {
+    if (checkInDays === null) {
+      // Was "every day" → select just this one day
+      setCheckInDays(String(dayIdx));
+      return;
+    }
+    const current = checkInDays.split(",").map(Number);
+    const selected = current.includes(dayIdx);
+    const next = selected ? current.filter((d) => d !== dayIdx) : [...current, dayIdx].sort((a, b) => a - b);
+    setCheckInDays(next.length === 0 ? null : next.join(","));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -105,9 +130,18 @@ export default function GoalForm({ categories, initialData }: Props) {
         reminderDay: form.reminderTime && reminderFrequency !== "daily" && reminderFrequency !== "custom" ? reminderDay : null,
         reminderDays: form.reminderTime && reminderFrequency === "custom" ? reminderDays.join(",") : null,
         tags,
-        milestones,
+        // create mode: send milestones array; edit mode: send kept IDs + new titles
+        ...(isEditing
+          ? {
+              milestonesKept: existingMilestones.map((m) => m.id),
+              milestonesAdded: milestones,
+            }
+          : { milestones }),
         isRecurring,
         recurrenceType: isRecurring ? recurrenceType : null,
+        dailyCheckIn,
+        checkInXP: dailyCheckIn ? checkInXP : undefined,
+        checkInDays: dailyCheckIn ? checkInDays : undefined,
       }),
     });
 
@@ -116,7 +150,7 @@ export default function GoalForm({ categories, initialData }: Props) {
       setError(data.error || "Something went wrong");
       setLoading(false);
     } else {
-      router.push(`/goals`);
+      router.push("/goals");
     }
   }
 
@@ -189,7 +223,6 @@ export default function GoalForm({ categories, initialData }: Props) {
       <div>
         <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🔔 Reminder</label>
 
-        {/* Frequency tabs */}
         <div className="grid grid-cols-4 gap-1 mb-2 p-1 rounded-xl" style={{ background: "var(--theme-bg)" }}>
           {(["daily", "weekly", "monthly", "custom"] as ReminderFrequency[]).map((f) => (
             <button
@@ -208,7 +241,6 @@ export default function GoalForm({ categories, initialData }: Props) {
           ))}
         </div>
 
-        {/* Day picker for weekly */}
         {reminderFrequency === "weekly" && (
           <div className="flex gap-1 mb-2">
             {WEEKDAYS.map((day, i) => (
@@ -229,7 +261,6 @@ export default function GoalForm({ categories, initialData }: Props) {
           </div>
         )}
 
-        {/* Day picker for monthly */}
         {reminderFrequency === "monthly" && (
           <div className="flex items-center gap-2 mb-2">
             <label className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Day of month</label>
@@ -246,7 +277,6 @@ export default function GoalForm({ categories, initialData }: Props) {
           </div>
         )}
 
-        {/* Multi-day picker for custom */}
         {reminderFrequency === "custom" && (
           <div className="mb-2">
             <p className="text-xs mb-1.5" style={{ color: "var(--theme-text-muted)" }}>Pick one or more days</p>
@@ -258,7 +288,7 @@ export default function GoalForm({ categories, initialData }: Props) {
                     key={day}
                     type="button"
                     onClick={() => {
-                      if (selected && reminderDays.length === 1) return; // keep at least one
+                      if (selected && reminderDays.length === 1) return;
                       setReminderDays(selected ? reminderDays.filter((d) => d !== i) : [...reminderDays, i].sort((a, b) => a - b));
                     }}
                     className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
@@ -276,7 +306,6 @@ export default function GoalForm({ categories, initialData }: Props) {
           </div>
         )}
 
-        {/* Time picker */}
         <div className="flex items-center gap-3">
           <input
             type="time"
@@ -376,60 +405,102 @@ export default function GoalForm({ categories, initialData }: Props) {
         )}
       </div>
 
-      {!isEditing && (
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-sm font-medium" style={{ color: "var(--theme-text-muted)" }}>⭐ Milestones / Sub-goals</label>
-            {milestones.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setMilestones([])}
-                className="text-xs hover:text-red-400 transition-colors"
-                style={{ color: "var(--theme-text-muted)" }}
-              >
-                Clear all ({milestones.length})
-              </button>
-            )}
-          </div>
-          <div className="flex gap-2 mb-2">
-            <input
-              value={milestoneInput}
-              onChange={(e) => setMilestoneInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMilestone(); } }}
-              placeholder="Add a milestone..."
-              className="flex-1 px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40 text-white placeholder-[var(--theme-text-muted)] text-sm"
-              style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
-            />
+      {/* Milestones — shown in both create and edit mode */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium" style={{ color: "var(--theme-text-muted)" }}>⭐ Milestones</label>
+          {!isEditing && milestones.length > 0 && (
             <button
               type="button"
-              onClick={addMilestone}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium border hover:border-[var(--theme-accent)]/40 transition-colors"
-              style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+              onClick={() => setMilestones([])}
+              className="text-xs hover:text-red-400 transition-colors"
+              style={{ color: "var(--theme-text-muted)" }}
             >
-              +
+              Clear all ({milestones.length})
             </button>
-          </div>
-          {milestones.length > 0 && (
-            <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-              {milestones.map((m, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-xl px-3 py-2 text-sm border"
-                  style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+          )}
+        </div>
+
+        {/* Existing milestones in edit mode */}
+        {isEditing && existingMilestones.length > 0 && (
+          <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto pr-1">
+            {existingMilestones.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm border"
+                style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+              >
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${
+                    m.completed ? "bg-amber-500 text-black" : "border"
+                  }`}
+                  style={m.completed ? {} : { borderColor: "var(--theme-surface-border)" }}
                 >
-                  <span className="flex items-center gap-2 min-w-0">
+                  {m.completed && "✓"}
+                </span>
+                <span
+                  className={`flex-1 truncate ${m.completed ? "line-through" : "text-white"}`}
+                  style={m.completed ? { color: "var(--theme-text-muted)" } : {}}
+                >
+                  {m.title}
+                </span>
+                {!m.completed && (
+                  <button
+                    type="button"
+                    onClick={() => setExistingMilestones(existingMilestones.filter((x) => x.id !== m.id))}
+                    className="hover:text-red-400 flex-shrink-0 ml-1"
+                    style={{ color: "var(--theme-text-muted)" }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-2 mb-2">
+          <input
+            value={milestoneInput}
+            onChange={(e) => setMilestoneInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMilestone(); } }}
+            placeholder={isEditing ? "Add new milestone..." : "Add a milestone..."}
+            className="flex-1 px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40 text-white placeholder-[var(--theme-text-muted)] text-sm"
+            style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+          />
+          <button
+            type="button"
+            onClick={addMilestone}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium border hover:border-[var(--theme-accent)]/40 transition-colors"
+            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+          >
+            +
+          </button>
+        </div>
+        {milestones.length > 0 && (
+          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            {milestones.map((m, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-xl px-3 py-2 text-sm border"
+                style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  {isEditing ? (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 border border-amber-700/30 flex-shrink-0">new</span>
+                  ) : (
                     <span className="w-5 h-5 rounded-full text-xs flex items-center justify-center font-semibold border flex-shrink-0 text-amber-400 bg-amber-900/40 border-amber-700/40">
                       {i + 1}
                     </span>
-                    <span className="truncate text-white">{m}</span>
-                  </span>
-                  <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="hover:text-red-400 ml-2 flex-shrink-0">×</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                  )}
+                  <span className="truncate text-white">{m}</span>
+                </span>
+                <button type="button" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))} className="hover:text-red-400 ml-2 flex-shrink-0">×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {!isEditing && (
         <div className="flex items-center gap-3 bg-amber-900/20 border border-amber-700/30 rounded-xl px-4 py-3">
@@ -443,6 +514,7 @@ export default function GoalForm({ categories, initialData }: Props) {
         </div>
       )}
 
+      {/* Recurring quest toggle */}
       <div className="rounded-xl border p-4 space-y-3" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <button
           type="button"
@@ -473,6 +545,86 @@ export default function GoalForm({ categories, initialData }: Props) {
                 {t}
               </button>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Daily check-in toggle */}
+      <div className="rounded-xl border p-4 space-y-3" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+        <button
+          type="button"
+          onClick={() => setDailyCheckIn(!dailyCheckIn)}
+          className="flex items-center justify-between w-full"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xl">📅</span>
+            <div className="text-left">
+              <p className="text-sm font-medium text-[#ede9ff]">Daily check-in</p>
+              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Log progress on scheduled days and earn XP</p>
+            </div>
+          </div>
+          <div className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${dailyCheckIn ? "bg-amber-500" : "bg-[#3b2d6e]"}`}>
+            <div className={`w-5 h-5 rounded-full bg-white m-0.5 transition-transform ${dailyCheckIn ? "translate-x-5" : "translate-x-0"}`} />
+          </div>
+        </button>
+
+        {dailyCheckIn && (
+          <div className="space-y-3 pt-1">
+            {/* XP per check-in */}
+            <div className="flex items-center gap-3">
+              <label className="text-xs flex-1" style={{ color: "var(--theme-text-muted)" }}>XP per check-in</label>
+              <input
+                type="number"
+                value={checkInXP}
+                onChange={(e) => setCheckInXP(Math.max(1, Math.min(50, parseInt(e.target.value) || 5)))}
+                min="1"
+                max="50"
+                className="w-20 px-3 py-2 rounded-xl border text-white text-sm text-center focus:outline-none"
+                style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+              />
+            </div>
+
+            {/* Day schedule */}
+            <div>
+              <p className="text-xs mb-2" style={{ color: "var(--theme-text-muted)" }}>Schedule</p>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setCheckInDays(null)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border whitespace-nowrap"
+                  style={
+                    checkInDays === null
+                      ? { background: "var(--theme-accent)", borderColor: "var(--theme-accent)", color: "#000" }
+                      : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }
+                  }
+                >
+                  Every day
+                </button>
+                {WEEKDAYS.map((day, i) => {
+                  const selected = checkInDays !== null && checkInDays.split(",").map(Number).includes(i);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleCheckInDay(i)}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                      style={
+                        selected
+                          ? { background: "var(--theme-accent)", color: "#000" }
+                          : { background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", border: "1px solid" }
+                      }
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+              {checkInDays !== null && (
+                <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>
+                  {checkInDays.split(",").length}×/week · {checkInDays.split(",").map((d) => WEEKDAYS[Number(d)]).join(", ")}
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

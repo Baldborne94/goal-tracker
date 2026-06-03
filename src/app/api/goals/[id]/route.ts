@@ -37,7 +37,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType } = body;
+  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType, dailyCheckIn, checkInXP, checkInDays, milestonesKept, milestonesAdded } = body;
 
   const existing = await prisma.goal.findFirst({
     where: { id, userId: session.user.id },
@@ -72,6 +72,11 @@ export async function PATCH(
       recurrenceType: isRecurring !== undefined
         ? (isRecurring ? (recurrenceType || "monthly") : null)
         : existing.recurrenceType,
+      ...(dailyCheckIn !== undefined && {
+        dailyCheckIn: !!dailyCheckIn,
+        checkInXP: dailyCheckIn ? (parseInt(String(checkInXP)) || 5) : 5,
+        checkInDays: dailyCheckIn ? (checkInDays || null) : null,
+      }),
       completedAt:
         isNowComplete && !wasCompleted ? new Date() : existing.completedAt,
     },
@@ -81,6 +86,29 @@ export async function PATCH(
       tags: { include: { tag: true } },
     },
   });
+
+  // Handle milestone edits
+  if (milestonesKept !== undefined || milestonesAdded?.length > 0) {
+    if (milestonesKept !== undefined) {
+      await prisma.milestone.deleteMany({
+        where: { goalId: id, completed: false, id: { notIn: milestonesKept } },
+      });
+    }
+    if (milestonesAdded?.length > 0) {
+      const last = await prisma.milestone.findFirst({ where: { goalId: id }, orderBy: { order: "desc" }, select: { order: true } });
+      const startOrder = (last?.order ?? -1) + 1;
+      await prisma.milestone.createMany({
+        data: (milestonesAdded as string[]).map((title: string, i: number) => ({ title, goalId: id, order: startOrder + i })),
+      });
+    }
+    // Recalculate progress after milestone changes
+    const all = await prisma.milestone.findMany({ where: { goalId: id } });
+    if (all.length > 0) {
+      const done = all.filter((m: { completed: boolean }) => m.completed).length;
+      const newProgress = Math.round((done / all.length) * 100);
+      await prisma.goal.update({ where: { id }, data: { progress: newProgress } });
+    }
+  }
 
   // award points and badges when completing
   if (isNowComplete && !wasCompleted) {
