@@ -119,6 +119,19 @@ const MIGRATIONS = [
     CONSTRAINT "RecurringBill_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
   `ALTER TABLE "RecurringBill" ENABLE ROW LEVEL SECURITY`,
+  `CREATE TABLE IF NOT EXISTS "FoodEntry" (
+    id TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    date TEXT NOT NULL,
+    "mealType" TEXT NOT NULL,
+    "foodName" TEXT NOT NULL,
+    grams REAL NOT NULL,
+    "kcalPer100g" REAL NOT NULL,
+    kcal REAL NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "FoodEntry_pkey" PRIMARY KEY (id),
+    CONSTRAINT "FoodEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
 ];
 
 async function main() {

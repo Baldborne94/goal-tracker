@@ -585,9 +585,9 @@ export default function DietClient({ initialDate }: Props) {
                         <div className="grid grid-cols-4 gap-1.5 mt-3">
                           {[
                             { label: "Kcal", value: scannedProduct.kcalPer100g, color: "text-amber-400" },
-                            { label: "Protein", value: `${scannedProduct.proteins}g`, color: "text-[#ede9ff]" },
-                            { label: "Carbs", value: `${scannedProduct.carbs}g`, color: "text-[#ede9ff]" },
-                            { label: "Fat", value: `${scannedProduct.fat}g`, color: "text-[#ede9ff]" },
+                            { label: "Proteine", value: `${scannedProduct.proteins}g`, color: "text-[#ede9ff]" },
+                            { label: "Carboidrati", value: `${scannedProduct.carbs}g`, color: "text-[#ede9ff]" },
+                            { label: "Grassi", value: `${scannedProduct.fat}g`, color: "text-[#ede9ff]" },
                           ].map(m => (
                             <div key={m.label} className="text-center px-1 py-1.5 rounded-lg" style={{ background: "var(--theme-surface)" }}>
                               <p className={`text-xs font-bold ${m.color}`}>{m.value}</p>
@@ -597,7 +597,7 @@ export default function DietClient({ initialDate }: Props) {
                         </div>
                         {scannedProduct.ingredients && (
                           <p className="text-[10px] mt-2 leading-relaxed" style={{ color: "var(--theme-text-muted)" }}>
-                            <span className="font-semibold">Ingredients: </span>{scannedProduct.ingredients}
+                            <span className="font-semibold">Ingredienti: </span>{scannedProduct.ingredients}
                             {scannedProduct.ingredients.length >= 300 ? "…" : ""}
                           </p>
                         )}
