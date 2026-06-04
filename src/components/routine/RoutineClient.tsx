@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 
 type HabitLog = { id: string; date: string };
 type Habit = {
@@ -224,9 +225,12 @@ export default function RoutineClient() {
     <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-amber-400">🔁 Habits</h1>
-          <p className="text-xs text-[#6b5a9e] capitalize">{formatDate(new Date())}</p>
+        <div className="flex items-center gap-3">
+          <Link href="/vita" className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold flex-shrink-0" style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}>‹</Link>
+          <div>
+            <h1 className="text-xl font-bold text-amber-400">🔁 Habits</h1>
+            <p className="text-xs text-[#6b5a9e] capitalize">{formatDate(new Date())}</p>
+          </div>
         </div>
         {msg && (
           <span className="text-xs bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full font-medium">

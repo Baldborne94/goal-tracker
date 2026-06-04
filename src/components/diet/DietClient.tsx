@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { FOODS, type FoodItem } from "@/lib/foods";
 
 type BarcodeProduct = {
@@ -20,7 +21,6 @@ const MEALS = [
 const DAILY_TARGET = 2000;
 
 type MealLog = { id: string; date: string; mealType: string; text: string; notes: string | null };
-type WeightEntry = { id: string; weight: number; date: string };
 type FoodEntry = { id: string; mealType: string; foodName: string; grams: number; kcalPer100g: number; kcal: number };
 
 type Props = {
@@ -43,7 +43,7 @@ export default function DietClient({ initialDate }: Props) {
   const [date, setDate] = useState(initialDate);
   const [logs, setLogs] = useState<MealLog[]>([]);
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
-  const [weights, setWeights] = useState<WeightEntry[]>([]);
+  const [waterGlasses, setWaterGlasses] = useState(0);
   const [loadingDate, setLoadingDate] = useState(false);
 
   // Load data client-side on mount
@@ -52,13 +52,13 @@ export default function DietClient({ initialDate }: Props) {
       .then(r => r.ok ? r.json() : [])
       .then(setLogs)
       .catch(() => {});
-    fetch(`/api/peso`)
-      .then(r => r.ok ? r.json() : [])
-      .then((data: WeightEntry[]) => setWeights(data.slice(0, 14)))
-      .catch(() => {});
     fetch(`/api/diet/food?date=${initialDate}`)
       .then(r => r.ok ? r.json() : [])
       .then(setFoodEntries)
+      .catch(() => {});
+    fetch(`/api/diet/water?date=${initialDate}`)
+      .then(r => r.ok ? r.json() : { glasses: 0 })
+      .then((d: { glasses: number }) => setWaterGlasses(d.glasses))
       .catch(() => {});
   }, [initialDate]);
 
@@ -84,10 +84,6 @@ export default function DietClient({ initialDate }: Props) {
   const [onlineResults, setOnlineResults] = useState<BarcodeProduct[]>([]);
   const [onlineSearching, setOnlineSearching] = useState(false);
 
-  // Weight
-  const [weightInput, setWeightInput] = useState("");
-  const [savingWeight, setSavingWeight] = useState(false);
-
   // ── date navigation ────────────────────────────────────────────────────
   async function changeDate(delta: number) {
     const d = new Date(date + "T12:00:00");
@@ -95,14 +91,26 @@ export default function DietClient({ initialDate }: Props) {
     const newDate = toDateKey(d);
     if (newDate > toDateKey(new Date())) return;
     setLoadingDate(true);
-    const [logsRes, foodRes] = await Promise.all([
+    const [logsRes, foodRes, waterRes] = await Promise.all([
       fetch(`/api/diet/logs?date=${newDate}`),
       fetch(`/api/diet/food?date=${newDate}`),
+      fetch(`/api/diet/water?date=${newDate}`),
     ]);
     if (logsRes.ok) setLogs(await logsRes.json());
     if (foodRes.ok) setFoodEntries(await foodRes.json());
+    if (waterRes.ok) { const w = await waterRes.json(); setWaterGlasses(w.glasses ?? 0); }
     setDate(newDate);
     setLoadingDate(false);
+  }
+
+  // ── water ──────────────────────────────────────────────────────────────
+  async function setWater(glasses: number) {
+    setWaterGlasses(glasses);
+    await fetch("/api/diet/water", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, glasses }),
+    }).catch(() => {});
   }
 
   // ── food modal ─────────────────────────────────────────────────────────
@@ -250,26 +258,7 @@ export default function DietClient({ initialDate }: Props) {
     if (res.ok) setFoodEntries(prev => prev.filter(e => e.id !== id));
   }
 
-  // ── weight ─────────────────────────────────────────────────────────────
-  async function saveWeight() {
-    const val = parseFloat(weightInput);
-    if (!weightInput || isNaN(val) || val <= 0) return;
-    setSavingWeight(true);
-    const res = await fetch("/api/peso", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ weight: val, date }),
-    });
-    if (res.ok) {
-      const entry = await res.json();
-      setWeights(prev => [entry, ...prev].slice(0, 14));
-      setWeightInput("");
-    }
-    setSavingWeight(false);
-  }
-
   // ── computed ────────────────────────────────────────────────────────────
-  const todayWeight = weights.find(w => w.date.slice(0, 10) === date);
   const isToday = date === toDateKey(new Date());
   const dailyKcal = foodEntries.reduce((s, e) => s + e.kcal, 0);
 
@@ -284,7 +273,11 @@ export default function DietClient({ initialDate }: Props) {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-28">
-      <h1 className="text-xl font-bold text-[#ede9ff] mb-5">🥗 Diet tracker</h1>
+      {/* Header with back button */}
+      <div className="flex items-center gap-3 mb-5">
+        <Link href="/vita" className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold flex-shrink-0" style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}>‹</Link>
+        <h1 className="text-xl font-bold text-[#ede9ff]">🥗 Diet tracker</h1>
+      </div>
 
       {/* Date navigation */}
       <div className="flex items-center justify-between rounded-2xl border px-4 py-3 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
@@ -333,55 +326,31 @@ export default function DietClient({ initialDate }: Props) {
         )}
       </div>
 
-      {/* Weight entry */}
+      {/* Water tracker */}
       <div className="rounded-2xl border p-4 mb-5" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-[#ede9ff]">⚖️ Weight</p>
-            {todayWeight ? (
-              <p className="text-xl font-bold text-amber-400">{todayWeight.weight} kg</p>
-            ) : (
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Not logged yet</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={weightInput}
-              onChange={e => setWeightInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && saveWeight()}
-              placeholder="e.g. 72.5"
-              step="0.1"
-              min="0"
-              className="w-24 px-3 py-2 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
-              style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
-            />
-            <button
-              onClick={saveWeight}
-              disabled={savingWeight || !weightInput}
-              className="px-3 py-2 bg-amber-500 text-black rounded-xl text-sm font-bold disabled:opacity-50 active:scale-95 transition-all"
-            >
-              {savingWeight ? "..." : "Log"}
-            </button>
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-[#ede9ff]">💧 Acqua</p>
+          <p className="text-xs" style={{ color: waterGlasses >= 8 ? "#60a5fa" : "var(--theme-text-muted)" }}>
+            {waterGlasses}/8 bicchieri · {(waterGlasses * 0.25).toFixed(2).replace(/\.?0+$/, "")}L
+          </p>
         </div>
-        {weights.length >= 2 && (
-          <div className="mt-3 flex items-end gap-1.5 h-10">
-            {[...weights].reverse().slice(-10).map((w, i, arr) => {
-              const vals = arr.map(x => x.weight);
-              const min = Math.min(...vals);
-              const max = Math.max(...vals);
-              const range = max - min || 1;
-              const h = 8 + ((w.weight - min) / range) * 28;
-              const isLast = i === arr.length - 1;
-              return (
-                <div key={w.id} className="flex-1 flex flex-col items-center gap-0.5">
-                  <div className={`w-full rounded-t-sm transition-all ${isLast ? "bg-amber-400" : "bg-violet-600/60"}`} style={{ height: `${h}px` }} />
-                  {isLast && <span className="text-[8px] text-amber-400 font-bold">{w.weight}</span>}
-                </div>
-              );
-            })}
-          </div>
+        <div className="flex gap-1.5">
+          {Array.from({ length: 8 }, (_, i) => {
+            const filled = i < waterGlasses;
+            return (
+              <button
+                key={i}
+                onClick={() => setWater(filled && i === waterGlasses - 1 ? waterGlasses - 1 : i + 1)}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl transition-all active:scale-95"
+                style={{ background: filled ? "rgba(59,130,246,0.15)" : "var(--theme-bg)", border: `1px solid ${filled ? "#3b82f6" : "transparent"}` }}
+              >
+                <span className="text-base leading-none">{filled ? "💧" : "○"}</span>
+              </button>
+            );
+          })}
+        </div>
+        {waterGlasses >= 8 && (
+          <p className="text-xs mt-2 text-center text-blue-400">Obiettivo raggiunto! 🎉</p>
         )}
       </div>
 
