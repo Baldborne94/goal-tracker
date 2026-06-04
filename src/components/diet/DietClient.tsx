@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { FOODS, type FoodItem } from "@/lib/foods";
 
 const MEALS = [
   { type: "breakfast",  icon: "🌅", label: "Breakfast",        time: "08:00" },
@@ -10,13 +11,17 @@ const MEALS = [
   { type: "dinner",     icon: "🌙", label: "Dinner",           time: "20:00" },
 ];
 
+const DAILY_TARGET = 2000;
+
 type MealLog = { id: string; date: string; mealType: string; text: string; notes: string | null };
 type WeightEntry = { id: string; weight: number; date: string };
+type FoodEntry = { id: string; mealType: string; foodName: string; grams: number; kcalPer100g: number; kcal: number };
 
 type Props = {
   initialDate: string;
   initialLogs: MealLog[];
   recentWeights: WeightEntry[];
+  initialFoodEntries: FoodEntry[];
 };
 
 function toDateKey(d: Date) {
@@ -31,69 +36,112 @@ function formatDateLabel(dateStr: string) {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
-export default function DietClient({ initialDate, initialLogs, recentWeights: initialWeights }: Props) {
+export default function DietClient({ initialDate, initialLogs, recentWeights: initialWeights, initialFoodEntries }: Props) {
   const [date, setDate] = useState(initialDate);
   const [logs, setLogs] = useState<MealLog[]>(initialLogs);
+  const [foodEntries, setFoodEntries] = useState<FoodEntry[]>(initialFoodEntries);
   const [weights, setWeights] = useState<WeightEntry[]>(initialWeights);
   const [loadingDate, setLoadingDate] = useState(false);
 
-  // Meal form
-  const [showMealForm, setShowMealForm] = useState(false);
-  const [formMealType, setFormMealType] = useState("");
-  const [formText, setFormText] = useState("");
-  const [formNotes, setFormNotes] = useState("");
-  const [formSaving, setFormSaving] = useState(false);
+  // Food modal
+  const [modalMealType, setModalMealType] = useState("");
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<FoodItem | null>(null);
+  const [gramsInput, setGramsInput] = useState("");
+  const [customMode, setCustomMode] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customKcal, setCustomKcal] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  // Weight form
+  // Weight
   const [weightInput, setWeightInput] = useState("");
   const [savingWeight, setSavingWeight] = useState(false);
 
+  // ── date navigation ────────────────────────────────────────────────────
   async function changeDate(delta: number) {
     const d = new Date(date + "T12:00:00");
     d.setDate(d.getDate() + delta);
     const newDate = toDateKey(d);
-    if (newDate > toDateKey(new Date())) return; // no future
+    if (newDate > toDateKey(new Date())) return;
     setLoadingDate(true);
-    const res = await fetch(`/api/diet/logs?date=${newDate}`);
-    if (res.ok) {
-      setLogs(await res.json());
-      setDate(newDate);
-    }
+    const [logsRes, foodRes] = await Promise.all([
+      fetch(`/api/diet/logs?date=${newDate}`),
+      fetch(`/api/diet/food?date=${newDate}`),
+    ]);
+    if (logsRes.ok) setLogs(await logsRes.json());
+    if (foodRes.ok) setFoodEntries(await foodRes.json());
+    setDate(newDate);
     setLoadingDate(false);
   }
 
-  function openMealForm(mealType: string) {
-    const existing = logs.find(l => l.mealType === mealType);
-    setFormMealType(mealType);
-    setFormText(existing?.text ?? "");
-    setFormNotes(existing?.notes ?? "");
-    setShowMealForm(true);
+  // ── food modal ─────────────────────────────────────────────────────────
+  function openFoodModal(mealType: string) {
+    setModalMealType(mealType);
+    setSearch("");
+    setSelected(null);
+    setGramsInput("");
+    setCustomMode(false);
+    setCustomName("");
+    setCustomKcal("");
+    setShowFoodModal(true);
   }
 
-  async function saveMeal() {
-    if (!formText.trim()) return;
-    setFormSaving(true);
-    const res = await fetch("/api/diet/logs", {
+  function closeFoodModal() {
+    setShowFoodModal(false);
+  }
+
+  const filteredFoods = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return FOODS.slice(0, 12);
+    return FOODS.filter(f => f.name.toLowerCase().includes(q)).slice(0, 12);
+  }, [search]);
+
+  const liveKcal = useMemo(() => {
+    const g = parseFloat(gramsInput);
+    if (!g || g <= 0) return null;
+    if (selected) return Math.round((g * selected.kcalPer100g) / 100);
+    if (customMode) {
+      const kp = parseFloat(customKcal);
+      if (!kp || kp <= 0) return null;
+      return Math.round((g * kp) / 100);
+    }
+    return null;
+  }, [gramsInput, selected, customMode, customKcal]);
+
+  async function addFood() {
+    const g = parseFloat(gramsInput);
+    if (!g || g <= 0) return;
+
+    const foodName = customMode ? customName.trim() : selected?.name ?? "";
+    const kcalPer100g = customMode ? parseFloat(customKcal) : selected?.kcalPer100g ?? 0;
+    if (!foodName || !kcalPer100g) return;
+
+    setSaving(true);
+    const res = await fetch("/api/diet/food", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, mealType: formMealType, text: formText, notes: formNotes }),
+      body: JSON.stringify({ date, mealType: modalMealType, foodName, grams: g, kcalPer100g }),
     });
     if (res.ok) {
-      const saved = await res.json();
-      setLogs(prev => {
-        const without = prev.filter(l => l.mealType !== formMealType);
-        return [...without, saved];
-      });
-      setShowMealForm(false);
+      const entry: FoodEntry = await res.json();
+      setFoodEntries(prev => [...prev, entry]);
+      setGramsInput("");
+      setSelected(null);
+      setCustomMode(false);
+      setCustomName("");
+      setCustomKcal("");
+      setSearch("");
     }
-    setFormSaving(false);
+    setSaving(false);
   }
 
-  async function deleteMeal(id: string) {
-    const res = await fetch(`/api/diet/logs/${id}`, { method: "DELETE" });
-    if (res.ok) setLogs(prev => prev.filter(l => l.id !== id));
+  async function deleteFood(id: string) {
+    const res = await fetch(`/api/diet/food/${id}`, { method: "DELETE" });
+    if (res.ok) setFoodEntries(prev => prev.filter(e => e.id !== id));
   }
 
+  // ── weight ─────────────────────────────────────────────────────────────
   async function saveWeight() {
     const val = parseFloat(weightInput);
     if (!weightInput || isNaN(val) || val <= 0) return;
@@ -111,23 +159,69 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
     setSavingWeight(false);
   }
 
+  // ── computed ────────────────────────────────────────────────────────────
   const todayWeight = weights.find(w => w.date.slice(0, 10) === date);
-  const loggedCount = logs.length;
   const isToday = date === toDateKey(new Date());
+  const dailyKcal = foodEntries.reduce((s, e) => s + e.kcal, 0);
+
+  function mealEntries(mealType: string) {
+    return foodEntries.filter(e => e.mealType === mealType);
+  }
+  function mealKcal(mealType: string) {
+    return mealEntries(mealType).reduce((s, e) => s + e.kcal, 0);
+  }
+
+  const modalMeal = MEALS.find(m => m.type === modalMealType);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-28">
-      {/* Header */}
-      <h1 className="text-xl font-bold text-[#ede9ff] mb-6">🥗 Diet tracker</h1>
+      <h1 className="text-xl font-bold text-[#ede9ff] mb-5">🥗 Diet tracker</h1>
 
       {/* Date navigation */}
-      <div className="flex items-center justify-between rounded-2xl border px-4 py-3 mb-5" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+      <div className="flex items-center justify-between rounded-2xl border px-4 py-3 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <button onClick={() => changeDate(-1)} disabled={loadingDate} className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold disabled:opacity-40" style={{ color: "var(--theme-text-muted)" }}>‹</button>
         <div className="text-center">
           <p className="font-semibold text-[#ede9ff] text-sm">{formatDateLabel(date)}</p>
           <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{new Date(date + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
         </div>
         <button onClick={() => changeDate(1)} disabled={isToday || loadingDate} className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold disabled:opacity-30" style={{ color: "var(--theme-text-muted)" }}>›</button>
+      </div>
+
+      {/* Daily kcal summary */}
+      <div className="rounded-2xl border p-4 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold text-[#ede9ff]">🔥 Daily calories</p>
+          <div className="text-right">
+            <span className="text-lg font-bold text-amber-400">{dailyKcal}</span>
+            <span className="text-xs ml-1" style={{ color: "var(--theme-text-muted)" }}>/ {DAILY_TARGET} kcal</span>
+          </div>
+        </div>
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${Math.min(100, (dailyKcal / DAILY_TARGET) * 100)}%`,
+              background: dailyKcal > DAILY_TARGET ? "#ef4444" : dailyKcal > DAILY_TARGET * 0.8 ? "#f59e0b" : "var(--theme-accent)",
+            }}
+          />
+        </div>
+        {dailyKcal === 0 && (
+          <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>Add foods to each meal to track calories</p>
+        )}
+        {dailyKcal > 0 && (
+          <div className="flex gap-3 mt-2">
+            {MEALS.map(m => {
+              const k = mealKcal(m.type);
+              if (!k) return null;
+              return (
+                <div key={m.type} className="text-center">
+                  <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>{m.icon}</p>
+                  <p className="text-[10px] font-semibold text-amber-400">{k}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Weight entry */}
@@ -162,8 +256,6 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
             </button>
           </div>
         </div>
-
-        {/* Mini weight trend */}
         {weights.length >= 2 && (
           <div className="mt-3 flex items-end gap-1.5 h-10">
             {[...weights].reverse().slice(-10).map((w, i, arr) => {
@@ -175,13 +267,8 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
               const isLast = i === arr.length - 1;
               return (
                 <div key={w.id} className="flex-1 flex flex-col items-center gap-0.5">
-                  <div
-                    className={`w-full rounded-t-sm transition-all ${isLast ? "bg-amber-400" : "bg-violet-600/60"}`}
-                    style={{ height: `${h}px` }}
-                  />
-                  {isLast && (
-                    <span className="text-[8px] text-amber-400 font-bold">{w.weight}</span>
-                  )}
+                  <div className={`w-full rounded-t-sm transition-all ${isLast ? "bg-amber-400" : "bg-violet-600/60"}`} style={{ height: `${h}px` }} />
+                  {isLast && <span className="text-[8px] text-amber-400 font-bold">{w.weight}</span>}
                 </div>
               );
             })}
@@ -189,97 +276,199 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
         )}
       </div>
 
-      {/* Progress badge */}
-      {loggedCount > 0 && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ background: "var(--theme-bg)" }}>
-          <span className="text-sm">{loggedCount === 5 ? "🌟" : "✅"}</span>
-          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
-            {loggedCount === 5 ? "All meals logged for today!" : `${loggedCount}/5 meals logged`}
-          </p>
-        </div>
-      )}
-
-      {/* Meal slots */}
-      <div className="space-y-2.5">
+      {/* Meal sections */}
+      <div className="space-y-3" style={{ opacity: loadingDate ? 0.6 : 1 }}>
         {MEALS.map(meal => {
+          const entries = mealEntries(meal.type);
+          const mealTotal = mealKcal(meal.type);
           const log = logs.find(l => l.mealType === meal.type);
+
           return (
-            <div
-              key={meal.type}
-              className="rounded-2xl border p-4 cursor-pointer active:scale-[0.98] transition-all"
-              style={{ background: "var(--theme-surface)", borderColor: log ? "var(--theme-accent)" : "var(--theme-surface-border)", opacity: loadingDate ? 0.6 : 1 }}
-              onClick={() => openMealForm(meal.type)}
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-2xl flex-shrink-0">{meal.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <p className="text-sm font-semibold text-[#ede9ff]">{meal.label}</p>
-                    <span className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{meal.time}</span>
+            <div key={meal.type} className="rounded-2xl border p-4" style={{ background: "var(--theme-surface)", borderColor: entries.length > 0 ? "var(--theme-accent)" : "var(--theme-surface-border)" }}>
+              {/* Meal header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{meal.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-[#ede9ff] leading-tight">{meal.label}</p>
+                    <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>{meal.time}</p>
                   </div>
-                  {log ? (
-                    <>
-                      <p className="text-sm text-[#ede9ff] leading-snug">{log.text}</p>
-                      {log.notes && <p className="text-xs mt-0.5" style={{ color: "var(--theme-text-muted)" }}>{log.notes}</p>}
-                    </>
-                  ) : (
-                    <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Tap to log what you ate</p>
-                  )}
                 </div>
-                {log && (
+                <div className="flex items-center gap-2">
+                  {mealTotal > 0 && (
+                    <span className="text-xs font-bold text-amber-400">{mealTotal} kcal</span>
+                  )}
                   <button
-                    onClick={e => { e.stopPropagation(); deleteMeal(log.id); }}
-                    className="text-lg leading-none flex-shrink-0 hover:text-red-400 transition-colors"
-                    style={{ color: "var(--theme-surface-border)" }}
+                    onClick={() => openFoodModal(meal.type)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-sm font-bold transition-colors"
+                    style={{ background: "var(--theme-bg)", color: "var(--theme-accent)" }}
                   >
-                    ×
+                    +
                   </button>
-                )}
+                </div>
               </div>
+
+              {/* Food entries */}
+              {entries.length > 0 && (
+                <div className="space-y-1.5 mb-1">
+                  {entries.map(entry => (
+                    <div key={entry.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl" style={{ background: "var(--theme-bg)" }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-[#ede9ff] truncate">{entry.foodName}</p>
+                        <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>{entry.grams}g · {entry.kcalPer100g} kcal/100g</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs font-bold text-amber-400">{entry.kcal} kcal</span>
+                        <button
+                          onClick={() => deleteFood(entry.id)}
+                          className="text-sm leading-none hover:text-red-400 transition-colors"
+                          style={{ color: "var(--theme-surface-border)" }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Legacy text log (backward compat) */}
+              {entries.length === 0 && log && (
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{log.text}</p>
+              )}
+
+              {entries.length === 0 && !log && (
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Tap + to add food</p>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Meal log bottom sheet */}
-      {showMealForm && (
-        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]" onClick={() => setShowMealForm(false)}>
+      {/* Food add modal */}
+      {showFoodModal && modalMeal && (
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]" onClick={closeFoodModal}>
           <div
-            className="rounded-t-2xl border w-full max-w-lg px-5 pt-5 pb-10"
-            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+            className="rounded-t-2xl border w-full max-w-lg flex flex-col"
+            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", maxHeight: "85vh" }}
             onClick={e => e.stopPropagation()}
           >
-            {(() => {
-              const meal = MEALS.find(m => m.type === formMealType)!;
-              return (
-                <>
-                  <h3 className="font-bold text-[#ede9ff] mb-1">{meal.icon} {meal.label}</h3>
-                  <p className="text-xs mb-4" style={{ color: "var(--theme-text-muted)" }}>What did you eat?</p>
-                  <textarea
-                    rows={3}
-                    value={formText}
-                    onChange={e => setFormText(e.target.value)}
-                    placeholder="e.g. Oatmeal with berries and honey"
-                    autoFocus
-                    className="w-full px-3 py-2.5 rounded-xl text-[#ede9ff] placeholder-[#4a3a7a] text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 border resize-none mb-2"
-                    style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
-                  />
-                  <input
-                    value={formNotes}
-                    onChange={e => setFormNotes(e.target.value)}
-                    placeholder="Notes (optional — how you felt, quantity...)"
-                    className="w-full px-3 py-2.5 rounded-xl text-[#ede9ff] placeholder-[#4a3a7a] text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 border mb-4"
-                    style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
-                  />
-                  <div className="flex gap-3">
-                    <button onClick={() => setShowMealForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
-                    <button onClick={saveMeal} disabled={formSaving || !formText.trim()} className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all">
-                      {formSaving ? "..." : "Save"}
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+              <div>
+                <h3 className="font-bold text-[#ede9ff]">{modalMeal.icon} {modalMeal.label}</h3>
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Add a food item</p>
+              </div>
+              <button onClick={closeFoodModal} className="w-8 h-8 flex items-center justify-center rounded-xl text-lg" style={{ color: "var(--theme-text-muted)" }}>×</button>
+            </div>
+
+            {/* Grams + add (when food selected or custom) */}
+            {(selected || customMode) && (
+              <div className="px-5 pb-4 flex-shrink-0 border-t" style={{ borderColor: "var(--theme-surface-border)" }}>
+                <div className="pt-3">
+                  {selected && (
+                    <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-xl" style={{ background: "var(--theme-bg)" }}>
+                      <div>
+                        <p className="text-sm font-semibold text-[#ede9ff]">{selected.name}</p>
+                        <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{selected.kcalPer100g} kcal/100g · {selected.category}</p>
+                      </div>
+                      <button onClick={() => setSelected(null)} className="text-xs px-2 py-1 rounded-lg" style={{ color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}>change</button>
+                    </div>
+                  )}
+                  {customMode && (
+                    <div className="space-y-2 mb-3">
+                      <input
+                        value={customName}
+                        onChange={e => setCustomName(e.target.value)}
+                        placeholder="Food name"
+                        autoFocus
+                        className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
+                        style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                      />
+                      <input
+                        type="number"
+                        value={customKcal}
+                        onChange={e => setCustomKcal(e.target.value)}
+                        placeholder="kcal per 100g"
+                        min="0"
+                        className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
+                        style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 relative">
+                      <input
+                        type="number"
+                        value={gramsInput}
+                        onChange={e => setGramsInput(e.target.value)}
+                        placeholder="Grams"
+                        min="0"
+                        step="1"
+                        autoFocus={!customMode}
+                        className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
+                        style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                      />
+                    </div>
+                    {liveKcal !== null && (
+                      <div className="text-center flex-shrink-0">
+                        <p className="text-lg font-bold text-amber-400">{liveKcal}</p>
+                        <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>kcal</p>
+                      </div>
+                    )}
+                    <button
+                      onClick={addFood}
+                      disabled={saving || !gramsInput || (!selected && !customMode) || (customMode && (!customName.trim() || !customKcal))}
+                      className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-50 active:scale-95 transition-all flex-shrink-0"
+                    >
+                      {saving ? "..." : "Add"}
                     </button>
                   </div>
-                </>
-              );
-            })()}
+                </div>
+              </div>
+            )}
+
+            {/* Search (when no food selected) */}
+            {!selected && !customMode && (
+              <>
+                <div className="px-5 pb-3 flex-shrink-0">
+                  <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search food (e.g. pasta, pollo, pane...)"
+                    autoFocus
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
+                    style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                  />
+                </div>
+
+                <div className="overflow-y-auto flex-1 px-5 pb-5">
+                  <div className="space-y-1.5">
+                    {filteredFoods.map(food => (
+                      <button
+                        key={food.name}
+                        onClick={() => { setSelected(food); setGramsInput(""); }}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-colors active:scale-[0.98]"
+                        style={{ background: "var(--theme-bg)" }}
+                      >
+                        <div>
+                          <p className="text-sm text-[#ede9ff]">{food.name}</p>
+                          <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>{food.category}</p>
+                        </div>
+                        <span className="text-xs font-semibold text-amber-400 flex-shrink-0 ml-2">{food.kcalPer100g} kcal/100g</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => { setCustomMode(true); setSearch(""); }}
+                      className="w-full px-3 py-2.5 rounded-xl text-left text-sm border-dashed border transition-colors"
+                      style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+                    >
+                      ✏️ Custom food (not in list)
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
