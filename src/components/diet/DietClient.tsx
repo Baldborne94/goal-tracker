@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { FOODS, type FoodItem } from "@/lib/foods";
 
 type BarcodeProduct = {
@@ -27,7 +27,6 @@ type Props = {
   initialDate: string;
   initialLogs: MealLog[];
   recentWeights: WeightEntry[];
-  initialFoodEntries: FoodEntry[];
 };
 
 function toDateKey(d: Date) {
@@ -42,12 +41,20 @@ function formatDateLabel(dateStr: string) {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
-export default function DietClient({ initialDate, initialLogs, recentWeights: initialWeights, initialFoodEntries }: Props) {
+export default function DietClient({ initialDate, initialLogs, recentWeights: initialWeights }: Props) {
   const [date, setDate] = useState(initialDate);
   const [logs, setLogs] = useState<MealLog[]>(initialLogs);
-  const [foodEntries, setFoodEntries] = useState<FoodEntry[]>(initialFoodEntries);
+  const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
   const [weights, setWeights] = useState<WeightEntry[]>(initialWeights);
   const [loadingDate, setLoadingDate] = useState(false);
+
+  // Load food entries client-side to avoid server-side table dependency
+  useEffect(() => {
+    fetch(`/api/diet/food?date=${initialDate}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setFoodEntries(data))
+      .catch(() => {});
+  }, [initialDate]);
 
   // Food modal
   const [modalMealType, setModalMealType] = useState("");
