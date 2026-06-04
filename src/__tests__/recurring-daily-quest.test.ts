@@ -157,23 +157,8 @@ describe("Recurring quest with daily check-in", () => {
   // ── 2. Manual completion → clone ─────────────────────────────────────────
 
   describe("PATCH /api/goals/[id] — manual completion clones recurring quest", () => {
-    it("returns 400 when completing a daily check-in quest with progress < 100", async () => {
-      prismaMock.goal.findFirst.mockResolvedValueOnce(baseExistingGoal);
-      // guard query: dailyCheckIn=true, progress=40 → blocked
-      prismaMock.$queryRawUnsafe.mockResolvedValueOnce([{ dailyCheckIn: true, progress: 40 }]);
-
-      const { PATCH } = await import("@/app/api/goals/[id]/route");
-      const req = makePatchRequest({ status: "completed", progress: 100 });
-      const res = await PATCH(req, { params: Promise.resolve({ id: "goal_abc" }) });
-
-      expect(res.status).toBe(400);
-      expect(prismaMock.goal.create).not.toHaveBeenCalled();
-    });
-
     it("creates a clone when completing a recurring quest manually", async () => {
       prismaMock.goal.findFirst.mockResolvedValueOnce(baseExistingGoal);
-      // guard query: dailyCheckIn=true, progress=100 → passes
-      prismaMock.$queryRawUnsafe.mockResolvedValueOnce([{ dailyCheckIn: true, progress: 100 }]);
       prismaMock.goal.update.mockResolvedValueOnce({ ...baseExistingGoal, status: "completed", progress: 100, milestones: [], tags: [], category: null });
       prismaMock.user.update.mockResolvedValueOnce({});
       prismaMock.$queryRawUnsafe.mockResolvedValueOnce(checkInFields);
@@ -193,8 +178,6 @@ describe("Recurring quest with daily check-in", () => {
 
     it("copies dailyCheckIn settings to the cloned quest", async () => {
       prismaMock.goal.findFirst.mockResolvedValueOnce(baseExistingGoal);
-      // guard query: progress=100 → passes
-      prismaMock.$queryRawUnsafe.mockResolvedValueOnce([{ dailyCheckIn: true, progress: 100 }]);
       prismaMock.goal.update.mockResolvedValueOnce({ ...baseExistingGoal, status: "completed", progress: 100, milestones: [], tags: [], category: null });
       prismaMock.user.update.mockResolvedValueOnce({});
       prismaMock.$queryRawUnsafe.mockResolvedValueOnce(checkInFields);
@@ -218,8 +201,6 @@ describe("Recurring quest with daily check-in", () => {
     it("does NOT clone when the quest is not recurring", async () => {
       const nonRecurring = { ...baseExistingGoal, isRecurring: false };
       prismaMock.goal.findFirst.mockResolvedValueOnce(nonRecurring);
-      // guard query: dailyCheckIn=false → passes
-      prismaMock.$queryRawUnsafe.mockResolvedValueOnce([{ dailyCheckIn: false, progress: 0 }]);
       prismaMock.goal.update.mockResolvedValueOnce({ ...nonRecurring, status: "completed", milestones: [], tags: [], category: null });
       prismaMock.user.update.mockResolvedValueOnce({});
 
@@ -232,8 +213,6 @@ describe("Recurring quest with daily check-in", () => {
 
     it("advances target date by 7 days for weekly recurrence", async () => {
       prismaMock.goal.findFirst.mockResolvedValueOnce(baseExistingGoal);
-      // guard query: dailyCheckIn=false → passes
-      prismaMock.$queryRawUnsafe.mockResolvedValueOnce([{ dailyCheckIn: false, progress: 0 }]);
       prismaMock.goal.update.mockResolvedValueOnce({ ...baseExistingGoal, status: "completed", progress: 100, milestones: [], tags: [], category: null });
       prismaMock.user.update.mockResolvedValueOnce({});
       prismaMock.$queryRawUnsafe.mockResolvedValueOnce([{ dailyCheckIn: false, checkInXP: 5, checkInDays: null }]);

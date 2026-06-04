@@ -7,6 +7,7 @@ import { getLevelProgress } from "@/lib/levels";
 import { getClassDef } from "@/lib/classes";
 import LogoutButton from "@/components/LogoutButton";
 import DailyChallenges from "@/components/DailyChallenges";
+import WeeklyLifeSummary from "@/components/WeeklyLifeSummary";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -286,6 +287,9 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Weekly life summary */}
+      <WeeklyLifeSummary />
 
       {/* Today's check-ins */}
       {checkInToday.length > 0 && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { FOODS, type FoodItem } from "@/lib/foods";
 
 type BarcodeProduct = {
@@ -17,11 +18,8 @@ const MEALS = [
   { type: "dinner",     icon: "🌙", label: "Dinner",           time: "20:00" },
 ];
 
-const DAILY_TARGET = 2000;
-
 type MealLog = { id: string; date: string; mealType: string; text: string; notes: string | null };
-type WeightEntry = { id: string; weight: number; date: string };
-type FoodEntry = { id: string; mealType: string; foodName: string; grams: number; kcalPer100g: number; kcal: number };
+type FoodEntry = { id: string; mealType: string; foodName: string; grams: number; kcalPer100g: number; kcal: number; proteins: number; carbs: number; fat: number };
 
 type Props = {
   initialDate: string;
@@ -43,8 +41,12 @@ export default function DietClient({ initialDate }: Props) {
   const [date, setDate] = useState(initialDate);
   const [logs, setLogs] = useState<MealLog[]>([]);
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
-  const [weights, setWeights] = useState<WeightEntry[]>([]);
+  const [waterGlasses, setWaterGlasses] = useState(0);
   const [loadingDate, setLoadingDate] = useState(false);
+  const [kcalGoal, setKcalGoal] = useState(2000);
+  const [showGoalEdit, setShowGoalEdit] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const [savingGoal, setSavingGoal] = useState(false);
 
   // Load data client-side on mount
   useEffect(() => {
@@ -52,13 +54,17 @@ export default function DietClient({ initialDate }: Props) {
       .then(r => r.ok ? r.json() : [])
       .then(setLogs)
       .catch(() => {});
-    fetch(`/api/peso`)
-      .then(r => r.ok ? r.json() : [])
-      .then((data: WeightEntry[]) => setWeights(data.slice(0, 14)))
-      .catch(() => {});
     fetch(`/api/diet/food?date=${initialDate}`)
       .then(r => r.ok ? r.json() : [])
       .then(setFoodEntries)
+      .catch(() => {});
+    fetch(`/api/diet/water?date=${initialDate}`)
+      .then(r => r.ok ? r.json() : { glasses: 0 })
+      .then((d: { glasses: number }) => setWaterGlasses(d.glasses))
+      .catch(() => {});
+    fetch(`/api/diet/goal`)
+      .then(r => r.ok ? r.json() : { kcalGoal: 2000 })
+      .then((d: { kcalGoal: number }) => setKcalGoal(d.kcalGoal))
       .catch(() => {});
   }, [initialDate]);
 
@@ -84,10 +90,6 @@ export default function DietClient({ initialDate }: Props) {
   const [onlineResults, setOnlineResults] = useState<BarcodeProduct[]>([]);
   const [onlineSearching, setOnlineSearching] = useState(false);
 
-  // Weight
-  const [weightInput, setWeightInput] = useState("");
-  const [savingWeight, setSavingWeight] = useState(false);
-
   // ── date navigation ────────────────────────────────────────────────────
   async function changeDate(delta: number) {
     const d = new Date(date + "T12:00:00");
@@ -95,14 +97,26 @@ export default function DietClient({ initialDate }: Props) {
     const newDate = toDateKey(d);
     if (newDate > toDateKey(new Date())) return;
     setLoadingDate(true);
-    const [logsRes, foodRes] = await Promise.all([
+    const [logsRes, foodRes, waterRes] = await Promise.all([
       fetch(`/api/diet/logs?date=${newDate}`),
       fetch(`/api/diet/food?date=${newDate}`),
+      fetch(`/api/diet/water?date=${newDate}`),
     ]);
     if (logsRes.ok) setLogs(await logsRes.json());
     if (foodRes.ok) setFoodEntries(await foodRes.json());
+    if (waterRes.ok) { const w = await waterRes.json(); setWaterGlasses(w.glasses ?? 0); }
     setDate(newDate);
     setLoadingDate(false);
+  }
+
+  // ── water ──────────────────────────────────────────────────────────────
+  async function setWater(glasses: number) {
+    setWaterGlasses(glasses);
+    await fetch("/api/diet/water", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, glasses }),
+    }).catch(() => {});
   }
 
   // ── food modal ─────────────────────────────────────────────────────────
@@ -183,17 +197,47 @@ export default function DietClient({ initialDate }: Props) {
 
   function applyScannedProduct() {
     if (!scannedProduct) return;
-    setSelected({ name: scannedProduct.name, kcalPer100g: scannedProduct.kcalPer100g, category: scannedProduct.brand || "Scanned" });
+    setSelected({
+      name: scannedProduct.name,
+      kcalPer100g: scannedProduct.kcalPer100g,
+      category: scannedProduct.brand || "Scanned",
+      proteins: scannedProduct.proteins,
+      carbs: scannedProduct.carbs,
+      fat: scannedProduct.fat,
+    });
     setScannedProduct(null);
     setScanState("idle");
     setGramsInput("");
   }
 
   function applyOnlineProduct(p: BarcodeProduct) {
-    setSelected({ name: p.name, kcalPer100g: p.kcalPer100g, category: p.brand || "Online" });
+    setSelected({
+      name: p.name,
+      kcalPer100g: p.kcalPer100g,
+      category: p.brand || "Online",
+      proteins: p.proteins,
+      carbs: p.carbs,
+      fat: p.fat,
+    });
     setOnlineResults([]);
     setSearch("");
     setGramsInput("");
+  }
+
+  async function saveKcalGoal() {
+    const g = parseInt(goalInput);
+    if (!g || g < 500 || g > 10000) return;
+    setSavingGoal(true);
+    const res = await fetch("/api/diet/goal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kcalGoal: g }),
+    });
+    if (res.ok) {
+      setKcalGoal(g);
+      setShowGoalEdit(false);
+    }
+    setSavingGoal(false);
   }
 
   function closeFoodModal() {
@@ -224,13 +268,16 @@ export default function DietClient({ initialDate }: Props) {
 
     const foodName = customMode ? customName.trim() : selected?.name ?? "";
     const kcalPer100g = customMode ? parseFloat(customKcal) : selected?.kcalPer100g ?? 0;
+    const proteins = customMode ? 0 : (selected?.proteins ?? 0);
+    const carbs = customMode ? 0 : (selected?.carbs ?? 0);
+    const fat = customMode ? 0 : (selected?.fat ?? 0);
     if (!foodName || !kcalPer100g) return;
 
     setSaving(true);
     const res = await fetch("/api/diet/food", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, mealType: modalMealType, foodName, grams: g, kcalPer100g }),
+      body: JSON.stringify({ date, mealType: modalMealType, foodName, grams: g, kcalPer100g, proteins, carbs, fat }),
     });
     if (res.ok) {
       const entry: FoodEntry = await res.json();
@@ -250,28 +297,13 @@ export default function DietClient({ initialDate }: Props) {
     if (res.ok) setFoodEntries(prev => prev.filter(e => e.id !== id));
   }
 
-  // ── weight ─────────────────────────────────────────────────────────────
-  async function saveWeight() {
-    const val = parseFloat(weightInput);
-    if (!weightInput || isNaN(val) || val <= 0) return;
-    setSavingWeight(true);
-    const res = await fetch("/api/peso", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ weight: val, date }),
-    });
-    if (res.ok) {
-      const entry = await res.json();
-      setWeights(prev => [entry, ...prev].slice(0, 14));
-      setWeightInput("");
-    }
-    setSavingWeight(false);
-  }
-
   // ── computed ────────────────────────────────────────────────────────────
-  const todayWeight = weights.find(w => w.date.slice(0, 10) === date);
   const isToday = date === toDateKey(new Date());
   const dailyKcal = foodEntries.reduce((s, e) => s + e.kcal, 0);
+  const dailyProteins = Math.round(foodEntries.reduce((s, e) => s + (e.grams * e.proteins) / 100, 0));
+  const dailyCarbs = Math.round(foodEntries.reduce((s, e) => s + (e.grams * e.carbs) / 100, 0));
+  const dailyFat = Math.round(foodEntries.reduce((s, e) => s + (e.grams * e.fat) / 100, 0));
+  const hasMacros = dailyProteins > 0 || dailyCarbs > 0 || dailyFat > 0;
 
   function mealEntries(mealType: string) {
     return foodEntries.filter(e => e.mealType === mealType);
@@ -284,7 +316,11 @@ export default function DietClient({ initialDate }: Props) {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-28">
-      <h1 className="text-xl font-bold text-[#ede9ff] mb-5">🥗 Diet tracker</h1>
+      {/* Header with back button */}
+      <div className="flex items-center gap-3 mb-5">
+        <Link href="/vita" className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold flex-shrink-0" style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}>‹</Link>
+        <h1 className="text-xl font-bold text-[#ede9ff]">🥗 Diet tracker</h1>
+      </div>
 
       {/* Date navigation */}
       <div className="flex items-center justify-between rounded-2xl border px-4 py-3 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
@@ -300,17 +336,37 @@ export default function DietClient({ initialDate }: Props) {
       <div className="rounded-2xl border p-4 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-semibold text-[#ede9ff]">🔥 Daily calories</p>
-          <div className="text-right">
+          <div className="flex items-center gap-1.5">
             <span className="text-lg font-bold text-amber-400">{dailyKcal}</span>
-            <span className="text-xs ml-1" style={{ color: "var(--theme-text-muted)" }}>/ {DAILY_TARGET} kcal</span>
+            {showGoalEdit ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={goalInput}
+                  onChange={e => setGoalInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && saveKcalGoal()}
+                  autoFocus
+                  min="500"
+                  max="10000"
+                  className="w-16 px-1.5 py-0.5 rounded-lg text-xs text-[#ede9ff] border focus:outline-none"
+                  style={{ background: "var(--theme-bg)", borderColor: "var(--theme-accent)" }}
+                />
+                <button onClick={saveKcalGoal} disabled={savingGoal} className="text-xs px-2 py-0.5 rounded-lg font-bold text-black bg-amber-400 disabled:opacity-50">✓</button>
+                <button onClick={() => setShowGoalEdit(false)} className="text-xs px-1.5 py-0.5 rounded-lg" style={{ color: "var(--theme-text-muted)" }}>✕</button>
+              </div>
+            ) : (
+              <button onClick={() => { setGoalInput(String(kcalGoal)); setShowGoalEdit(true); }} className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
+                / {kcalGoal} kcal ✏️
+              </button>
+            )}
           </div>
         </div>
         <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
           <div
             className="h-full rounded-full transition-all"
             style={{
-              width: `${Math.min(100, (dailyKcal / DAILY_TARGET) * 100)}%`,
-              background: dailyKcal > DAILY_TARGET ? "#ef4444" : dailyKcal > DAILY_TARGET * 0.8 ? "#f59e0b" : "var(--theme-accent)",
+              width: `${Math.min(100, (dailyKcal / kcalGoal) * 100)}%`,
+              background: dailyKcal > kcalGoal ? "#ef4444" : dailyKcal > kcalGoal * 0.8 ? "#f59e0b" : "var(--theme-accent)",
             }}
           />
         </div>
@@ -318,7 +374,7 @@ export default function DietClient({ initialDate }: Props) {
           <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>Add foods to each meal to track calories</p>
         )}
         {dailyKcal > 0 && (
-          <div className="flex gap-3 mt-2">
+          <div className="flex gap-3 mt-2 flex-wrap">
             {MEALS.map(m => {
               const k = mealKcal(m.type);
               if (!k) return null;
@@ -331,57 +387,49 @@ export default function DietClient({ initialDate }: Props) {
             })}
           </div>
         )}
+        {hasMacros && (
+          <div className="flex gap-4 mt-3 pt-3 border-t" style={{ borderColor: "var(--theme-surface-border)" }}>
+            <div className="text-center flex-1">
+              <p className="text-sm font-bold text-blue-400">{dailyProteins}g</p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>Proteine</p>
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-sm font-bold text-yellow-400">{dailyCarbs}g</p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>Carboidrati</p>
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-sm font-bold text-orange-400">{dailyFat}g</p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>Grassi</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Weight entry */}
+      {/* Water tracker */}
       <div className="rounded-2xl border p-4 mb-5" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-[#ede9ff]">⚖️ Weight</p>
-            {todayWeight ? (
-              <p className="text-xl font-bold text-amber-400">{todayWeight.weight} kg</p>
-            ) : (
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Not logged yet</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={weightInput}
-              onChange={e => setWeightInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && saveWeight()}
-              placeholder="e.g. 72.5"
-              step="0.1"
-              min="0"
-              className="w-24 px-3 py-2 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
-              style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
-            />
-            <button
-              onClick={saveWeight}
-              disabled={savingWeight || !weightInput}
-              className="px-3 py-2 bg-amber-500 text-black rounded-xl text-sm font-bold disabled:opacity-50 active:scale-95 transition-all"
-            >
-              {savingWeight ? "..." : "Log"}
-            </button>
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-[#ede9ff]">💧 Acqua</p>
+          <p className="text-xs" style={{ color: waterGlasses >= 8 ? "#60a5fa" : "var(--theme-text-muted)" }}>
+            {waterGlasses}/8 bicchieri · {(waterGlasses * 0.25).toFixed(2).replace(/\.?0+$/, "")}L
+          </p>
         </div>
-        {weights.length >= 2 && (
-          <div className="mt-3 flex items-end gap-1.5 h-10">
-            {[...weights].reverse().slice(-10).map((w, i, arr) => {
-              const vals = arr.map(x => x.weight);
-              const min = Math.min(...vals);
-              const max = Math.max(...vals);
-              const range = max - min || 1;
-              const h = 8 + ((w.weight - min) / range) * 28;
-              const isLast = i === arr.length - 1;
-              return (
-                <div key={w.id} className="flex-1 flex flex-col items-center gap-0.5">
-                  <div className={`w-full rounded-t-sm transition-all ${isLast ? "bg-amber-400" : "bg-violet-600/60"}`} style={{ height: `${h}px` }} />
-                  {isLast && <span className="text-[8px] text-amber-400 font-bold">{w.weight}</span>}
-                </div>
-              );
-            })}
-          </div>
+        <div className="flex gap-1.5">
+          {Array.from({ length: 8 }, (_, i) => {
+            const filled = i < waterGlasses;
+            return (
+              <button
+                key={i}
+                onClick={() => setWater(filled && i === waterGlasses - 1 ? waterGlasses - 1 : i + 1)}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl transition-all active:scale-95"
+                style={{ background: filled ? "rgba(59,130,246,0.15)" : "var(--theme-bg)", border: `1px solid ${filled ? "#3b82f6" : "transparent"}` }}
+              >
+                <span className="text-base leading-none">{filled ? "💧" : "○"}</span>
+              </button>
+            );
+          })}
+        </div>
+        {waterGlasses >= 8 && (
+          <p className="text-xs mt-2 text-center text-blue-400">Obiettivo raggiunto! 🎉</p>
         )}
       </div>
 

@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+
+type BodyMeasurement = {
+  id: string; date: string;
+  height: number | null; waist: number | null; hips: number | null;
+  chest: number | null; bicep: number | null; bodyFat: number | null;
+};
 
 type WeightEntry = {
   id: string;
@@ -101,10 +108,26 @@ export default function PesoClient() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // Body measurements
+  const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
+  const [showMeasForm, setShowMeasForm] = useState(false);
+  const [measDate, setMeasDate] = useState(new Date().toISOString().slice(0, 10));
+  const [mHeight, setMHeight] = useState("");
+  const [mWaist, setMWaist] = useState("");
+  const [mHips, setMHips] = useState("");
+  const [mChest, setMChest] = useState("");
+  const [mBicep, setMBicep] = useState("");
+  const [mBodyFat, setMBodyFat] = useState("");
+  const [savingMeas, setSavingMeas] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/peso");
-      if (res.ok) setEntries(await res.json());
+      const [pesoRes, measRes] = await Promise.all([
+        fetch("/api/peso"),
+        fetch("/api/peso/measurements"),
+      ]);
+      if (pesoRes.ok) setEntries(await pesoRes.json());
+      if (measRes.ok) setMeasurements(await measRes.json());
     } catch {
       // silently ignore
     } finally {
@@ -115,6 +138,36 @@ export default function PesoClient() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  async function saveMeasurement() {
+    setSavingMeas(true);
+    const body = {
+      date: measDate,
+      height: mHeight ? parseFloat(mHeight) : null,
+      waist: mWaist ? parseFloat(mWaist) : null,
+      hips: mHips ? parseFloat(mHips) : null,
+      chest: mChest ? parseFloat(mChest) : null,
+      bicep: mBicep ? parseFloat(mBicep) : null,
+      bodyFat: mBodyFat ? parseFloat(mBodyFat) : null,
+    };
+    const res = await fetch("/api/peso/measurements", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      const m = await res.json() as BodyMeasurement;
+      setMeasurements(prev => [m, ...prev]);
+      setShowMeasForm(false);
+      setMHeight(""); setMWaist(""); setMHips(""); setMChest(""); setMBicep(""); setMBodyFat("");
+    }
+    setSavingMeas(false);
+  }
+
+  async function deleteMeasurement(id: string) {
+    await fetch(`/api/peso/measurements/${id}`, { method: "DELETE" });
+    setMeasurements(prev => prev.filter(m => m.id !== id));
+  }
 
   const sorted = [...entries].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -177,9 +230,12 @@ export default function PesoClient() {
     <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-amber-400">⚖️ Weight</h1>
-          <p className="text-xs text-[#6b5a9e]">Track your weight over time</p>
+        <div className="flex items-center gap-3">
+          <Link href="/vita" className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold flex-shrink-0" style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}>‹</Link>
+          <div>
+            <h1 className="text-xl font-bold text-amber-400">⚖️ Weight</h1>
+            <p className="text-xs text-[#6b5a9e]">Track your weight over time</p>
+          </div>
         </div>
         {msg && (
           <span className="text-xs bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full font-medium">
@@ -349,6 +405,108 @@ export default function PesoClient() {
           ))}
         </div>
       )}
+
+      {/* ── Body measurements ─────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-[#6b5a9e] uppercase tracking-wider">📏 Misurazioni corporee</p>
+          <button
+            onClick={() => setShowMeasForm(v => !v)}
+            className="text-xs px-3 py-1 rounded-lg font-semibold"
+            style={{ background: "var(--theme-surface)", color: "var(--theme-accent)" }}
+          >
+            {showMeasForm ? "Annulla" : "+ Aggiungi"}
+          </button>
+        </div>
+
+        {/* Latest measurements snapshot */}
+        {measurements.length > 0 && !showMeasForm && (() => {
+          const latest = measurements[0];
+          const fields: { label: string; value: number | null; unit: string }[] = [
+            { label: "Altezza", value: latest.height, unit: "cm" },
+            { label: "Girovita", value: latest.waist, unit: "cm" },
+            { label: "Fianchi", value: latest.hips, unit: "cm" },
+            { label: "Petto", value: latest.chest, unit: "cm" },
+            { label: "Bicipite", value: latest.bicep, unit: "cm" },
+            { label: "Grasso", value: latest.bodyFat, unit: "%" },
+          ].filter(f => f.value != null);
+
+          if (fields.length === 0) return null;
+          return (
+            <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4 mb-2">
+              <p className="text-[10px] text-[#6b5a9e] mb-2">{fmt(latest.date)}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {fields.map(f => (
+                  <div key={f.label} className="text-center px-2 py-1.5 rounded-xl" style={{ background: "var(--theme-bg)" }}>
+                    <p className="text-sm font-bold text-white">{f.value}{f.unit}</p>
+                    <p className="text-[9px] text-[#6b5a9e]">{f.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Measurement form */}
+        {showMeasForm && (
+          <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4 space-y-3">
+            <div>
+              <label className="text-xs text-[#6b5a9e] mb-1 block">Data</label>
+              <input type="date" value={measDate} onChange={e => setMeasDate(e.target.value)}
+                className="w-full bg-[#0c0a1a] border border-[#3b2d6e] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Altezza (cm)", val: mHeight, set: setMHeight },
+                { label: "Girovita (cm)", val: mWaist, set: setMWaist },
+                { label: "Fianchi (cm)", val: mHips, set: setMHips },
+                { label: "Petto (cm)", val: mChest, set: setMChest },
+                { label: "Bicipite (cm)", val: mBicep, set: setMBicep },
+                { label: "Grasso corp. (%)", val: mBodyFat, set: setMBodyFat },
+              ].map(f => (
+                <div key={f.label}>
+                  <label className="text-xs text-[#6b5a9e] mb-1 block">{f.label}</label>
+                  <input type="number" step="0.1" value={f.val} onChange={e => f.set(e.target.value)}
+                    placeholder="—"
+                    className="w-full bg-[#0c0a1a] border border-[#3b2d6e] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={saveMeasurement} disabled={savingMeas}
+                className="flex-1 py-2.5 rounded-xl bg-amber-400 text-[#0c0a1a] font-bold text-sm disabled:opacity-50">
+                {savingMeas ? "Salvando..." : "Salva"}
+              </button>
+              <button onClick={() => setShowMeasForm(false)}
+                className="px-4 py-2.5 rounded-xl border border-[#3b2d6e] text-[#6b5a9e] text-sm">
+                Annulla
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Measurement history */}
+        {measurements.length > 1 && !showMeasForm && (
+          <div className="space-y-1.5 mt-2">
+            {measurements.slice(1, 5).map(m => {
+              const vals = [
+                m.waist && `Vita ${m.waist}cm`,
+                m.hips && `Fianchi ${m.hips}cm`,
+                m.bodyFat && `${m.bodyFat}% grasso`,
+              ].filter(Boolean).join(" · ");
+              return (
+                <div key={m.id} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "var(--theme-surface)" }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-[#6b5a9e]">{fmt(m.date)}</p>
+                    {vals && <p className="text-xs text-white truncate">{vals}</p>}
+                  </div>
+                  <button onClick={() => deleteMeasurement(m.id)} className="text-sm text-[#3b2d6e] hover:text-red-400">×</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
