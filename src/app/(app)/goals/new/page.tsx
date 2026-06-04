@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import GoalForm from "@/components/goals/GoalForm";
 
 function fmt(d: Date): string {
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 }
 
 function generateMilestones(
@@ -16,7 +16,7 @@ function generateMilestones(
     return Array.from({ length: durationDays }, (_, i) => {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
-      return `Day ${i + 1} · ${fmt(d)}`;
+      return `Giorno ${i + 1} · ${fmt(d)}`;
     });
   }
   if (mtype === "sessions" && spw) {
@@ -25,7 +25,7 @@ function generateMilestones(
     return Array.from({ length: total }, (_, i) => {
       const week = Math.floor(i / spw) + 1;
       const session = (i % spw) + 1;
-      return `Week ${week} · Session ${session}`;
+      return `Settimana ${week} · Sessione ${session}`;
     });
   }
   if (mtype === "weekly") {
@@ -35,7 +35,7 @@ function generateMilestones(
       start.setDate(start.getDate() + i * 7);
       const end = new Date(start);
       end.setDate(end.getDate() + 6);
-      return `Week ${i + 1} · ${fmt(start)} – ${fmt(end)}`;
+      return `Settimana ${i + 1} · ${fmt(start)} – ${fmt(end)}`;
     });
   }
   return [];

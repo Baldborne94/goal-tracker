@@ -58,7 +58,7 @@ export default function NotificationButton() {
       setStatus(permission as Status);
       if (permission === "granted") {
         await ensureSubscribed();
-        setTestResult("✅ Notifications enabled! You'll receive reminders at your quest times.");
+        setTestResult("✅ Notifiche attivate! Riceverai promemoria agli orari delle tue missioni.");
       }
     } catch {
       setStatus("default");
@@ -70,11 +70,11 @@ export default function NotificationButton() {
     const res = await fetch("/api/push/test", { method: "POST" });
     const data = await res.json();
     if (res.ok && data.sent > 0) {
-      setTestResult("📱 Test sent! Check your notification panel.");
+      setTestResult("📱 Test inviato! Controlla il pannello notifiche.");
     } else if (data.error) {
       setTestResult(`⚠️ ${data.error}`);
     } else {
-      setTestResult("⚠️ Sent but no confirmation — check Chrome notifications in settings.");
+      setTestResult("⚠️ Inviato ma senza conferma — controlla le notifiche di Chrome nelle impostazioni.");
     }
     setStatus("granted");
   }
@@ -82,7 +82,7 @@ export default function NotificationButton() {
   if (status === "unsupported") {
     return (
       <div className="rounded-xl border p-3 text-xs" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
-        🔕 Push notifications not supported in this browser.
+        🔕 Notifiche push non supportate in questo browser.
       </div>
     );
   }
@@ -91,13 +91,13 @@ export default function NotificationButton() {
     <div className="space-y-2">
       {status === "loading" && (
         <div className="rounded-xl border p-3 text-xs" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
-          Checking notification status...
+          Verifica stato notifiche...
         </div>
       )}
 
       {status === "denied" && (
         <div className="rounded-xl border border-red-800/40 bg-red-950/20 p-3 text-xs text-red-400">
-          🚫 Notifications blocked. Go to Chrome → Site settings → Notifications → Allow for this site.
+          🚫 Notifiche bloccate. Vai su Chrome → Impostazioni sito → Notifiche → Consenti per questo sito.
         </div>
       )}
 
@@ -106,21 +106,21 @@ export default function NotificationButton() {
           onClick={enableNotifications}
           className="w-full py-3 rounded-xl font-semibold text-sm border border-amber-500/40 text-amber-400 hover:bg-amber-900/10 active:scale-95 transition-all"
         >
-          🔔 Enable push notifications
+          🔔 Attiva notifiche push
         </button>
       )}
 
       {(status === "granted" || status === "sending") && (
         <div className="space-y-2">
           <div className="rounded-xl border p-3 flex items-center justify-between" style={{ borderColor: "var(--theme-surface-border)" }}>
-            <span className="text-sm text-green-400 font-medium">✅ Notifications active</span>
+            <span className="text-sm text-green-400 font-medium">✅ Notifiche attive</span>
             <button
               onClick={sendTest}
               disabled={status === "sending"}
               className="text-xs px-3 py-1.5 rounded-lg border font-medium active:scale-95 transition-all disabled:opacity-50"
               style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
             >
-              {status === "sending" ? "Sending..." : "Send test"}
+              {status === "sending" ? "Invio..." : "Invia test"}
             </button>
           </div>
         </div>

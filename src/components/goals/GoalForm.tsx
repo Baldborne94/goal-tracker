@@ -7,7 +7,7 @@ type Category = { id: string; name: string; color: string };
 type ReminderFrequency = "daily" | "weekly" | "monthly" | "custom";
 type MilestoneInit = { id: string; title: string; completed: boolean };
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
 
 type Props = {
   categories: Category[];
@@ -147,7 +147,7 @@ export default function GoalForm({ categories, initialData }: Props) {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error || "Something went wrong");
+      setError(data.error || "Qualcosa è andato storto");
       setLoading(false);
     } else {
       router.push("/goals");
@@ -170,24 +170,24 @@ export default function GoalForm({ categories, initialData }: Props) {
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Title *</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Titolo *</label>
         <input
           required
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          placeholder="What do you want to achieve?"
+          placeholder="Cosa vuoi raggiungere?"
           className={inputClass}
           style={inputStyle}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Description</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Descrizione</label>
         <textarea
           rows={3}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          placeholder="Describe your quest..."
+          placeholder="Descrivi la tua missione..."
           className={`${inputClass} resize-none`}
           style={inputStyle}
         />
@@ -195,21 +195,21 @@ export default function GoalForm({ categories, initialData }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Difficulty</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Difficoltà</label>
           <select
             value={form.priority}
             onChange={(e) => setForm({ ...form, priority: e.target.value })}
             className={inputClass}
             style={inputStyle}
           >
-            <option value="low">🍃 Low</option>
-            <option value="medium">⚡ Medium</option>
-            <option value="high">🔥 High</option>
+            <option value="low">🍃 Bassa</option>
+            <option value="medium">⚡ Media</option>
+            <option value="high">🔥 Alta</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🌙 Deadline</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🌙 Scadenza</label>
           <input
             type="date"
             value={form.targetDate}
@@ -221,7 +221,7 @@ export default function GoalForm({ categories, initialData }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🔔 Reminder</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>🔔 Promemoria</label>
 
         <div className="grid grid-cols-4 gap-1 mb-2 p-1 rounded-xl" style={{ background: "var(--theme-bg)" }}>
           {(["daily", "weekly", "monthly", "custom"] as ReminderFrequency[]).map((f) => (
@@ -236,7 +236,7 @@ export default function GoalForm({ categories, initialData }: Props) {
                   : { color: "var(--theme-text-muted)" }
               }
             >
-              {f}
+              {f === "daily" ? "Giornaliero" : f === "weekly" ? "Settimanale" : f === "monthly" ? "Mensile" : "Personalizzato"}
             </button>
           ))}
         </div>
@@ -263,7 +263,7 @@ export default function GoalForm({ categories, initialData }: Props) {
 
         {reminderFrequency === "monthly" && (
           <div className="flex items-center gap-2 mb-2">
-            <label className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Day of month</label>
+            <label className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Giorno del mese</label>
             <select
               value={reminderDay}
               onChange={(e) => setReminderDay(parseInt(e.target.value))}
@@ -279,7 +279,7 @@ export default function GoalForm({ categories, initialData }: Props) {
 
         {reminderFrequency === "custom" && (
           <div className="mb-2">
-            <p className="text-xs mb-1.5" style={{ color: "var(--theme-text-muted)" }}>Pick one or more days</p>
+            <p className="text-xs mb-1.5" style={{ color: "var(--theme-text-muted)" }}>Scegli uno o più giorni</p>
             <div className="flex gap-1">
               {WEEKDAYS.map((day, i) => {
                 const selected = reminderDays.includes(i);
@@ -321,23 +321,23 @@ export default function GoalForm({ categories, initialData }: Props) {
               className="text-xs px-3 py-3 rounded-xl border hover:text-red-400 transition-colors"
               style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
             >
-              Clear
+              Cancella
             </button>
           )}
         </div>
         <p className="text-xs mt-1" style={{ color: "var(--theme-text-muted)" }}>
           {reminderFrequency === "weekly"
-            ? `Every ${WEEKDAYS[reminderDay]}${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            ? `Ogni ${WEEKDAYS[reminderDay]}${form.reminderTime ? ` alle ${form.reminderTime}` : ""}`
             : reminderFrequency === "monthly"
-            ? `Day ${reminderDay} of each month${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
+            ? `Giorno ${reminderDay} di ogni mese${form.reminderTime ? ` alle ${form.reminderTime}` : ""}`
             : reminderFrequency === "custom"
-            ? `Every ${reminderDays.map((d) => WEEKDAYS[d]).join(", ")}${form.reminderTime ? ` at ${form.reminderTime}` : ""}`
-            : `Every day${form.reminderTime ? ` at ${form.reminderTime}` : ""}`}
+            ? `Ogni ${reminderDays.map((d) => WEEKDAYS[d]).join(", ")}${form.reminderTime ? ` alle ${form.reminderTime}` : ""}`
+            : `Ogni giorno${form.reminderTime ? ` alle ${form.reminderTime}` : ""}`}
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2" style={{ color: "var(--theme-text-muted)" }}>Category</label>
+        <label className="block text-sm font-medium mb-2" style={{ color: "var(--theme-text-muted)" }}>Categoria</label>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -349,7 +349,7 @@ export default function GoalForm({ categories, initialData }: Props) {
                 : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }
             }
           >
-            None
+            Nessuna
           </button>
           {categories.map((c) => (
             <button
@@ -370,13 +370,13 @@ export default function GoalForm({ categories, initialData }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Tags</label>
+        <label className="block text-sm font-medium mb-1" style={{ color: "var(--theme-text-muted)" }}>Tag</label>
         <div className="flex gap-2 mb-2">
           <input
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-            placeholder="Add tag..."
+            placeholder="Aggiungi tag..."
             className="flex-1 px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40 text-white placeholder-[var(--theme-text-muted)] text-sm"
             style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
           />
@@ -408,7 +408,7 @@ export default function GoalForm({ categories, initialData }: Props) {
       {/* Milestones — shown in both create and edit mode */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium" style={{ color: "var(--theme-text-muted)" }}>⭐ Milestones</label>
+          <label className="block text-sm font-medium" style={{ color: "var(--theme-text-muted)" }}>⭐ Milestone</label>
           {!isEditing && milestones.length > 0 && (
             <button
               type="button"
@@ -416,7 +416,7 @@ export default function GoalForm({ categories, initialData }: Props) {
               className="text-xs hover:text-red-400 transition-colors"
               style={{ color: "var(--theme-text-muted)" }}
             >
-              Clear all ({milestones.length})
+              Rimuovi tutte ({milestones.length})
             </button>
           )}
         </div>
@@ -464,7 +464,7 @@ export default function GoalForm({ categories, initialData }: Props) {
             value={milestoneInput}
             onChange={(e) => setMilestoneInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMilestone(); } }}
-            placeholder={isEditing ? "Add new milestone..." : "Add a milestone..."}
+            placeholder={isEditing ? "Aggiungi nuova milestone..." : "Aggiungi una milestone..."}
             className="flex-1 px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/40 text-white placeholder-[var(--theme-text-muted)] text-sm"
             style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
           />
@@ -487,7 +487,7 @@ export default function GoalForm({ categories, initialData }: Props) {
               >
                 <span className="flex items-center gap-2 min-w-0">
                   {isEditing ? (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 border border-amber-700/30 flex-shrink-0">new</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 border border-amber-700/30 flex-shrink-0">nuova</span>
                   ) : (
                     <span className="w-5 h-5 rounded-full text-xs flex items-center justify-center font-semibold border flex-shrink-0 text-amber-400 bg-amber-900/40 border-amber-700/40">
                       {i + 1}
@@ -506,9 +506,9 @@ export default function GoalForm({ categories, initialData }: Props) {
         <div className="flex items-center gap-3 bg-amber-900/20 border border-amber-700/30 rounded-xl px-4 py-3">
           <span className="text-2xl">✨</span>
           <div>
-            <p className="text-sm font-semibold text-amber-300">{estimatedXP} XP on completion</p>
+            <p className="text-sm font-semibold text-amber-300">{estimatedXP} XP al completamento</p>
             <p className="text-xs text-amber-400/60">
-              {form.priority === "low" ? "Easy quest" : form.priority === "high" ? "Hard quest — well rewarded!" : "Medium quest"} · add description, deadline & milestones to earn more
+              {form.priority === "low" ? "Missione facile" : form.priority === "high" ? "Missione difficile — ben ricompensata!" : "Missione media"} · aggiungi descrizione, scadenza e milestone per guadagnare di più
             </p>
           </div>
         </div>
@@ -524,8 +524,8 @@ export default function GoalForm({ categories, initialData }: Props) {
           <div className="flex items-center gap-3">
             <span className="text-xl">🔄</span>
             <div className="text-left">
-              <p className="text-sm font-medium text-[#ede9ff]">Recurring quest</p>
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Auto-creates a new copy when completed</p>
+              <p className="text-sm font-medium text-[#ede9ff]">Missione ricorrente</p>
+              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Crea automaticamente una nuova copia al completamento</p>
             </div>
           </div>
           <div className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${isRecurring ? "bg-amber-500" : "bg-[#3b2d6e]"}`}>
@@ -542,7 +542,7 @@ export default function GoalForm({ categories, initialData }: Props) {
                 className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors capitalize ${recurrenceType === t ? "border-amber-500/60 bg-amber-900/20 text-amber-300" : ""}`}
                 style={recurrenceType !== t ? { borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" } : {}}
               >
-                {t}
+                {t === "weekly" ? "Settimanale" : "Mensile"}
               </button>
             ))}
           </div>
@@ -559,8 +559,8 @@ export default function GoalForm({ categories, initialData }: Props) {
           <div className="flex items-center gap-3">
             <span className="text-xl">📅</span>
             <div className="text-left">
-              <p className="text-sm font-medium text-[#ede9ff]">Daily check-in</p>
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Log progress on scheduled days and earn XP</p>
+              <p className="text-sm font-medium text-[#ede9ff]">Check-in giornaliero</p>
+              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Registra il progresso nei giorni pianificati e guadagna XP</p>
             </div>
           </div>
           <div className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${dailyCheckIn ? "bg-amber-500" : "bg-[#3b2d6e]"}`}>
@@ -586,7 +586,7 @@ export default function GoalForm({ categories, initialData }: Props) {
 
             {/* Day schedule */}
             <div>
-              <p className="text-xs mb-2" style={{ color: "var(--theme-text-muted)" }}>Schedule</p>
+              <p className="text-xs mb-2" style={{ color: "var(--theme-text-muted)" }}>Pianificazione</p>
               <div className="flex gap-1">
                 <button
                   type="button"
@@ -598,7 +598,7 @@ export default function GoalForm({ categories, initialData }: Props) {
                       : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }
                   }
                 >
-                  Every day
+                  Ogni giorno
                 </button>
                 {WEEKDAYS.map((day, i) => {
                   const selected = checkInDays !== null && checkInDays.split(",").map(Number).includes(i);
@@ -621,7 +621,7 @@ export default function GoalForm({ categories, initialData }: Props) {
               </div>
               {checkInDays !== null && (
                 <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>
-                  {checkInDays.split(",").length}×/week · {checkInDays.split(",").map((d) => WEEKDAYS[Number(d)]).join(", ")}
+                  {checkInDays.split(",").length}×/settimana · {checkInDays.split(",").map((d) => WEEKDAYS[Number(d)]).join(", ")}
                 </p>
               )}
             </div>
@@ -636,14 +636,14 @@ export default function GoalForm({ categories, initialData }: Props) {
           className="flex-1 py-3 rounded-xl font-semibold border transition-colors"
           style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
         >
-          Cancel
+          Annulla
         </button>
         <button
           type="submit"
           disabled={loading}
           className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold disabled:opacity-60 shadow-lg shadow-amber-900/30"
         >
-          {loading ? "..." : isEditing ? "✨ Save" : "⚔️ Create quest"}
+          {loading ? "..." : isEditing ? "✨ Salva" : "⚔️ Crea missione"}
         </button>
       </div>
     </form>

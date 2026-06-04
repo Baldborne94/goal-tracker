@@ -10,11 +10,11 @@ export default function BottomNav({ points = 0, heroClass }: { points?: number; 
   const tier = getLevel(points, heroClass);
 
   const NAV_ITEMS = [
-    { href: "/dashboard", icon: "🏰", label: "Realm" },
-    { href: "/goals",     icon: "📜", label: "Quests" },
-    { href: "/finance",   icon: "💎", label: "Treasury" },
-    { href: "/vita",      icon: "🌿", label: "Life" },
-    { href: "/profile",   icon: tier.icon, label: "Hero" },
+    { href: "/dashboard", icon: "🏰", label: "Reame" },
+    { href: "/goals",     icon: "📜", label: "Missioni" },
+    { href: "/finance",   icon: "💎", label: "Finanze" },
+    { href: "/vita",      icon: "🌿", label: "Vita" },
+    { href: "/profile",   icon: tier.icon, label: "Eroe" },
   ];
 
   return (

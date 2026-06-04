@@ -31,115 +31,115 @@ function mk(labels: string[], icons: string[]): ClassTier[] {
 }
 
 export const CLASSES: ClassDef[] = [
-  // ── Warriors ─────────────────────────────────────────────
+  // ── Guerrieri ─────────────────────────────────────────────
   {
-    key: "fighter", name: "Fighter", icon: "⚔️",
-    description: "Master of weapons and combat tactics",
+    key: "fighter", name: "Guerriero", icon: "⚔️",
+    description: "Maestro delle armi e delle tattiche di combattimento",
     theme: "warrior", group: "warrior",
     tiers: mk(
-      ["Recruit", "Soldier", "Squire", "Knight", "Champion", "Commander", "Warlord", "Legendary Hero"],
+      ["Recluta", "Soldato", "Scudiero", "Cavaliere", "Campione", "Comandante", "Condottiero", "Eroe Leggendario"],
       ["🗡️", "⚔️", "🛡️", "🏆", "🏰", "⚜️", "🔱", "✨"]
     ),
   },
   {
-    key: "paladin", name: "Paladin", icon: "🛡️",
-    description: "Holy warrior bound by a sacred oath",
+    key: "paladin", name: "Paladino", icon: "🛡️",
+    description: "Guerriero sacro legato da un giuramento divino",
     theme: "warrior", group: "warrior",
     tiers: mk(
-      ["Initiate", "Aspirant", "Templar", "Crusader", "Holy Knight", "Sacred Guard", "Divine Champion", "Avatar of Light"],
+      ["Novizio", "Aspirante", "Templare", "Crociato", "Cavaliere Santo", "Guardia Sacra", "Campione Divino", "Avatara della Luce"],
       ["🕯️", "✝️", "🛡️", "⚔️", "🌟", "👼", "☀️", "✨"]
     ),
   },
   {
-    key: "barbarian", name: "Barbarian", icon: "🪓",
-    description: "Primal warrior fueled by unstoppable rage",
+    key: "barbarian", name: "Barbaro", icon: "🪓",
+    description: "Guerriero primordiale alimentato da furia inarrestabile",
     theme: "warrior", group: "warrior",
     tiers: mk(
-      ["Savage", "Berserker", "Ravager", "Slayer", "Chieftain", "Warchief", "Battle God", "Primal Force"],
+      ["Selvaggio", "Berserker", "Devastatore", "Massacratore", "Capo", "Gran Capo", "Dio della Battaglia", "Forza Primordiale"],
       ["🪓", "💢", "⚔️", "🔪", "🐺", "🦁", "🔥", "🌪️"]
     ),
   },
-  // ── Nature ───────────────────────────────────────────────
+  // ── Natura ───────────────────────────────────────────────
   {
     key: "ranger", name: "Ranger", icon: "🏹",
-    description: "Hunter and explorer of the untamed wild",
+    description: "Cacciatore ed esploratore della natura selvaggia",
     theme: "forest", group: "nature",
     tiers: mk(
-      ["Scout", "Hunter", "Tracker", "Warden", "Strider", "Pathfinder", "Shadow Walker", "Legend of the Wild"],
+      ["Esploratore", "Cacciatore", "Segugio", "Guardiano", "Vagabondo", "Pioniere", "Camminatore delle Ombre", "Leggenda della Natura"],
       ["👁️", "🏹", "🐾", "🌲", "🧭", "🌙", "🌿", "✨"]
     ),
   },
   {
-    key: "druid", name: "Druid", icon: "🌿",
-    description: "Shapeshifter attuned to the forces of nature",
+    key: "druid", name: "Druido", icon: "🌿",
+    description: "Mutaforma in sintonia con le forze della natura",
     theme: "forest", group: "nature",
     tiers: mk(
-      ["Seedling", "Grove Ward", "Shaman", "Shapechanger", "Forest Elder", "Circle Master", "Voice of Nature", "World Tree"],
+      ["Germoglio", "Custode del Bosco", "Sciamano", "Mutaforma", "Anziano della Foresta", "Maestro del Cerchio", "Voce della Natura", "Albero del Mondo"],
       ["🌱", "🍃", "🌿", "🌳", "🦋", "🌙", "🌍", "✨"]
     ),
   },
-  // ── Arcane ───────────────────────────────────────────────
+  // ── Arcano ───────────────────────────────────────────────
   {
-    key: "rogue", name: "Rogue", icon: "🗡️",
-    description: "Shadow operative and master of stealth",
+    key: "rogue", name: "Ladro", icon: "🗡️",
+    description: "Agente nell'ombra e maestro della furtività",
     theme: "crimson", group: "arcane",
     tiers: mk(
-      ["Street Rat", "Cutpurse", "Infiltrator", "Assassin", "Shadow", "Phantom", "Wraith", "Ghost"],
+      ["Topo di Strada", "Borseggiatore", "Infiltrato", "Assassino", "Ombra", "Fantasma", "Spettro", "Spirito"],
       ["🐀", "🎭", "🕵️", "🗡️", "🌑", "👻", "💀", "✨"]
     ),
   },
   {
-    key: "wizard", name: "Wizard", icon: "🧙",
-    description: "Scholar who masters the arcane arts",
+    key: "wizard", name: "Mago", icon: "🧙",
+    description: "Studioso che padroneggia le arti arcane",
     theme: "crimson", group: "arcane",
     tiers: mk(
-      ["Apprentice", "Conjurer", "Invoker", "Mage", "Archmage", "High Wizard", "Grand Magister", "Omniscient"],
+      ["Apprendista", "Evocatore", "Invocatore", "Mago", "Arcimago", "Alto Mago", "Gran Magistro", "Onnisciente"],
       ["📖", "✋", "🔮", "🧙", "📜", "🌟", "🔱", "✨"]
     ),
   },
   {
-    key: "sorcerer", name: "Sorcerer", icon: "✨",
-    description: "Born with raw untamed magical power",
+    key: "sorcerer", name: "Stregone", icon: "✨",
+    description: "Nato con un grezzo potere magico indomabile",
     theme: "crimson", group: "arcane",
     tiers: mk(
-      ["Touched", "Spark", "Flare", "Channeler", "Wild Mage", "Arcane Soul", "Chaos Lord", "Primordial Force"],
+      ["Toccato", "Scintilla", "Bagliore", "Canale", "Mago Selvaggio", "Anima Arcana", "Signore del Caos", "Forza Primordiale"],
       ["💫", "⚡", "🔥", "🌟", "🌀", "💎", "🌪️", "🌌"]
     ),
   },
   {
-    key: "necromancer", name: "Necromancer", icon: "💀",
-    description: "Master of death, undeath and dark power",
+    key: "necromancer", name: "Negromante", icon: "💀",
+    description: "Maestro della morte, dei non-morti e del potere oscuro",
     theme: "crimson", group: "arcane",
     tiers: mk(
-      ["Bone Collector", "Grave Caller", "Corpse Keeper", "Dread Lord", "Death Mage", "Soul Reaper", "Lich", "Dark Sovereign"],
+      ["Raccoglitore di Ossa", "Evocatore di Tombe", "Custode di Cadaveri", "Signore del Terrore", "Mago della Morte", "Mietitore di Anime", "Lich", "Sovrano delle Tenebre"],
       ["🦴", "💀", "⚰️", "🕯️", "🌑", "🪦", "👑", "☠️"]
     ),
   },
-  // ── Holy ─────────────────────────────────────────────────
+  // ── Sacro ─────────────────────────────────────────────────
   {
-    key: "cleric", name: "Cleric", icon: "✝️",
-    description: "Divine spellcaster and healer of the gods",
+    key: "cleric", name: "Chierico", icon: "✝️",
+    description: "Incantatore divino e guaritore degli dei",
     theme: "ocean", group: "holy",
     tiers: mk(
-      ["Acolyte", "Deacon", "Priest", "Confessor", "High Priest", "Oracle", "Divine Vessel", "Saint"],
+      ["Accolito", "Diacono", "Sacerdote", "Confessore", "Gran Sacerdote", "Oracolo", "Vaso Divino", "Santo"],
       ["🕯️", "✝️", "🙏", "📿", "👼", "🌟", "☀️", "✨"]
     ),
   },
   {
-    key: "bard", name: "Bard", icon: "🎵",
-    description: "Performer who weaves magic through art",
+    key: "bard", name: "Bardo", icon: "🎵",
+    description: "Esecutore che tesse la magia attraverso l'arte",
     theme: "ocean", group: "holy",
     tiers: mk(
-      ["Minstrel", "Troubadour", "Skald", "Virtuoso", "Lorekeeper", "Voice of Ages", "Grand Storyteller", "Living Legend"],
+      ["Menestrello", "Trovatore", "Skald", "Virtuoso", "Guardiano della Tradizione", "Voce dei Secoli", "Gran Narratore", "Leggenda Vivente"],
       ["🎵", "🎶", "🎸", "🎭", "📚", "🎼", "🌟", "✨"]
     ),
   },
   {
-    key: "monk", name: "Monk", icon: "🥋",
-    description: "Master of body, mind and ki energy",
+    key: "monk", name: "Monaco", icon: "🥋",
+    description: "Maestro del corpo, della mente e dell'energia ki",
     theme: "ocean", group: "holy",
     tiers: mk(
-      ["Novice", "Initiate", "Adept", "Disciple", "Sensei", "Grand Master", "Enlightened", "Transcendent"],
+      ["Novizio", "Iniziato", "Adepto", "Discepolo", "Sensei", "Gran Maestro", "Illuminato", "Trascendente"],
       ["🙏", "🥋", "💨", "☯️", "🌸", "🌟", "🌙", "✨"]
     ),
   },
@@ -150,8 +150,8 @@ export function getClassDef(key: HeroClass | string | null | undefined): ClassDe
 }
 
 export const CLASS_GROUPS: { key: ClassDef["group"]; label: string; color: string }[] = [
-  { key: "warrior", label: "⚔️ Warriors",  color: "#f59e0b" },
-  { key: "nature",  label: "🌿 Nature",    color: "#22c55e" },
-  { key: "arcane",  label: "🔮 Arcane",    color: "#e879f9" },
-  { key: "holy",    label: "✝️ Holy",      color: "#38bdf8" },
+  { key: "warrior", label: "⚔️ Guerrieri", color: "#f59e0b" },
+  { key: "nature",  label: "🌿 Natura",    color: "#22c55e" },
+  { key: "arcane",  label: "🔮 Arcano",    color: "#e879f9" },
+  { key: "holy",    label: "✝️ Sacro",     color: "#38bdf8" },
 ];

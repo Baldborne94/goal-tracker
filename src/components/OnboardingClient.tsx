@@ -5,10 +5,10 @@ import { completeOnboarding } from "@/app/(setup)/onboarding/actions";
 import { THEMES, type ThemeKey } from "@/components/ThemeProvider";
 
 const CLASSES = [
-  { key: "warrior", icon: "⚔️", name: "Warrior", desc: "Discipline & strength" },
-  { key: "ranger",  icon: "🏹", name: "Ranger",  desc: "Consistency & focus" },
-  { key: "mage",    icon: "🔮", name: "Mage",    desc: "Knowledge & growth" },
-  { key: "rogue",   icon: "🗡️", name: "Rogue",   desc: "Speed & adaptability" },
+  { key: "warrior", icon: "⚔️", name: "Guerriero", desc: "Disciplina & forza" },
+  { key: "ranger",  icon: "🏹", name: "Ranger",    desc: "Costanza & concentrazione" },
+  { key: "mage",    icon: "🔮", name: "Mago",      desc: "Conoscenza & crescita" },
+  { key: "rogue",   icon: "🗡️", name: "Ladro",     desc: "Velocità & adattabilità" },
 ];
 
 export default function OnboardingClient({ initialName }: { initialName: string }) {
@@ -51,15 +51,15 @@ export default function OnboardingClient({ initialName }: { initialName: string 
         {step === 1 && (
           <div className="text-center">
             <div className="text-6xl mb-4">⚔️</div>
-            <h1 className="text-2xl font-bold text-[#ede9ff] mb-2">Name your hero</h1>
-            <p className="text-[#9d8ac7] text-sm mb-8">This is how you&apos;ll appear in your quest log.</p>
+            <h1 className="text-2xl font-bold text-[#ede9ff] mb-2">Dai un nome al tuo eroe</h1>
+            <p className="text-[#9d8ac7] text-sm mb-8">Così apparirai nel diario delle missioni.</p>
 
             <input
               autoFocus
               value={heroName}
               onChange={(e) => setHeroName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && heroName.trim() && setStep(2)}
-              placeholder="Enter hero name..."
+              placeholder="Inserisci nome eroe..."
               maxLength={32}
               className="w-full px-4 py-3 rounded-2xl bg-black/30 border text-[#ede9ff] placeholder-[#4a3a7a] text-center text-lg font-bold focus:outline-none mb-6"
               style={{ borderColor: selectedTheme.border }}
@@ -71,7 +71,7 @@ export default function OnboardingClient({ initialName }: { initialName: string 
               className="w-full py-3 rounded-2xl font-bold text-black active:scale-95 transition-all disabled:opacity-40"
               style={{ background: selectedTheme.bar }}
             >
-              Continue →
+              Continua →
             </button>
           </div>
         )}
@@ -79,8 +79,8 @@ export default function OnboardingClient({ initialName }: { initialName: string 
         {/* Step 2 — Choose class */}
         {step === 2 && (
           <div>
-            <h1 className="text-2xl font-bold text-[#ede9ff] mb-2 text-center">Choose your class</h1>
-            <p className="text-[#9d8ac7] text-sm mb-6 text-center">Your playstyle as a hero.</p>
+            <h1 className="text-2xl font-bold text-[#ede9ff] mb-2 text-center">Scegli la tua classe</h1>
+            <p className="text-[#9d8ac7] text-sm mb-6 text-center">Il tuo stile di gioco come eroe.</p>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
               {CLASSES.map((c) => (
@@ -105,14 +105,14 @@ export default function OnboardingClient({ initialName }: { initialName: string 
                 onClick={() => setStep(1)}
                 className="flex-1 py-3 rounded-2xl font-semibold text-[#9d8ac7] border border-[#3b2d6e] active:scale-95 transition-all"
               >
-                ← Back
+                ← Indietro
               </button>
               <button
                 onClick={() => setStep(3)}
                 className="flex-1 py-3 rounded-2xl font-bold text-black active:scale-95 transition-all"
                 style={{ background: selectedTheme.bar }}
               >
-                Continue →
+                Continua →
               </button>
             </div>
           </div>
@@ -121,8 +121,8 @@ export default function OnboardingClient({ initialName }: { initialName: string 
         {/* Step 3 — Choose theme */}
         {step === 3 && (
           <div>
-            <h1 className="text-2xl font-bold text-[#ede9ff] mb-2 text-center">Choose your realm</h1>
-            <p className="text-[#9d8ac7] text-sm mb-6 text-center">Pick a visual theme for your journey.</p>
+            <h1 className="text-2xl font-bold text-[#ede9ff] mb-2 text-center">Scegli il tuo regno</h1>
+            <p className="text-[#9d8ac7] text-sm mb-6 text-center">Scegli un tema visivo per il tuo percorso.</p>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
               {(Object.values(THEMES) as (typeof THEMES)[ThemeKey][]).map((t) => (
@@ -146,7 +146,7 @@ export default function OnboardingClient({ initialName }: { initialName: string 
                 onClick={() => setStep(2)}
                 className="flex-1 py-3 rounded-2xl font-semibold text-[#9d8ac7] border border-[#3b2d6e] active:scale-95 transition-all"
               >
-                ← Back
+                ← Indietro
               </button>
               <button
                 onClick={handleFinish}
@@ -154,7 +154,7 @@ export default function OnboardingClient({ initialName }: { initialName: string 
                 className="flex-1 py-3 rounded-2xl font-bold text-black active:scale-95 transition-all disabled:opacity-60"
                 style={{ background: selectedTheme.bar }}
               >
-                {saving ? "Creating..." : "⚔️ Begin quest!"}
+                {saving ? "Creazione..." : "⚔️ Inizia la missione!"}
               </button>
             </div>
           </div>
@@ -162,7 +162,7 @@ export default function OnboardingClient({ initialName }: { initialName: string 
 
         {/* Preview footer */}
         <p className="text-center text-xs text-[#4a3a7a] mt-6">
-          {heroName.trim() ? `Hero: ${heroName}` : "Name your hero to continue"}
+          {heroName.trim() ? `Eroe: ${heroName}` : "Dai un nome al tuo eroe per continuare"}
         </p>
       </div>
     </div>

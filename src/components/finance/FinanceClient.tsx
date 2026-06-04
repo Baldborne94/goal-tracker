@@ -38,19 +38,19 @@ const ISYBANK_CAT_MAP: Record<string, string> = {
 };
 
 const CATS: Record<string, { icon: string; color: string; label: string }> = {
-  groceries:     { icon: "🛒", color: "#f59e0b", label: "Groceries" },
-  eating_out:    { icon: "🍽️", color: "#f97316", label: "Eating out" },
-  transport:     { icon: "🚗", color: "#0ea5e9", label: "Transport" },
-  housing:       { icon: "🏠", color: "#22c55e", label: "Housing" },
-  utilities:     { icon: "💡", color: "#3b82f6", label: "Utilities" },
-  health:        { icon: "💊", color: "#ec4899", label: "Health" },
-  subscriptions: { icon: "📱", color: "#6366f1", label: "Subs" },
+  groceries:     { icon: "🛒", color: "#f59e0b", label: "Spesa" },
+  eating_out:    { icon: "🍽️", color: "#f97316", label: "Ristoranti" },
+  transport:     { icon: "🚗", color: "#0ea5e9", label: "Trasporti" },
+  housing:       { icon: "🏠", color: "#22c55e", label: "Casa" },
+  utilities:     { icon: "💡", color: "#3b82f6", label: "Bollette" },
+  health:        { icon: "💊", color: "#ec4899", label: "Salute" },
+  subscriptions: { icon: "📱", color: "#6366f1", label: "Abbonamenti" },
   hobby:         { icon: "🎨", color: "#06b6d4", label: "Hobby" },
-  culture:       { icon: "🎭", color: "#8b5cf6", label: "Culture" },
-  travel:        { icon: "✈️", color: "#14b8a6", label: "Travel" },
-  gifts:         { icon: "🎁", color: "#a855f7", label: "Gifts" },
-  unexpected:    { icon: "⚡", color: "#ef4444", label: "Unexpected" },
-  other:         { icon: "📦", color: "#6b7280", label: "Other" },
+  culture:       { icon: "🎭", color: "#8b5cf6", label: "Cultura" },
+  travel:        { icon: "✈️", color: "#14b8a6", label: "Viaggi" },
+  gifts:         { icon: "🎁", color: "#a855f7", label: "Regali" },
+  unexpected:    { icon: "⚡", color: "#ef4444", label: "Imprevisti" },
+  other:         { icon: "📦", color: "#6b7280", label: "Altro" },
 };
 
 type Budget = { id: string; month: string; amount: number; closed?: boolean } | null;
@@ -121,7 +121,7 @@ function getDaysUntilDue(dueDay: number): number {
 }
 
 function ordinal(n: number) {
-  return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th");
+  return `${n}°`;
 }
 
 export default function FinanceClient({ initialMonth, initialBudget, initialExpenses, trend, initialBills = [] }: Props) {
@@ -518,7 +518,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     setShowImport(false);
   }
 
-  const monthLabel = new Date(month + "-15").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const monthLabel = new Date(month + "-15").toLocaleDateString("it-IT", { month: "long", year: "numeric" });
   const maxTrend = Math.max(...trend.map(t => Math.max(t.spent, t.budget ?? 0)), 1);
   const trendCurr = trend[trend.length - 1];
   const trendPrev = trend[trend.length - 2];
@@ -532,7 +532,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
     <div className="max-w-lg mx-auto px-4 py-6 pb-28">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-[#ede9ff]">💰 Finance</h1>
+        <h1 className="text-xl font-bold text-[#ede9ff]">💰 Finanze</h1>
         <div className="flex gap-2 flex-wrap justify-end">
           {expenses.length > 0 && (
             <button onClick={exportCsv} className="px-3 py-2 rounded-xl text-sm font-medium active:scale-95 transition-all border" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
@@ -544,7 +544,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={e => e.target.files?.[0] && parseExcelFile(e.target.files[0])} />
           </label>
           <button onClick={openAdd} className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold active:scale-95 transition-all">
-            + Expense
+            + Spesa
           </button>
         </div>
       </div>
@@ -561,8 +561,8 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         <div className="bg-red-950/40 border border-red-700/50 rounded-2xl p-4 mb-4 flex items-center gap-3">
           <span className="text-2xl">⚠️</span>
           <div>
-            <p className="text-red-300 font-semibold text-sm">Over budget!</p>
-            <p className="text-red-400/70 text-xs">Exceeded by €{Math.abs(remaining!).toFixed(2)} this month.</p>
+            <p className="text-red-300 font-semibold text-sm">Budget superato!</p>
+            <p className="text-red-400/70 text-xs">Sforato di €{Math.abs(remaining!).toFixed(2)} questo mese.</p>
           </div>
         </div>
       )}
@@ -573,7 +573,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           <>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--theme-text-muted)" }}>Monthly budget</p>
+                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--theme-text-muted)" }}>Budget mensile</p>
                 {editingBudget ? (
                   <div className="flex items-center gap-2">
                     <input
@@ -585,7 +585,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                       className="w-28 px-2 py-1.5 rounded-lg text-[#ede9ff] text-sm focus:outline-none border border-amber-500/40"
                       style={{ background: "var(--theme-bg)" }}
                     />
-                    <button onClick={saveBudget} disabled={savingBudget} className="px-3 py-1.5 bg-amber-500 text-black rounded-lg text-xs font-bold">{savingBudget ? "..." : "Save"}</button>
+                    <button onClick={saveBudget} disabled={savingBudget} className="px-3 py-1.5 bg-amber-500 text-black rounded-lg text-xs font-bold">{savingBudget ? "..." : "Salva"}</button>
                     <button onClick={() => setEditingBudget(false)} className="px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>✕</button>
                   </div>
                 ) : (
@@ -595,7 +595,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 )}
               </div>
               <div className="text-right">
-                <p className="text-xs mb-1" style={{ color: "var(--theme-text-muted)" }}>Spent</p>
+                <p className="text-xs mb-1" style={{ color: "var(--theme-text-muted)" }}>Speso</p>
                 <p className={`text-2xl font-bold ${isOver ? "text-red-400" : "text-amber-400"}`}>€{totalSpent.toFixed(2)}</p>
               </div>
             </div>
@@ -607,9 +607,9 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
               />
             </div>
             <div className="flex justify-between text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>
-              <span>{Math.round(pctUsed)}% used</span>
+              <span>{Math.round(pctUsed)}% usato</span>
               <span className={remaining! >= 0 ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
-                {remaining! >= 0 ? `€${remaining!.toFixed(2)} remaining` : `€${Math.abs(remaining!).toFixed(2)} over`}
+                {remaining! >= 0 ? `€${remaining!.toFixed(2)} rimanenti` : `€${Math.abs(remaining!).toFixed(2)} in eccesso`}
               </span>
             </div>
 
@@ -617,15 +617,15 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             {dailyLeft && (
               <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: "var(--theme-bg)" }}>
                 <div>
-                  <p className="text-sm font-bold text-[#ede9ff]">€{dailyLeft.amount.toFixed(2)}<span className="text-xs font-normal">/day</span></p>
-                  <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{dailyLeft.daysLeft} days left in month</p>
+                  <p className="text-sm font-bold text-[#ede9ff]">€{dailyLeft.amount.toFixed(2)}<span className="text-xs font-normal">/giorno</span></p>
+                  <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{dailyLeft.daysLeft} giorni rimanenti nel mese</p>
                 </div>
                 {insights?.projected !== undefined && insights.projected !== null && (
                   <div className="text-right">
                     <p className={`text-xs font-semibold ${insights.projected > budget.amount ? "text-red-400" : "text-green-400"}`}>
-                      ~€{insights.projected.toFixed(0)} projected
+                      ~€{insights.projected.toFixed(0)} previsto
                     </p>
-                    <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>end-of-month est.</p>
+                    <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>stima fine mese</p>
                   </div>
                 )}
               </div>
@@ -633,7 +633,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
 
             {!isOver && pctUsed >= 70 && (
               <p className={`text-xs mt-2 font-medium ${pctUsed >= 90 ? "text-red-400" : pctUsed >= 80 ? "text-amber-400" : "text-yellow-500"}`}>
-                {pctUsed >= 90 ? `⚠️ Almost at limit — €${remaining!.toFixed(2)} left!` : pctUsed >= 80 ? `⚡ Over 80% used — €${remaining!.toFixed(2)} remaining` : `💡 70% through budget — €${remaining!.toFixed(2)} left`}
+                {pctUsed >= 90 ? `⚠️ Quasi al limite — €${remaining!.toFixed(2)} rimasti!` : pctUsed >= 80 ? `⚡ Oltre l'80% usato — €${remaining!.toFixed(2)} rimanenti` : `💡 70% del budget consumato — €${remaining!.toFixed(2)} rimasti`}
               </p>
             )}
           </>
@@ -641,19 +641,19 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           <div>
             <div className="flex justify-between items-start mb-3">
               <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--theme-text-muted)" }}>No budget set</p>
+                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--theme-text-muted)" }}>Nessun budget impostato</p>
                 <p className="text-2xl font-bold text-amber-400">€{totalSpent.toFixed(2)}</p>
-                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>spent this month</p>
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>speso questo mese</p>
               </div>
             </div>
             {editingBudget ? (
               <div className="flex gap-2">
-                <input type="number" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} onKeyDown={e => e.key === "Enter" && saveBudget()} placeholder="Monthly budget (€)" className={inputCls} style={inputStyle} />
-                <button onClick={saveBudget} disabled={savingBudget} className="px-4 py-2.5 bg-amber-500 text-black rounded-xl text-sm font-bold">{savingBudget ? "..." : "Set"}</button>
+                <input type="number" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} onKeyDown={e => e.key === "Enter" && saveBudget()} placeholder="Budget mensile (€)" className={inputCls} style={inputStyle} />
+                <button onClick={saveBudget} disabled={savingBudget} className="px-4 py-2.5 bg-amber-500 text-black rounded-xl text-sm font-bold">{savingBudget ? "..." : "Imposta"}</button>
               </div>
             ) : (
               <button onClick={() => setEditingBudget(true)} className="w-full py-2.5 border border-dashed border-amber-500/40 text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-900/10 transition-colors">
-                + Set monthly budget
+                + Imposta budget mensile
               </button>
             )}
           </div>
@@ -664,9 +664,9 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {insights && (
         <div className="grid grid-cols-3 gap-2 mb-4">
           {[
-            { icon: "📅", label: "Avg/day", value: `€${insights.avgPerDay.toFixed(2)}` },
-            { icon: CATS[insights.biggest.category]?.icon ?? "📦", label: "Biggest", value: `€${insights.biggest.amount.toFixed(2)}` },
-            { icon: "🗓", label: "Active days", value: `${insights.activeDays}/${insights.daysInMonth}` },
+            { icon: "📅", label: "Media/giorno", value: `€${insights.avgPerDay.toFixed(2)}` },
+            { icon: CATS[insights.biggest.category]?.icon ?? "📦", label: "Maggiore", value: `€${insights.biggest.amount.toFixed(2)}` },
+            { icon: "🗓", label: "Giorni attivi", value: `${insights.activeDays}/${insights.daysInMonth}` },
           ].map(card => (
             <div key={card.label} className="rounded-xl border p-3 text-center" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
               <div className="text-lg mb-0.5">{card.icon}</div>
@@ -683,8 +683,8 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
           <div className="bg-amber-950/20 border border-amber-700/30 rounded-2xl p-4 mb-4 flex items-center gap-3">
             <span className="text-2xl">💎</span>
             <div>
-              <p className="text-amber-300 font-semibold text-sm">Month closed — budget kept!</p>
-              <p className="text-amber-400/70 text-xs">25 XP earned · trophy unlocked</p>
+              <p className="text-amber-300 font-semibold text-sm">Mese chiuso — budget rispettato!</p>
+              <p className="text-amber-400/70 text-xs">25 XP guadagnati · trofeo sbloccato</p>
             </div>
           </div>
         ) : (
@@ -692,20 +692,20 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             {isLastDayOfMonth && !isOver && (
               <div className="mb-3 bg-amber-950/30 border border-amber-600/40 rounded-xl px-3 py-2.5 flex items-center gap-2">
                 <span className="text-lg">🔔</span>
-                <p className="text-xs text-amber-300 font-medium">Today is the last day — claim your reward before midnight!</p>
+                <p className="text-xs text-amber-300 font-medium">Oggi è l'ultimo giorno — riscatta la tua ricompensa prima di mezzanotte!</p>
               </div>
             )}
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-[#c4b5fd]">🔐 Close this month</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--theme-text-muted)" }}>Stay within budget → earn 25 XP + a trophy</p>
+                <p className="text-sm font-semibold text-[#c4b5fd]">🔐 Chiudi questo mese</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--theme-text-muted)" }}>Rimani nel budget → guadagna 25 XP + un trofeo</p>
               </div>
               <button onClick={closeMonth} disabled={closingMonth || isOver} className="px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-500 text-white rounded-xl text-sm font-bold disabled:opacity-40 active:scale-95 transition-all flex-shrink-0">
-                {closingMonth ? "..." : "Claim"}
+                {closingMonth ? "..." : "Riscatta"}
               </button>
             </div>
             {isOver && (
-              <p className="text-xs text-red-400 mt-3 bg-red-950/30 border border-red-800/30 px-3 py-2 rounded-xl">⚠️ You&apos;re over budget — reduce spending to unlock.</p>
+              <p className="text-xs text-red-400 mt-3 bg-red-950/30 border border-red-800/30 px-3 py-2 rounded-xl">⚠️ Hai sforato il budget — riduci le spese per sbloccare.</p>
             )}
           </div>
         )
@@ -714,18 +714,18 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {/* Recurring bills */}
       <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#c4b5fd] text-sm">📌 Fixed payments</h2>
+          <h2 className="font-semibold text-[#c4b5fd] text-sm">📌 Pagamenti fissi</h2>
           <button
             onClick={() => openBillForm()}
             className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95 transition-all"
           >
-            + Add bill
+            + Aggiungi
           </button>
         </div>
 
         {bills.length === 0 ? (
           <p className="text-sm text-center py-4" style={{ color: "var(--theme-text-muted)" }}>
-            No fixed payments yet — add rent, utilities, subscriptions, etc.
+            Nessun pagamento fisso — aggiungi affitto, bollette, abbonamenti, ecc.
           </p>
         ) : (
           <div className="space-y-2">
@@ -738,17 +738,17 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                   <span className="text-xl flex-shrink-0">{s.icon}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-[#ede9ff] truncate">{bill.title}</p>
-                    <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Every {ordinal(bill.dueDay)} · notify {bill.notifyDaysBefore}d before</p>
+                    <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Ogni {ordinal(bill.dueDay)} del mese · avviso {bill.notifyDaysBefore}gg prima</p>
                   </div>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${badgeColor}`}>
-                    {daysUntil === 0 ? "today" : `${daysUntil}d`}
+                    {daysUntil === 0 ? "oggi" : `${daysUntil}gg`}
                   </span>
                   <span className="font-semibold text-sm flex-shrink-0" style={{ color: s.color }}>€{bill.amount.toFixed(2)}</span>
                   <button
                     onClick={() => toggleBillActive(bill.id, !bill.active)}
                     className="text-sm flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg border transition-colors"
                     style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
-                    title={bill.active ? "Pause bill" : "Activate bill"}
+                    title={bill.active ? "Metti in pausa" : "Attiva pagamento"}
                   >
                     {bill.active ? "⏸" : "▶"}
                   </button>
@@ -770,7 +770,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {/* Category breakdown */}
       {catBreakdown.length > 0 && (
         <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-          <h2 className="font-semibold text-[#c4b5fd] mb-4 text-sm">📊 By category</h2>
+          <h2 className="font-semibold text-[#c4b5fd] mb-4 text-sm">📊 Per categoria</h2>
           <div className="flex gap-4 items-center">
             <DonutChart breakdown={catBreakdown} />
             <div className="flex-1 space-y-2.5 min-w-0">
@@ -797,7 +797,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                               value={catBudgetInput}
                               onChange={e => setCatBudgetInput(e.target.value)}
                               onKeyDown={e => { if (e.key === "Enter") saveCatBudget(cat); if (e.key === "Escape") setEditingCatBudget(null); }}
-                              placeholder="limit"
+                              placeholder="limite"
                               autoFocus
                               className="w-16 px-1.5 py-0.5 rounded-lg text-xs text-[#ede9ff] border border-amber-500/40 focus:outline-none"
                               style={{ background: "var(--theme-bg)" }}
@@ -811,7 +811,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                             className="text-[10px] px-1.5 py-0.5 rounded-md border transition-colors"
                             style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
                           >
-                            {catLimit ? "✏️" : "+ limit"}
+                            {catLimit ? "✏️" : "+ limite"}
                           </button>
                         )}
                         {catLimit && editingCatBudget !== cat && (
@@ -836,13 +836,13 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
 
       {/* 12-month trend */}
       <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-        <h2 className="font-semibold text-[#c4b5fd] mb-3 text-sm">📈 12-month trend</h2>
+        <h2 className="font-semibold text-[#c4b5fd] mb-3 text-sm">📈 Trend 12 mesi</h2>
         {trendDiff !== null && (
           <div className={`flex items-center gap-2 text-xs mb-4 px-3 py-2 rounded-xl ${trendDiff > 0 ? "bg-red-950/30 border border-red-800/30 text-red-400" : "bg-green-950/30 border border-green-800/30 text-green-400"}`}>
             <span>{trendDiff > 0 ? "↑" : "↓"}</span>
             <span>
-              {trendDiff > 0 ? "Spent" : "Saved"} €{Math.abs(trendDiff).toFixed(2)} {trendDiff > 0 ? "more" : "less"} than last month
-              {trendPct !== null ? ` · ${trendPct}% ${trendDiff > 0 ? "increase" : "decrease"}` : ""}
+              {trendDiff > 0 ? "Speso" : "Risparmiato"} €{Math.abs(trendDiff).toFixed(2)} {trendDiff > 0 ? "in più" : "in meno"} rispetto al mese scorso
+              {trendPct !== null ? ` · ${trendPct}% ${trendDiff > 0 ? "in più" : "in meno"}` : ""}
             </span>
           </div>
         )}
@@ -872,7 +872,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         </div>
         <div className="flex justify-between text-[10px]" style={{ color: "var(--theme-text-muted)" }}>
           <span>€0</span>
-          <span style={{ fontSize: "9px" }}>— budget line</span>
+          <span style={{ fontSize: "9px" }}>— linea budget</span>
           <span>€{maxTrend.toFixed(0)}</span>
         </div>
       </div>
@@ -881,7 +881,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       <div className="rounded-2xl border p-5" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[#c4b5fd] text-sm">
-            🧾 Daily log{" "}
+            🧾 Registro giornaliero{" "}
             {expenses.length > 0 && <span className="font-normal" style={{ color: "var(--theme-text-muted)" }}>({expenses.length})</span>}
           </h2>
           <div className="flex items-center gap-2">
@@ -894,7 +894,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 className="text-xs px-2 py-1 rounded-lg border transition-colors"
                 style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
               >
-                🗑️ Clear
+                🗑️ Cancella
               </button>
             )}
           </div>
@@ -908,7 +908,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
               className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${filterCat === null ? "border-amber-500/60 bg-amber-900/20 text-amber-400" : ""}`}
               style={filterCat !== null ? { borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" } : {}}
             >
-              All
+              Tutto
             </button>
             {catBreakdown.map(({ cat }) => {
               const s = CATS[cat] ?? CATS.other;
@@ -928,11 +928,11 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         )}
 
         {loading ? (
-          <p className="text-sm text-center py-4" style={{ color: "var(--theme-text-muted)" }}>Loading...</p>
+          <p className="text-sm text-center py-4" style={{ color: "var(--theme-text-muted)" }}>Caricamento...</p>
         ) : expenses.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-sm mb-3" style={{ color: "var(--theme-text-muted)" }}>No expenses for {monthLabel}</p>
-            <button onClick={openAdd} className="text-xs text-amber-400 hover:text-amber-300">+ Add your first expense</button>
+            <p className="text-sm mb-3" style={{ color: "var(--theme-text-muted)" }}>Nessuna spesa per {monthLabel}</p>
+            <button onClick={openAdd} className="text-xs text-amber-400 hover:text-amber-300">+ Aggiungi la prima spesa</button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -948,7 +948,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 if (existing) { existing.items.push(e); existing.total += e.amount; }
                 else {
                   const d = new Date(dateKey + "T12:00:00");
-                  const label = dateKey === todayKey ? "Today" : dateKey === yesterKey ? "Yesterday" : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+                  const label = dateKey === todayKey ? "Oggi" : dateKey === yesterKey ? "Ieri" : d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
                   byDay.push({ dateKey, label, total: e.amount, items: [e] });
                 }
               }
@@ -983,7 +983,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                             onClick={() => openBillForm({ title: e.description ?? undefined, amount: e.amount, category: e.category })}
                             className="text-xs flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border transition-colors"
                             style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
-                            title="Pin as recurring bill"
+                            title="Fissa come pagamento ricorrente"
                           >
                             📌
                           </button>
@@ -1010,14 +1010,14 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] px-4">
           <div className="rounded-2xl border w-full max-w-sm p-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-            <h3 className="font-bold text-[#ede9ff] mb-2">🗑️ Clear {monthLabel}?</h3>
+            <h3 className="font-bold text-[#ede9ff] mb-2">🗑️ Cancella {monthLabel}?</h3>
             <p className="text-sm mb-5" style={{ color: "var(--theme-text-muted)" }}>
-              This will permanently delete all {expenses.length} expense{expenses.length !== 1 ? "s" : ""} for this month. This cannot be undone.
+              Questo eliminerà definitivamente tutte le {expenses.length} spese di questo mese. Non può essere annullato.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setShowClearConfirm(false)} disabled={clearingMonth} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border disabled:opacity-50" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
+              <button onClick={() => setShowClearConfirm(false)} disabled={clearingMonth} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border disabled:opacity-50" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Annulla</button>
               <button onClick={clearMonth} disabled={clearingMonth} className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all">
-                {clearingMonth ? "Clearing..." : "Delete all"}
+                {clearingMonth ? "Cancellando..." : "Elimina tutto"}
               </button>
             </div>
           </div>
@@ -1028,10 +1028,10 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {showImport && (
         <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]">
           <div className="rounded-t-2xl border w-full max-w-lg px-5 pt-5 pb-20 max-h-[80vh] overflow-y-auto" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-            <h3 className="font-bold text-[#ede9ff] mb-1">📥 Import from CSV</h3>
-            <p className="text-xs mb-4" style={{ color: "var(--theme-text-muted)" }}>{csvRows.length} rows — review before importing</p>
+            <h3 className="font-bold text-[#ede9ff] mb-1">📥 Importa da CSV</h3>
+            <p className="text-xs mb-4" style={{ color: "var(--theme-text-muted)" }}>{csvRows.length} righe — controlla prima di importare</p>
             {csvRows.length === 0 ? (
-              <p className="text-sm text-center py-4" style={{ color: "var(--theme-text-muted)" }}>No valid rows. Format: <code className="text-amber-400">date,amount,category,description</code></p>
+              <p className="text-sm text-center py-4" style={{ color: "var(--theme-text-muted)" }}>Nessuna riga valida. Formato: <code className="text-amber-400">data,importo,categoria,descrizione</code></p>
             ) : (
               <div className="space-y-1.5 mb-4 max-h-52 overflow-y-auto">
                 {csvRows.map((row, i) => {
@@ -1049,11 +1049,11 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 })}
               </div>
             )}
-            {importing && <p className="text-xs text-amber-400 text-center mb-3">Importing {importDone}/{csvRows.length}...</p>}
+            {importing && <p className="text-xs text-amber-400 text-center mb-3">Importando {importDone}/{csvRows.length}...</p>}
             <div className="flex gap-3">
-              <button onClick={() => { setShowImport(false); setCsvRows([]); }} disabled={importing} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border disabled:opacity-50" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
+              <button onClick={() => { setShowImport(false); setCsvRows([]); }} disabled={importing} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border disabled:opacity-50" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Annulla</button>
               <button onClick={confirmImport} disabled={importing || csvRows.length === 0} className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95">
-                {importing ? `${importDone}/${csvRows.length}...` : `Import ${csvRows.length}`}
+                {importing ? `${importDone}/${csvRows.length}...` : `Importa ${csvRows.length}`}
               </button>
             </div>
           </div>
@@ -1064,13 +1064,13 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {showBillForm && (
         <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]">
           <div className="rounded-t-2xl border w-full max-w-lg px-5 pt-5 pb-20 max-h-[90vh] overflow-y-auto" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-            <h3 className="font-bold text-[#ede9ff] mb-4">📌 Add recurring bill</h3>
+            <h3 className="font-bold text-[#ede9ff] mb-4">📌 Aggiungi pagamento fisso</h3>
 
             <div className="space-y-3 mb-4">
               <input
                 value={billFormTitle}
                 onChange={e => setBillFormTitle(e.target.value)}
-                placeholder="Bill name (e.g. Rent, Netflix, Car payment)"
+                placeholder="Nome (es. Affitto, Netflix, Rata auto)"
                 className={inputCls}
                 style={inputStyle}
               />
@@ -1078,7 +1078,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 type="number"
                 value={billFormAmount}
                 onChange={e => setBillFormAmount(e.target.value)}
-                placeholder="Amount (€)"
+                placeholder="Importo (€)"
                 min="0"
                 step="0.01"
                 className={inputCls}
@@ -1087,7 +1087,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             </div>
 
             <div className="mb-4">
-              <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>Category</label>
+              <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>Categoria</label>
               <div className="grid grid-cols-4 gap-2">
                 {Object.entries(CATS).map(([key, s]) => (
                   <button
@@ -1107,7 +1107,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             <div className="rounded-xl border p-4 mb-4 space-y-4" style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>Due day of month</label>
+                  <label className="text-xs uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>Giorno di scadenza</label>
                   <span className="text-sm font-bold text-amber-400">{ordinal(billFormDueDay)}</span>
                 </div>
                 <input
@@ -1119,13 +1119,13 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                   className="w-full accent-amber-500"
                 />
                 <div className="flex justify-between text-[10px] mt-1" style={{ color: "var(--theme-text-muted)" }}>
-                  <span>1st</span><span>15th</span><span>28th</span>
+                  <span>1°</span><span>15°</span><span>28°</span>
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>Notify days before</label>
-                  <span className="text-sm font-bold text-amber-400">{billFormNotify} day{billFormNotify !== 1 ? "s" : ""}</span>
+                  <label className="text-xs uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>Avviso giorni prima</label>
+                  <span className="text-sm font-bold text-amber-400">{billFormNotify} giorn{billFormNotify !== 1 ? "i" : "o"}</span>
                 </div>
                 <input
                   type="range"
@@ -1136,15 +1136,15 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                   className="w-full accent-amber-500"
                 />
                 <div className="flex justify-between text-[10px] mt-1" style={{ color: "var(--theme-text-muted)" }}>
-                  <span>1 day</span><span>4 days</span><span>7 days</span>
+                  <span>1 giorno</span><span>4 giorni</span><span>7 giorni</span>
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setShowBillForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
+              <button onClick={() => setShowBillForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Annulla</button>
               <button onClick={saveBill} disabled={savingBill || !billFormTitle.trim() || !billFormAmount} className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all">
-                {savingBill ? "..." : "Save bill"}
+                {savingBill ? "..." : "Salva"}
               </button>
             </div>
           </div>
@@ -1155,10 +1155,10 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
       {showForm && (
         <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60]">
           <div className="rounded-t-2xl border w-full max-w-lg px-5 pt-5 pb-20 max-h-[90vh] overflow-y-auto" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-            <h3 className="font-bold text-[#ede9ff] mb-4">{formMode === "add" ? "Add expense" : "Edit expense"}</h3>
+            <h3 className="font-bold text-[#ede9ff] mb-4">{formMode === "add" ? "Aggiungi spesa" : "Modifica spesa"}</h3>
 
             <div className="mb-4">
-              <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>Category</label>
+              <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>Categoria</label>
               <div className="grid grid-cols-4 gap-2">
                 {Object.entries(CATS).map(([key, s]) => (
                   <button
@@ -1176,8 +1176,8 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             </div>
 
             <div className="space-y-2 mb-4">
-              <input type="number" value={formAmt} onChange={e => setFormAmt(e.target.value)} placeholder="Amount (€)" min="0" step="0.01" className={inputCls} style={inputStyle} />
-              <input value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Description (optional)" className={inputCls} style={inputStyle} />
+              <input type="number" value={formAmt} onChange={e => setFormAmt(e.target.value)} placeholder="Importo (€)" min="0" step="0.01" className={inputCls} style={inputStyle} />
+              <input value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Descrizione (opzionale)" className={inputCls} style={inputStyle} />
               <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className={inputCls} style={inputStyle} />
             </div>
 
@@ -1190,8 +1190,8 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
               <div className="flex items-center gap-2">
                 <span className="text-base">🔄</span>
                 <div className="text-left">
-                  <p className="text-xs font-medium text-[#ede9ff]">Recurring monthly</p>
-                  <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>Auto-copy to next month</p>
+                  <p className="text-xs font-medium text-[#ede9ff]">Ricorrente mensile</p>
+                  <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>Copia automatica al mese successivo</p>
                 </div>
               </div>
               <div className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 ${formRecurring ? "bg-amber-500" : "bg-[#3b2d6e]"}`}>
@@ -1200,9 +1200,9 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
             </button>
 
             <div className="flex gap-3">
-              <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Cancel</button>
+              <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>Annulla</button>
               <button onClick={submitForm} disabled={formSaving || !formAmt} className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all">
-                {formSaving ? "..." : formMode === "add" ? "Add" : "Save changes"}
+                {formSaving ? "..." : formMode === "add" ? "Aggiungi" : "Salva modifiche"}
               </button>
             </div>
           </div>

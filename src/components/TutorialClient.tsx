@@ -9,63 +9,63 @@ import { getClassDef } from "@/lib/classes";
 const SECTIONS = [
   {
     icon: "⚔️",
-    title: "Quests & Milestones",
+    title: "Missioni e Tappe",
     color: "#f59e0b",
     steps: [
-      "Create a quest with a title, deadline, category and priority",
-      "Break it into milestones — each one is a concrete step forward",
-      "Complete milestones to earn XP and move the progress bar",
-      "When all milestones are done, mark the quest complete",
+      "Crea una missione con titolo, scadenza, categoria e priorità",
+      "Dividila in tappe — ognuna è un passo concreto avanti",
+      "Completa le tappe per guadagnare XP e avanzare la barra di progresso",
+      "Quando tutte le tappe sono completate, segna la missione come conclusa",
     ],
-    tip: "💡 No milestones? Enable daily check-in instead and track progress day by day.",
+    tip: "💡 Nessuna tappa? Abilita il check-in giornaliero e traccia i progressi giorno per giorno.",
   },
   {
     icon: "✨",
-    title: "XP & Levels",
+    title: "XP e Livelli",
     color: "#a78bfa",
     steps: [
-      "Every completed milestone earns XP (default: 10 XP each)",
-      "XP accumulates and levels up your hero automatically",
-      "8 tiers: Recruit → Warrior → Knight → Warlord → King → Emperor → Legend → Divine",
-      "Your current level icon appears in the navigation bar",
+      "Ogni tappa completata guadagna XP (predefinito: 10 XP ciascuna)",
+      "Gli XP si accumulano e fanno salire di livello il tuo eroe automaticamente",
+      "8 livelli: Recluta → Guerriero → Cavaliere → Condottiero → Re → Imperatore → Leggenda → Divino",
+      "L'icona del tuo livello attuale appare nella barra di navigazione",
     ],
-    tip: "💡 Your level icon in the nav bar changes as you level up — watch for it!",
+    tip: "💡 L'icona del livello nella barra cambia man mano che sali — tienila d'occhio!",
   },
   {
     icon: "📅",
-    title: "Daily Check-ins & Streaks",
+    title: "Check-in Giornaliero e Serie",
     color: "#34d399",
     steps: [
-      "Enable daily check-in on any quest from the quest settings",
-      "Come back every day and tap Check In to earn XP",
-      "You can restrict check-ins to specific days of the week",
-      "Consecutive check-in days build a streak shown on the dashboard",
+      "Abilita il check-in giornaliero su qualsiasi missione dalle impostazioni",
+      "Torna ogni giorno e premi Check In per guadagnare XP",
+      "Puoi limitare i check-in a giorni specifici della settimana",
+      "I giorni consecutivi di check-in formano una serie mostrata nella bacheca",
     ],
-    tip: "💡 Streaks reset if you miss a scheduled day — consistency is the key!",
+    tip: "💡 La serie si azzera se salti un giorno pianificato — la costanza è la chiave!",
   },
   {
     icon: "💎",
-    title: "Treasury",
+    title: "Tesoro",
     color: "#38bdf8",
     steps: [
-      "Set a monthly budget in the Treasury section",
-      "Log expenses by category (food, transport, subscriptions…)",
-      "The donut chart and trend graph show where your money goes",
-      "Close the month under budget to earn a bonus 25 XP + trophy",
+      "Imposta un budget mensile nella sezione Tesoro",
+      "Registra le spese per categoria (cibo, trasporti, abbonamenti…)",
+      "Il grafico a ciambella e il trend mostrano dove vanno i tuoi soldi",
+      "Chiudi il mese sotto budget per guadagnare 25 XP bonus + trofeo",
     ],
-    tip: "💡 You can import bank statements directly from ISYbank Excel exports.",
+    tip: "💡 Puoi importare gli estratti conto direttamente dai file Excel di ISYbank.",
   },
   {
     icon: "⚡",
-    title: "Daily Challenges",
+    title: "Sfide Giornaliere",
     color: "#fb923c",
     steps: [
-      "Five bonus challenges are available every day",
-      "Conditions: complete milestones, log expenses, do check-ins…",
-      "When the condition is met, the Claim button lights up",
-      "Claim your XP before midnight — challenges reset daily",
+      "Cinque sfide bonus sono disponibili ogni giorno",
+      "Condizioni: completa tappe, registra spese, fai check-in…",
+      "Quando la condizione è soddisfatta, il pulsante Riscatta si illumina",
+      "Riscatta i tuoi XP prima di mezzanotte — le sfide si resettano ogni giorno",
     ],
-    tip: "💡 All 5 done? You're having a great day — keep the momentum!",
+    tip: "💡 Tutte e 5 completate? Stai avendo una grande giornata — mantieni lo slancio!",
   },
 ];
 
@@ -101,10 +101,10 @@ export default function TutorialClient({
       <div className="text-center mb-8">
         <div className="text-6xl mb-3 animate-bounce" style={{ animationDuration: "2s" }}>📖</div>
         <h1 className="text-2xl font-bold text-[#ede9ff] mb-1">
-          {isFirstTime && name ? `Welcome, ${name}!` : "How to play"}
+          {isFirstTime && name ? `Benvenuto, ${name}!` : "Come si gioca"}
         </h1>
         <p className="text-sm" style={{ color: "var(--theme-text-muted)" }}>
-          Everything you need to know to master your quests.
+          Tutto quello che devi sapere per dominare le tue missioni.
         </p>
       </div>
 
@@ -161,7 +161,7 @@ export default function TutorialClient({
         <div className="flex items-center gap-2 mb-4">
           <span className="text-lg">{cls.icon}</span>
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>
-            {cls.name} level path
+            Percorso livelli — {cls.name}
           </p>
         </div>
         <div className="grid grid-cols-4 gap-2">
@@ -184,11 +184,11 @@ export default function TutorialClient({
             className="block w-full py-4 rounded-2xl font-bold text-center text-base shadow-lg shadow-amber-900/30 active:scale-95 transition-all mb-3 disabled:opacity-60"
             style={{ background: "linear-gradient(to right, #f59e0b, #eab308)", color: "#000" }}
           >
-            {loading ? "Loading…" : "⚔️ Start my adventure"}
+            {loading ? "Caricamento…" : "⚔️ Inizia la mia avventura"}
           </button>
           <p className="text-center text-xs" style={{ color: "var(--theme-text-muted)" }}>
-            You can always re-read this guide via the{" "}
-            <span className="font-bold text-[#ede9ff]">?</span> button on the dashboard.
+            Puoi rileggere questa guida in qualsiasi momento dal pulsante{" "}
+            <span className="font-bold text-[#ede9ff]">?</span> nella bacheca.
           </p>
         </>
       ) : (
@@ -197,7 +197,7 @@ export default function TutorialClient({
           className="block w-full py-4 rounded-2xl font-bold text-center text-base border active:scale-95 transition-all"
           style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
         >
-          ← Back to dashboard
+          ← Torna alla bacheca
         </Link>
       )}
     </div>
