@@ -7,8 +7,8 @@ export default async function VitaPage() {
   return (
     <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-amber-400">🌿 Life</h1>
-        <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Your personal trackers</p>
+        <h1 className="text-xl font-bold text-amber-400">🌿 Vita</h1>
+        <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>I tuoi tracker personali</p>
       </div>
 
       <Link
@@ -18,8 +18,8 @@ export default async function VitaPage() {
       >
         <span className="text-4xl">⚖️</span>
         <div>
-          <p className="text-white font-semibold">Weight</p>
-          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Track your measurements and progress</p>
+          <p className="text-white font-semibold">Peso</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Misura e monitora il tuo progresso</p>
         </div>
         <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
       </Link>
@@ -31,8 +31,8 @@ export default async function VitaPage() {
       >
         <span className="text-4xl">🥗</span>
         <div>
-          <p className="text-white font-semibold">Diet</p>
-          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Daily meals, weight log and nutrition plan</p>
+          <p className="text-white font-semibold">Dieta</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Pasti giornalieri e tracciamento nutrizione</p>
         </div>
         <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
       </Link>
@@ -44,8 +44,8 @@ export default async function VitaPage() {
       >
         <span className="text-4xl">🔁</span>
         <div>
-          <p className="text-white font-semibold">Habits</p>
-          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Daily check-ins and weekly streaks</p>
+          <p className="text-white font-semibold">Abitudini</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Check-in giornalieri e serie settimanali</p>
         </div>
         <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
       </Link>

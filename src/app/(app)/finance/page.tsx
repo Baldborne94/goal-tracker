@@ -58,7 +58,7 @@ export default async function FinancePage() {
     ]);
     trend.push({
       month: mo,
-      label: s.toLocaleDateString("en-GB", { month: "short" }),
+      label: s.toLocaleDateString("it-IT", { month: "short" }),
       spent: agg._sum.amount ?? 0,
       budget: bud?.amount ?? null,
     });

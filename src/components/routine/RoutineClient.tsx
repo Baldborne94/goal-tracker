@@ -49,7 +49,7 @@ function HabitHeatmap({ habits }: { habits: { name: string; icon: string; logs: 
   const monthLabels: { label: string; colIndex: number }[] = [];
   grid.forEach(({ date }, i) => {
     if (i % 7 === 0) {
-      const m = new Date(date).toLocaleDateString("en-GB", { month: "short" });
+      const m = new Date(date).toLocaleDateString("it-IT", { month: "short" });
       const weekIdx = Math.floor(i / 7);
       if (monthLabels.length === 0 || monthLabels[monthLabels.length - 1].label !== m) {
         monthLabels.push({ label: m, colIndex: weekIdx });
@@ -59,7 +59,7 @@ function HabitHeatmap({ habits }: { habits: { name: string; icon: string; logs: 
 
   return (
     <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4">
-      <p className="text-xs font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">🗓 12-week heatmap</p>
+      <p className="text-xs font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">🗓 Heatmap 12 settimane</p>
       <div className="overflow-x-auto">
         <div style={{ minWidth: `${weeks * 14}px` }}>
           <div className="flex gap-0.5 mb-1">
@@ -80,7 +80,7 @@ function HabitHeatmap({ habits }: { habits: { name: string; icon: string; logs: 
                     key={cell.date}
                     className="rounded-sm"
                     style={{ height: 11, backgroundColor: cellColor(cell.count, cell.total) }}
-                    title={`${cell.date}: ${cell.count}/${cell.total} habits`}
+                    title={`${cell.date}: ${cell.count}/${cell.total} abitudini`}
                   />
                 ))}
               </div>
@@ -89,11 +89,11 @@ function HabitHeatmap({ habits }: { habits: { name: string; icon: string; logs: 
         </div>
       </div>
       <div className="flex items-center gap-2 mt-2 justify-end">
-        <span className="text-[9px] text-[#6b5a9e]">Less</span>
+        <span className="text-[9px] text-[#6b5a9e]">Meno</span>
         {[0, 0.3, 0.6, 1].map((pct) => (
           <div key={pct} className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: cellColor(pct > 0 ? 1 : 0, pct > 0 ? 1 / pct : 1) }} />
         ))}
-        <span className="text-[9px] text-[#6b5a9e]">More</span>
+        <span className="text-[9px] text-[#6b5a9e]">Di più</span>
       </div>
     </div>
   );
@@ -120,7 +120,7 @@ function todayStr() {
 }
 
 function formatDate(d: Date) {
-  return d.toLocaleDateString("en-GB", {
+  return d.toLocaleDateString("it-IT", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -228,7 +228,7 @@ export default function RoutineClient() {
         <div className="flex items-center gap-3">
           <Link href="/vita" className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold flex-shrink-0" style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}>‹</Link>
           <div>
-            <h1 className="text-xl font-bold text-amber-400">🔁 Habits</h1>
+            <h1 className="text-xl font-bold text-amber-400">🔁 Abitudini</h1>
             <p className="text-xs text-[#6b5a9e] capitalize">{formatDate(new Date())}</p>
           </div>
         </div>
@@ -244,12 +244,12 @@ export default function RoutineClient() {
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-white font-medium">
-              Today: {doneToday}/{total} done
+              Oggi: {doneToday}/{total} completati
             </span>
             <span
               className={`text-sm font-bold ${pct === 100 ? "text-amber-400" : "text-[#6b5a9e]"}`}
             >
-              {pct === 100 ? "✨ Perfect!" : `${pct}%`}
+              {pct === 100 ? "✨ Perfetto!" : `${pct}%`}
             </span>
           </div>
           <div className="h-2 bg-[#0c0a1a] rounded-full overflow-hidden">
@@ -265,9 +265,9 @@ export default function RoutineClient() {
       {total === 0 && !showForm && (
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-6 text-center space-y-2">
           <p className="text-3xl">🌱</p>
-          <p className="text-white font-medium">No habits yet</p>
+          <p className="text-white font-medium">Nessuna abitudine</p>
           <p className="text-xs text-[#6b5a9e]">
-            Create your first habit to earn XP every day
+            Crea la tua prima abitudine per guadagnare XP ogni giorno
           </p>
         </div>
       )}
@@ -285,13 +285,13 @@ export default function RoutineClient() {
             <div className="flex-1 min-w-0">
               <p className="text-white font-medium text-sm">{habit.name}</p>
               {streak > 0 && (
-                <p className="text-xs text-orange-400">🔥 {streak} day streak</p>
+                <p className="text-xs text-orange-400">🔥 {streak} giorni di fila</p>
               )}
             </div>
             <button
               onClick={() => deleteHabit(habit.id)}
               className="text-[#3b2d6e] hover:text-red-400 transition-colors text-lg leading-none px-1"
-              aria-label="Delete"
+              aria-label="Elimina"
             >
               ×
             </button>
@@ -303,7 +303,7 @@ export default function RoutineClient() {
                   ? "bg-amber-400 border-amber-400 text-[#0c0a1a]"
                   : "border-[#3b2d6e] text-transparent"
               } ${toggling === habit.id ? "opacity-50" : ""}`}
-              aria-label={checked ? "Uncheck" : "Mark done"}
+              aria-label={checked ? "Deseleziona" : "Segna fatto"}
             >
               {checked && (
                 <svg
@@ -332,17 +332,17 @@ export default function RoutineClient() {
           onClick={() => setShowForm(true)}
           className="w-full py-3 rounded-xl bg-amber-400 text-[#0c0a1a] font-bold text-sm active:scale-95 transition-transform"
         >
-          + Add habit
+          + Aggiungi abitudine
         </button>
       ) : (
         <div className="bg-[#16112e] border border-[#3b2d6e] rounded-2xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-white">New habit</p>
+          <p className="text-sm font-semibold text-white">Nuova abitudine</p>
 
           <div>
-            <label className="text-xs text-[#6b5a9e] mb-1 block">Name *</label>
+            <label className="text-xs text-[#6b5a9e] mb-1 block">Nome *</label>
             <input
               type="text"
-              placeholder="e.g. Drink 2L of water"
+              placeholder="es. Bevi 2L d'acqua"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="w-full bg-[#0c0a1a] border border-[#3b2d6e] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
@@ -351,7 +351,7 @@ export default function RoutineClient() {
           </div>
 
           <div>
-            <label className="text-xs text-[#6b5a9e] mb-2 block">Icon</label>
+            <label className="text-xs text-[#6b5a9e] mb-2 block">Icona</label>
             <div className="grid grid-cols-8 gap-1.5">
               {PRESET_ICONS.map((icon) => (
                 <button
@@ -375,7 +375,7 @@ export default function RoutineClient() {
               disabled={saving || !newName.trim()}
               className="flex-1 py-2.5 rounded-xl bg-amber-400 text-[#0c0a1a] font-bold text-sm disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? "Salvando..." : "Salva"}
             </button>
             <button
               onClick={() => {
@@ -385,7 +385,7 @@ export default function RoutineClient() {
               }}
               className="px-4 py-2.5 rounded-xl border border-[#3b2d6e] text-[#6b5a9e] text-sm"
             >
-              Cancel
+              Annulla
             </button>
           </div>
         </div>

@@ -447,7 +447,7 @@ export default function WorkoutClient({ initialDate }: Props) {
                         style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }} />
                     </div>
                     <div className="flex-1">
-                      <label className="text-[10px] mb-1 block" style={{ color: "var(--theme-text-muted)" }}>Reps</label>
+                      <label className="text-[10px] mb-1 block" style={{ color: "var(--theme-text-muted)" }}>Ripetizioni</label>
                       <input type="number" value={reps} onChange={e => setReps(e.target.value)} min="1" max="100"
                         className="w-full px-3 py-2 rounded-xl text-sm text-[#ede9ff] border focus:outline-none"
                         style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }} />

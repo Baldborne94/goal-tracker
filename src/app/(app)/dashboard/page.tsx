@@ -180,15 +180,15 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-[#9d8ac7] text-sm">Welcome,</p>
-          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Adventurer"} {levelInfo.current.icon}</h1>
+          <p className="text-[#9d8ac7] text-sm">Benvenuto,</p>
+          <h1 className="text-2xl font-bold text-[#ede9ff]">{user?.name || "Avventuriero"} {levelInfo.current.icon}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/tutorial"
             className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold transition-colors hover:border-amber-500/40"
             style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
-            title="How to play"
+            title="Come si gioca"
           >
             ?
           </Link>
@@ -202,7 +202,7 @@ export default async function DashboardPage() {
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
         <div className="absolute top-0 right-0 w-32 h-32 opacity-10" style={{background: "radial-gradient(circle, var(--theme-accent) 0%, transparent 70%)"}}/>
         <div className="flex items-start justify-between mb-1">
-          <p className="text-amber-300/80 text-sm">✨ Experience</p>
+          <p className="text-amber-300/80 text-sm">✨ Esperienza</p>
           <span className="text-sm font-bold" style={{color: "var(--theme-accent)"}}>
             {levelInfo.current.icon} {levelInfo.current.label}
           </span>
@@ -222,19 +222,19 @@ export default async function DashboardPage() {
             </div>
             <div className="flex justify-between text-xs" style={{color: "rgba(251,191,36,0.55)"}}>
               <span>{levelInfo.progress}%</span>
-              <span>{levelInfo.next.icon} {levelInfo.next.label} — {levelInfo.xpNeeded} XP to go</span>
+              <span>{levelInfo.next.icon} {levelInfo.next.label} — {levelInfo.xpNeeded} XP al prossimo</span>
             </div>
           </>
         ) : (
-          <p className="text-xs font-semibold text-amber-400">👑 Max level — Legendary!</p>
+          <p className="text-xs font-semibold text-amber-400">👑 Livello massimo — Leggendario!</p>
         )}
         <div className="mt-3 flex gap-4 text-sm border-t border-white/10 pt-3">
           <div>
-            <span className="text-[#9d8ac7]">⚡ Active: </span>
+            <span className="text-[#9d8ac7]">⚡ Attive: </span>
             <span className="font-semibold text-[#ede9ff]">{active}</span>
           </div>
           <div>
-            <span className="text-[#9d8ac7]">👑 Completed: </span>
+            <span className="text-[#9d8ac7]">👑 Completate: </span>
             <span className="font-semibold text-[#ede9ff]">{completed}</span>
           </div>
         </div>
@@ -245,12 +245,12 @@ export default async function DashboardPage() {
         <div className="rounded-2xl border p-4 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-2xl mb-1">✅</div>
           <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekMilestones}</div>
-          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>This week</div>
+          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>Questa settimana</div>
         </div>
         <div className="rounded-2xl border p-4 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-2xl mb-1">👑</div>
           <div className="text-2xl font-bold" style={{color: "var(--theme-accent)"}}>{weekGoals}</div>
-          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>Quests done</div>
+          <div className="text-xs" style={{color: "var(--theme-text-muted)"}}>Missioni completate</div>
         </div>
       </div>
 
@@ -261,29 +261,29 @@ export default async function DashboardPage() {
           {streak > 0 ? (
             <>
               <p className="text-lg font-bold text-amber-400">
-                {streak}-day streak!
+                Serie di {streak} giorni!
               </p>
               <p className="text-xs text-[#9d8ac7]">
                 {streak >= 30
-                  ? "Legendary dedication. Don't stop now!"
+                  ? "Dedizione leggendaria. Non fermarti ora!"
                   : streak >= 7
-                  ? "One week strong — keep the fire burning!"
+                  ? "Una settimana forte — mantieni il fuoco acceso!"
                   : streak >= 3
-                  ? "Great momentum! Keep checking off milestones."
-                  : "Nice start! Come back tomorrow to keep it going."}
+                  ? "Ottimo slancio! Continua a completare le milestone."
+                  : "Buon inizio! Torna domani per mantenerlo."}
               </p>
             </>
           ) : (
             <>
-              <p className="text-base font-bold text-[#ede9ff]">No active streak</p>
-              <p className="text-xs text-[#9d8ac7]">Complete a milestone today to start one!</p>
+              <p className="text-base font-bold text-[#ede9ff]">Nessuna serie attiva</p>
+              <p className="text-xs text-[#9d8ac7]">Completa una milestone oggi per iniziarne una!</p>
             </>
           )}
         </div>
         {streak > 0 && (
           <div className="flex-shrink-0 text-center">
             <div className="text-2xl font-bold text-amber-400">{streak}</div>
-            <div className="text-xs text-[#6b5a9e]">days</div>
+            <div className="text-xs text-[#6b5a9e]">giorni</div>
           </div>
         )}
       </div>
@@ -294,7 +294,7 @@ export default async function DashboardPage() {
       {/* Today's check-ins */}
       {checkInToday.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">📅 Today&apos;s check-ins</h2>
+          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">📅 Check-in di oggi</h2>
           <div className="space-y-2">
             {checkInToday.map((g) => {
               const done = checkedInTodayIds.has(g.id);
@@ -331,7 +331,7 @@ export default async function DashboardPage() {
       {/* Today's focus */}
       {todayFocus.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎯 Today&apos;s focus</h2>
+          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎯 Focus di oggi</h2>
           <div className="space-y-2">
             {(todayFocus as { id: string; title: string; reminderTime: string | null; milestones: { id: string; title: string }[] }[]).map((g) => (
               <Link
@@ -357,7 +357,7 @@ export default async function DashboardPage() {
       {/* Recent rewards */}
       {user?.userRewards && user.userRewards.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">💎 Trophies earned</h2>
+          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">💎 Trofei ottenuti</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {user.userRewards.slice(0, 6).map((ur: { id: string; reward: { icon: string; name: string } }) => (
               <div
@@ -384,15 +384,15 @@ export default async function DashboardPage() {
           : { background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
       >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold uppercase tracking-wider" style={{color: "var(--theme-text-muted)"}}>💰 Finance</span>
+          <span className="text-sm font-semibold uppercase tracking-wider" style={{color: "var(--theme-text-muted)"}}>💰 Finanze</span>
           <span className="text-xs" style={{color: "var(--theme-accent)"}}>
-            {new Date().toLocaleDateString("en-GB", { month: "long" })} →
+            {new Date().toLocaleDateString("it-IT", { month: "long" })} →
           </span>
         </div>
         {financeBudget ? (
           <>
             <div className="flex justify-between text-sm mb-2">
-              <span style={{color: "var(--theme-text-muted)"}}>Spent</span>
+              <span style={{color: "var(--theme-text-muted)"}}>Speso</span>
               <span className={`font-bold ${isOverBudget ? "text-red-400" : "text-[#ede9ff]"}`}>
                 €{financeSpent.toFixed(2)} / €{financeBudget.amount.toFixed(2)}
               </span>
@@ -407,9 +407,9 @@ export default async function DashboardPage() {
             </div>
             <div className="flex justify-between mt-2 text-xs">
               {isOverBudget ? (
-                <span className="text-red-400">⚠️ Over by €{(financeSpent - financeBudget.amount).toFixed(2)}</span>
+                <span className="text-red-400">⚠️ Sforato di €{(financeSpent - financeBudget.amount).toFixed(2)}</span>
               ) : dailyBudgetLeft !== null ? (
-                <span className="text-green-400">€{dailyBudgetLeft.toFixed(2)}/day · {daysLeft}d left</span>
+                <span className="text-green-400">€{dailyBudgetLeft.toFixed(2)}/giorno · {daysLeft}gg rimasti</span>
               ) : <span />}
               {topCat && (
                 <span style={{color: "var(--theme-text-muted)"}}>
@@ -420,28 +420,28 @@ export default async function DashboardPage() {
           </>
         ) : (
           <p className="text-sm text-[#9d8ac7]">
-            €{financeSpent.toFixed(2)} spent · <span className="text-amber-400/70">Set a budget →</span>
+            €{financeSpent.toFixed(2)} spesi · <span className="text-amber-400/70">Imposta un budget →</span>
           </p>
         )}
       </Link>
 
       {/* Recent goals */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">⚔️ Recent quests</h2>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">⚔️ Missioni recenti</h2>
         <Link href="/goals" className="text-sm text-amber-400 font-medium hover:text-amber-300">
-          See all →
+          Vedi tutte →
         </Link>
       </div>
 
       {goals.length === 0 ? (
         <div className="rounded-2xl border p-8 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
           <div className="text-4xl mb-3">{classDef.icon}</div>
-          <p className="text-[#9d8ac7] text-sm mb-4">No quests yet</p>
+          <p className="text-[#9d8ac7] text-sm mb-4">Nessuna missione ancora</p>
           <Link
             href="/goals/new"
             className="inline-block px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold"
           >
-            Start your first quest
+            Inizia la tua prima missione
           </Link>
         </div>
       ) : (
@@ -469,7 +469,7 @@ export default async function DashboardPage() {
                         : "bg-violet-900/30 text-violet-300 border-violet-700/40"
                     }`}
                   >
-                    {goal.status === "completed" ? "👑 Done" : goalOverdue ? "⚠️ Overdue" : "⚡ Active"}
+                    {goal.status === "completed" ? "👑 Fatta" : goalOverdue ? "⚠️ Scaduta" : "⚡ Attiva"}
                   </span>
                 </div>
 
@@ -486,8 +486,8 @@ export default async function DashboardPage() {
                   <div className="flex items-center justify-between text-xs text-[#6b5a9e] mb-1">
                     <span>
                       {milestonesTotal > 0
-                        ? `${milestonesDone}/${milestonesTotal} milestones`
-                        : "Progress"}
+                        ? `${milestonesDone}/${milestonesTotal} milestone`
+                        : "Progresso"}
                     </span>
                     <span className="text-amber-400/80">{goal.progress}%</span>
                   </div>
@@ -507,7 +507,7 @@ export default async function DashboardPage() {
 
                 {goal.targetDate && (
                   <p className="text-xs text-[#6b5a9e] mt-2">
-                    🌙 Deadline: {formatDate(goal.targetDate)}
+                    🌙 Scadenza: {formatDate(goal.targetDate)}
                   </p>
                 )}
               </Link>

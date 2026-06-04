@@ -75,7 +75,7 @@ export default function WeeklyLifeSummary() {
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">🌿 Riepilogo settimana</h2>
-        <Link href="/vita" className="text-sm text-amber-400 font-medium">Life →</Link>
+        <Link href="/vita" className="text-sm text-amber-400 font-medium">Vita →</Link>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {workoutsThisWeek.length > 0 && (

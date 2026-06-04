@@ -48,8 +48,8 @@ export default function DailyChallenges({ initialChallenges }: { initialChalleng
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">⚡ Daily Challenges</h2>
-        <span className="text-xs text-amber-400">{completedCount}/{challenges.length} done</span>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">⚡ Sfide Giornaliere</h2>
+        <span className="text-xs text-amber-400">{completedCount}/{challenges.length} completata</span>
       </div>
       <div className="space-y-2">
         {challenges.map(c => (
@@ -77,7 +77,7 @@ export default function DailyChallenges({ initialChallenges }: { initialChalleng
                     : { background: "var(--theme-bg)", color: "var(--theme-text-muted)", border: "1px solid var(--theme-surface-border)" }
                   }
                 >
-                  {claiming === c.id ? "..." : c.conditionMet ? "Claim" : "Locked"}
+                  {claiming === c.id ? "..." : c.conditionMet ? "Riscatta" : "Bloccata"}
                 </button>
               )}
             </div>

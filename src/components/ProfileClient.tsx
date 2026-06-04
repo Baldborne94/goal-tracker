@@ -64,8 +64,8 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
     if (target <= now) target.setDate(target.getDate() + 1);
     const ms = target.getTime() - now.getTime();
     const id = setTimeout(() => {
-      new Notification("⚔️ Quest time!", {
-        body: "Don't break your streak! Complete a milestone today.",
+      new Notification("⚔️ Ora delle missioni!", {
+        body: "Non interrompere la serie! Completa una milestone oggi.",
       });
     }, ms);
     return () => clearTimeout(id);
@@ -137,7 +137,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">{level.icon} Hero Profile</h1>
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">{level.icon} Profilo Eroe</h1>
 
       {/* Hero card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
@@ -170,7 +170,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                       : "bg-amber-900/30 border-amber-700/40 text-amber-400"
                   }`}
                 >
-                  {nameStatus === "saving" ? "..." : nameStatus === "saved" ? "✓ Saved!" : nameStatus === "error" ? "✗ Error" : "Save"}
+                  {nameStatus === "saving" ? "..." : nameStatus === "saved" ? "✓ Salvato!" : nameStatus === "error" ? "✗ Errore" : "Salva"}
                 </button>
                 <button
                   onClick={() => { setEditingName(false); setNameInput(displayName); }}
@@ -199,7 +199,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
           <div className="flex justify-between text-sm mb-1.5">
             <span className="text-sm opacity-80" style={{color: "var(--theme-accent)"}}>✨ {user.points} XP</span>
             {nextLevel && (
-              <span className="text-[#9d8ac7] text-xs">{xpNeeded} XP to {nextLevel.label}</span>
+              <span className="text-[#9d8ac7] text-xs">{xpNeeded} XP al {nextLevel.label}</span>
             )}
           </div>
           <div className="h-2.5 rounded-full overflow-hidden" style={{background: "#0f0826"}}>
@@ -209,9 +209,9 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             />
           </div>
           {nextLevel ? (
-            <p className="text-xs text-[#6b5a9e] mt-1">{progressToNext}% towards {nextLevel.icon} {nextLevel.label}</p>
+            <p className="text-xs text-[#6b5a9e] mt-1">{progressToNext}% verso {nextLevel.icon} {nextLevel.label}</p>
           ) : (
-            <p className="text-xs text-amber-400 mt-1">👑 Max level — Legendary!</p>
+            <p className="text-xs text-amber-400 mt-1">👑 Livello massimo — Leggendario!</p>
           )}
         </div>
       </div>
@@ -219,10 +219,10 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2 mb-6">
         {[
-          { label: "Total", value: stats.total, icon: "📜" },
-          { label: "Active", value: stats.active, icon: "⚡" },
-          { label: "Done", value: stats.completed, icon: "👑" },
-          { label: "Streak", value: streak, icon: streak > 0 ? "🔥" : "💤" },
+          { label: "Totale", value: stats.total, icon: "📜" },
+          { label: "Attive", value: stats.active, icon: "⚡" },
+          { label: "Fatte", value: stats.completed, icon: "👑" },
+          { label: "Serie", value: streak, icon: streak > 0 ? "🔥" : "💤" },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border p-3 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
             <div className="text-xl mb-1">{s.icon}</div>
@@ -235,12 +235,12 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       {/* Weekly activity */}
       {weeklyMilestones.some((v) => v > 0) && (
         <div className="rounded-2xl border p-4 mb-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>📅 Weekly milestones</h2>
+          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>📅 Milestone settimanali</h2>
           <div className="flex items-end gap-2 h-16">
             {weeklyMilestones.map((count, i) => {
               const max = Math.max(...weeklyMilestones, 1);
               const pct = Math.round((count / max) * 100);
-              const labels = ["3w ago", "2w ago", "Last week", "This week"];
+              const labels = ["3 sett. fa", "2 sett. fa", "Scorsa", "Questa"];
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-xs font-bold" style={{ color: "var(--theme-accent)" }}>{count > 0 ? count : ""}</span>
@@ -256,7 +256,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       {/* Category breakdown */}
       {categoryStats.length > 0 && (
         <div className="rounded-2xl border p-4 mb-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>🗂 By category</h2>
+          <h2 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>🗂 Per categoria</h2>
           <div className="space-y-2.5">
             {categoryStats.map((c) => (
               <div key={c.name}>
@@ -279,14 +279,14 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       {/* Rewards */}
       <div className="mb-6">
         <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">
-          💎 Trophies{" "}
+          💎 Trofei{" "}
           <span className="text-[#6b5a9e] font-normal">({user.userRewards.length})</span>
         </h2>
 
         {user.userRewards.length === 0 ? (
           <div className="rounded-2xl border p-6 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
             <div className="text-3xl mb-2">🏆</div>
-            <p className="text-sm" style={{color: "var(--theme-text-muted)"}}>Complete quests to unlock trophies</p>
+            <p className="text-sm" style={{color: "var(--theme-text-muted)"}}>Completa missioni per sbloccare trofei</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -308,13 +308,13 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
       {/* Hero Class */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">🧬 Hero Class</h2>
+          <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">🧬 Classe Eroe</h2>
           <button
             onClick={() => setClassExpanded(!classExpanded)}
             className="text-xs font-semibold px-3 py-1 rounded-lg border transition-colors"
             style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
           >
-            {classExpanded ? "Cancel" : "Change"}
+            {classExpanded ? "Annulla" : "Cambia"}
           </button>
         </div>
 
@@ -380,7 +380,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
 
       {/* Theme picker */}
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎨 Hero Theme</h2>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎨 Tema Eroe</h2>
         <div className="grid grid-cols-2 gap-3">
           {(Object.values(THEMES) as (typeof THEMES)[ThemeKey][]).map((t) => (
             <button
@@ -404,25 +404,25 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
 
       {/* Daily reminder */}
       <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
-        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">⏰ Daily Reminder</h2>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">⏰ Promemoria Giornaliero</h2>
 
         {notifPermission === "denied" ? (
-          <p className="text-xs text-red-400">Notifications blocked by browser. Allow them in your browser settings to use reminders.</p>
+          <p className="text-xs text-red-400">Notifiche bloccate dal browser. Abilitale nelle impostazioni del browser per usare i promemoria.</p>
         ) : notifPermission !== "granted" ? (
           <div>
-            <p className="text-xs text-[#6b5a9e] mb-3">Get a daily nudge to keep your streak alive.</p>
+            <p className="text-xs text-[#6b5a9e] mb-3">Ricevi un promemoria giornaliero per mantenere la tua serie attiva.</p>
             <button
               onClick={requestNotifPermission}
               disabled={notifRequesting}
               className="w-full py-2.5 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-900/10 transition-colors disabled:opacity-50"
             >
-              {notifRequesting ? "..." : "🔔 Enable notifications"}
+              {notifRequesting ? "..." : "🔔 Attiva notifiche"}
             </button>
           </div>
         ) : (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[#ede9ff]">Daily reminder</span>
+              <span className="text-sm text-[#ede9ff]">Promemoria giornaliero</span>
               <button
                 onClick={() => toggleReminder(!notifEnabled)}
                 className="w-11 h-6 rounded-full transition-colors relative"
@@ -435,7 +435,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             </div>
             {notifEnabled && (
               <div className="flex items-center gap-3">
-                <span className="text-xs text-[#9d8ac7]">Remind me at</span>
+                <span className="text-xs text-[#9d8ac7]">Ricordami alle</span>
                 <input
                   type="time"
                   value={notifTime}
@@ -445,40 +445,40 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                 />
               </div>
             )}
-            <p className="text-xs text-[#4a3a7a]">Works while the app is open in your browser.</p>
+            <p className="text-xs text-[#4a3a7a]">Funziona mentre l&apos;app è aperta nel browser.</p>
           </div>
         )}
       </div>
 
       {/* Push notifications */}
       <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
-        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">📱 Push Notifications</h2>
-        <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>Receive quest reminders even when the app is closed.</p>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">📱 Notifiche Push</h2>
+        <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>Ricevi promemoria missioni anche quando l&apos;app è chiusa.</p>
         <NotificationButton />
       </div>
 
       {/* Danger zone */}
       <div className="rounded-2xl border border-red-900/30 p-5 mb-4" style={{background: "var(--theme-surface)"}}>
-        <h2 className="text-sm font-semibold text-red-400/80 uppercase tracking-wider mb-4">⚠️ Danger zone</h2>
+        <h2 className="text-sm font-semibold text-red-400/80 uppercase tracking-wider mb-4">⚠️ Zona pericolosa</h2>
 
         {!confirmReset ? (
           <button
             onClick={() => setConfirmReset(true)}
             className="w-full py-2.5 border border-red-900/50 text-red-400 rounded-xl text-sm font-medium hover:bg-red-950/30 transition-colors"
           >
-            Delete all quests
+            Elimina tutte le missioni
           </button>
         ) : (
           <div>
             <p className="text-sm text-[#c4b5fd] mb-3">
-              This will permanently delete all your quests, milestones and guide data. Are you sure?
+              Questo eliminerà definitivamente tutte le tue missioni, milestone e dati. Sei sicuro?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmReset(false)}
                 className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
-                Cancel
+                Annulla
               </button>
               <button
                 onClick={async () => {
@@ -491,7 +491,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                 disabled={resetting}
                 className="flex-1 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all"
               >
-                {resetting ? "Deleting..." : "Yes, delete all"}
+                {resetting ? "Eliminando..." : "Sì, elimina tutto"}
               </button>
             </div>
           </div>
@@ -504,19 +504,19 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             onClick={() => setConfirmResetRewards(true)}
             className="w-full py-2.5 border border-red-900/50 text-red-400 rounded-xl text-sm font-medium hover:bg-red-950/30 transition-colors"
           >
-            Reset trophies & XP
+            Azzera trofei & XP
           </button>
         ) : (
           <div>
             <p className="text-sm text-[#c4b5fd] mb-3">
-              This will delete all your trophies and reset your XP to 0. Are you sure?
+              Questo eliminerà tutti i tuoi trofei e azzererà i tuoi XP a 0. Sei sicuro?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmResetRewards(false)}
                 className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
-                Cancel
+                Annulla
               </button>
               <button
                 onClick={async () => {
@@ -529,7 +529,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                 disabled={resettingRewards}
                 className="flex-1 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all"
               >
-                {resettingRewards ? "Resetting..." : "Yes, reset"}
+                {resettingRewards ? "Azzerando..." : "Sì, azzera"}
               </button>
             </div>
           </div>
@@ -538,27 +538,27 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
 
       {/* Wipe everything */}
       <div className="rounded-2xl border border-red-900/50 p-5 mb-4" style={{background: "var(--theme-surface)"}}>
-        <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-1">💀 Wipe everything</h2>
-        <p className="text-xs text-[#6b5a9e] mb-4">Delete all quests, trophies and reset XP to 0. A clean slate.</p>
+        <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-1">💀 Cancella tutto</h2>
+        <p className="text-xs text-[#6b5a9e] mb-4">Elimina tutte le missioni, trofei e azzera gli XP a 0. Tabula rasa.</p>
 
         {!confirmWipeAll ? (
           <button
             onClick={() => setConfirmWipeAll(true)}
             className="w-full py-2.5 bg-red-950/40 border border-red-700/60 text-red-300 rounded-xl text-sm font-semibold hover:bg-red-900/40 transition-colors"
           >
-            💀 Reset everything
+            💀 Cancella tutto
           </button>
         ) : (
           <div>
             <p className="text-sm text-[#c4b5fd] mb-3">
-              This will permanently delete ALL quests, trophies and reset XP to 0. This cannot be undone.
+              Questo eliminerà definitivamente TUTTE le missioni, trofei e azzererà gli XP a 0. Non può essere annullato.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmWipeAll(false)}
                 className="flex-1 py-2.5 rounded-xl text-sm border" style={{borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)"}}
               >
-                Cancel
+                Annulla
               </button>
               <button
                 onClick={async () => {
@@ -572,7 +572,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
                 disabled={wipingAll}
                 className="flex-1 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-all"
               >
-                {wipingAll ? "Wiping..." : "Yes, wipe all"}
+                {wipingAll ? "Cancellando..." : "Sì, cancella tutto"}
               </button>
             </div>
           </div>
@@ -583,7 +583,7 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
         onClick={() => signOut({ callbackUrl: "/login" })}
         className="w-full py-3 border border-red-900/50 text-red-400 rounded-xl font-semibold hover:bg-red-950/30 transition-colors"
       >
-        Leave the realm
+        Esci dal regno
       </button>
     </div>
   );

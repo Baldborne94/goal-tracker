@@ -37,7 +37,7 @@ type Props = {
   checkIns: CheckIn[];
 };
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
 
 function calcStreak(checkIns: CheckIn[], checkInDays: string | null): number {
   if (checkIns.length === 0) return 0;
@@ -62,9 +62,9 @@ function calcStreak(checkIns: CheckIn[], checkInDays: string | null): number {
 }
 
 function scheduleLabel(checkInDays: string | null): string {
-  if (!checkInDays) return "Every day";
+  if (!checkInDays) return "Ogni giorno";
   const days = checkInDays.split(",").map((d) => WEEKDAYS[Number(d)]);
-  return `${days.length}×/week · ${days.join(", ")}`;
+  return `${days.length}×/sett. · ${days.join(", ")}`;
 }
 
 function isTodayScheduled(checkInDays: string | null): boolean {
@@ -192,7 +192,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         onClick={() => router.push("/goals")}
         className="flex items-center gap-1.5 text-[#9d8ac7] text-sm mb-5 hover:text-amber-400 transition-colors"
       >
-        ← Back
+        ← Indietro
       </button>
 
       {/* Main goal card */}
@@ -208,7 +208,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
                 : "bg-violet-900/30 text-violet-300 border-violet-700/40"
             }`}
           >
-            {isCompleted ? "👑 Completed" : isArchived ? "📦 Archived" : "⚡ Active"}
+            {isCompleted ? "👑 Completata" : isArchived ? "📦 Archiviata" : "⚡ Attiva"}
           </span>
         </div>
 
@@ -237,7 +237,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
 
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="font-medium" style={{ color: "var(--theme-text-muted)" }}>Progress</span>
+            <span className="font-medium" style={{ color: "var(--theme-text-muted)" }}>Progresso</span>
             <span className="font-bold text-amber-400">{goal.progress}%</span>
           </div>
           <div className="h-3 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
@@ -264,7 +264,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           {goal.reminderTime && (
             <div className="flex items-center gap-1">
               <span>🔔</span>
-              <span>{goal.reminderTime} daily</span>
+              <span>{goal.reminderTime} ogni giorno</span>
             </div>
           )}
           {goal.dailyCheckIn && (
@@ -279,8 +279,8 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           <div className="mt-4 p-3 rounded-xl flex items-center gap-2" style={{ background: "linear-gradient(135deg, #78350f33, #92400e22)", border: "1px solid #92400e66" }}>
             <span className="text-2xl">👑</span>
             <div>
-              <p className="text-amber-300 font-semibold text-sm">Quest complete!</p>
-              <p className="text-amber-400/70 text-xs">You earned {goal.points} XP</p>
+              <p className="text-amber-300 font-semibold text-sm">Missione completata!</p>
+              <p className="text-amber-400/70 text-xs">Hai guadagnato {goal.points} XP</p>
             </div>
           </div>
         )}
@@ -301,7 +301,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
       {goal.dailyCheckIn && (
         <div className="rounded-2xl border p-5 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-[#ede9ff]">📅 Daily Check-in</h2>
+            <h2 className="font-semibold text-[#ede9ff]">📅 Check-in giornaliero</h2>
             <span className="text-xs font-bold text-amber-400">+{goal.checkInXP} XP</span>
           </div>
 
@@ -309,15 +309,15 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           <div className="flex gap-5 mb-4">
             <div>
               <p className="font-bold text-amber-400 text-sm">{streak > 0 ? `🔥 ${streak}` : "—"}</p>
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>streak</p>
+              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>serie</p>
             </div>
             <div>
               <p className="font-bold text-amber-400 text-sm">{checkIns.length}</p>
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>total</p>
+              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>totale</p>
             </div>
             <div className="flex-1 text-right">
               <p className="font-medium text-xs text-[#ede9ff]">{scheduleLabel(goal.checkInDays)}</p>
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>schedule</p>
+              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>pianificazione</p>
             </div>
           </div>
 
@@ -346,7 +346,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
               <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-900/20 border border-amber-700/30">
                 <span className="text-lg">✅</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-amber-300">Checked in today!</p>
+                  <p className="text-sm font-semibold text-amber-300">Check-in completato oggi!</p>
                   {checkIns.find((c) => c.date === todayStr)?.note && (
                     <p className="text-xs mt-0.5 truncate" style={{ color: "var(--theme-text-muted)" }}>
                       {checkIns.find((c) => c.date === todayStr)!.note}
@@ -359,7 +359,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
                 <input
                   value={todayNote}
                   onChange={(e) => setTodayNote(e.target.value)}
-                  placeholder="Today's note (optional)..."
+                  placeholder="Nota di oggi (opzionale)..."
                   className="w-full px-3 py-2.5 rounded-xl border text-sm text-white placeholder-[var(--theme-text-muted)] focus:outline-none focus:ring-2 focus:ring-amber-500/30"
                   style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
                 />
@@ -369,13 +369,13 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
                   className="w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60"
                   style={{ background: "linear-gradient(to right, #f59e0b, #eab308)", color: "#000" }}
                 >
-                  {checkingIn ? "..." : `✓ Check in today  +${goal.checkInXP} XP`}
+                  {checkingIn ? "..." : `✓ Check-in oggi  +${goal.checkInXP} XP`}
                 </button>
               </div>
             )
           ) : (
             <p className="text-sm text-center py-2" style={{ color: "var(--theme-text-muted)" }}>
-              Not scheduled today — next scheduled day: {WEEKDAYS[goal.checkInDays!.split(",").map(Number).find((d) => d > new Date().getDay()) ?? Number(goal.checkInDays!.split(",")[0])]}
+              Non pianificato oggi — prossimo giorno: {WEEKDAYS[goal.checkInDays!.split(",").map(Number).find((d) => d > new Date().getDay()) ?? Number(goal.checkInDays!.split(",")[0])]}
             </p>
           )}
         </div>
@@ -428,16 +428,16 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
               disabled
               className="w-full py-3 rounded-xl font-bold opacity-40 cursor-not-allowed"
               style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
-              title="Complete all check-ins to finish this quest"
+              title="Completa tutti i check-in per finire questa missione"
             >
-              👑 Complete quest ({goal.progress}% done)
+              👑 Completa missione ({goal.progress}% fatto)
             </button>
           ) : (
             <button
               onClick={markComplete}
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 active:scale-95 transition-all shadow-lg shadow-amber-900/30"
             >
-              👑 Complete quest
+              👑 Completa missione
             </button>
           )}
         </div>
@@ -449,7 +449,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           className="block w-full py-3 rounded-xl font-semibold text-center border transition-colors mb-3 text-[#ede9ff]"
           style={{ borderColor: "var(--theme-surface-border)", background: "var(--theme-surface)" }}
         >
-          ✏️ Edit
+          ✏️ Modifica
         </Link>
       )}
 
@@ -458,7 +458,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         className="w-full py-3 rounded-xl font-semibold border transition-colors mb-3"
         style={{ borderColor: "var(--theme-surface-border)", background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}
       >
-        {copied ? "✅ Link copied!" : "📤 Share as template"}
+        {copied ? "✅ Link copiato!" : "📤 Condividi come modello"}
       </button>
 
       {!isCompleted && (
@@ -467,7 +467,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
           className="w-full py-3 rounded-xl font-semibold border transition-colors mb-3"
           style={{ borderColor: "var(--theme-surface-border)", background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}
         >
-          {isArchived ? "📂 Unarchive quest" : "📦 Archive quest"}
+          {isArchived ? "📂 Ripristina missione" : "📦 Archivia missione"}
         </button>
       )}
 
@@ -475,15 +475,15 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
         onClick={() => setShowDelete(true)}
         className="w-full py-3 border border-red-900/50 text-red-400 rounded-xl font-semibold hover:bg-red-950/30 transition-colors"
       >
-        🗑 Delete quest
+        🗑 Elimina missione
       </button>
 
       {showDelete && (
         <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-[60] p-4 pb-24">
           <div className="rounded-2xl border w-full max-w-sm p-6" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-            <h3 className="text-lg font-bold text-[#ede9ff] mb-2">Delete quest</h3>
+            <h3 className="text-lg font-bold text-[#ede9ff] mb-2">Elimina missione</h3>
             <p className="text-sm mb-5" style={{ color: "var(--theme-text-muted)" }}>
-              Are you sure? This action cannot be undone.
+              Sei sicuro? Questa azione non può essere annullata.
             </p>
             <div className="flex gap-3">
               <button
@@ -491,14 +491,14 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
                 className="flex-1 py-3 rounded-xl font-semibold border"
                 style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
               >
-                Cancel
+                Annulla
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="flex-1 py-3 bg-red-900 text-red-200 rounded-xl font-semibold disabled:opacity-60 border border-red-800"
               >
-                {deleting ? "..." : "Delete"}
+                {deleting ? "..." : "Elimina"}
               </button>
             </div>
           </div>

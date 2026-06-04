@@ -31,9 +31,9 @@ export default function ClassSelectClient() {
       {/* Header */}
       <div className="text-center mb-8">
         <div className="text-5xl mb-3">⚔️</div>
-        <h1 className="text-2xl font-bold text-[#ede9ff] mb-1">Choose your class</h1>
+        <h1 className="text-2xl font-bold text-[#ede9ff] mb-1">Scegli la tua classe</h1>
         <p className="text-sm" style={{ color: "var(--theme-text-muted)" }}>
-          This shapes your hero&apos;s path, level titles and visual theme.
+          Definisce il percorso del tuo eroe, i titoli di livello e il tema visivo.
         </p>
       </div>
 
@@ -90,7 +90,7 @@ export default function ClassSelectClient() {
               </div>
             </div>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>
-              Level path
+              Percorso livelli
             </p>
             <div className="flex flex-wrap gap-1.5">
               {cls.tiers.map((t, i) => (
@@ -114,7 +114,7 @@ export default function ClassSelectClient() {
         className="block w-full py-4 rounded-2xl font-bold text-center text-base shadow-lg shadow-amber-900/30 active:scale-95 transition-all disabled:opacity-40"
         style={{ background: "linear-gradient(to right, #f59e0b, #eab308)", color: "#000" }}
       >
-        {loading ? "Saving…" : selected ? `Begin as ${CLASSES.find(c => c.key === selected)?.name} →` : "Select a class to continue"}
+        {loading ? "Salvataggio…" : selected ? `Inizia come ${CLASSES.find(c => c.key === selected)?.name} →` : "Seleziona una classe per continuare"}
       </button>
     </div>
   );

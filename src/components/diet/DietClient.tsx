@@ -11,11 +11,11 @@ type BarcodeProduct = {
 };
 
 const MEALS = [
-  { type: "breakfast",  icon: "🌅", label: "Breakfast",        time: "08:00" },
-  { type: "snack_am",   icon: "🍎", label: "Morning snack",    time: "10:30" },
-  { type: "lunch",      icon: "☀️",  label: "Lunch",            time: "13:00" },
-  { type: "snack_pm",   icon: "🍊", label: "Afternoon snack",  time: "16:30" },
-  { type: "dinner",     icon: "🌙", label: "Dinner",           time: "20:00" },
+  { type: "breakfast",  icon: "🌅", label: "Colazione",        time: "08:00" },
+  { type: "snack_am",   icon: "🍎", label: "Spuntino",         time: "10:30" },
+  { type: "lunch",      icon: "☀️",  label: "Pranzo",           time: "13:00" },
+  { type: "snack_pm",   icon: "🍊", label: "Merenda",          time: "16:30" },
+  { type: "dinner",     icon: "🌙", label: "Cena",             time: "20:00" },
 ];
 
 type MealLog = { id: string; date: string; mealType: string; text: string; notes: string | null };
@@ -32,9 +32,9 @@ function toDateKey(d: Date) {
 function formatDateLabel(dateStr: string) {
   const today = toDateKey(new Date());
   const yest = toDateKey(new Date(Date.now() - 86400000));
-  if (dateStr === today) return "Today";
-  if (dateStr === yest) return "Yesterday";
-  return new Date(dateStr + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  if (dateStr === today) return "Oggi";
+  if (dateStr === yest) return "Ieri";
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
 }
 
 export default function DietClient({ initialDate }: Props) {
@@ -170,7 +170,7 @@ export default function DietClient({ initialDate }: Props) {
 
       if (!barcode) {
         setScanState("error");
-        setScanError("Barcode not detected. Try better lighting or enter it manually.");
+        setScanError("Codice non rilevato. Prova con più luce o inseriscilo manualmente.");
         return;
       }
 
@@ -178,7 +178,7 @@ export default function DietClient({ initialDate }: Props) {
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as { error?: string };
         setScanState("error");
-        setScanError(err.error ?? "Product not found in Open Food Facts database.");
+        setScanError(err.error ?? "Prodotto non trovato nel database Open Food Facts.");
         return;
       }
 
@@ -189,7 +189,7 @@ export default function DietClient({ initialDate }: Props) {
       setScanState("found");
     } catch {
       setScanState("error");
-      setScanError("Scan failed. Check your connection or enter the barcode manually.");
+      setScanError("Scansione fallita. Controlla la connessione o inserisci il codice manualmente.");
     } finally {
       if (barcodeInputRef.current) barcodeInputRef.current.value = "";
     }
@@ -319,7 +319,7 @@ export default function DietClient({ initialDate }: Props) {
       {/* Header with back button */}
       <div className="flex items-center gap-3 mb-5">
         <Link href="/vita" className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold flex-shrink-0" style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}>‹</Link>
-        <h1 className="text-xl font-bold text-[#ede9ff]">🥗 Diet tracker</h1>
+        <h1 className="text-xl font-bold text-[#ede9ff]">🥗 Diario alimentare</h1>
       </div>
 
       {/* Date navigation */}
@@ -327,7 +327,7 @@ export default function DietClient({ initialDate }: Props) {
         <button onClick={() => changeDate(-1)} disabled={loadingDate} className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold disabled:opacity-40" style={{ color: "var(--theme-text-muted)" }}>‹</button>
         <div className="text-center">
           <p className="font-semibold text-[#ede9ff] text-sm">{formatDateLabel(date)}</p>
-          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{new Date(date + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{new Date(date + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}</p>
         </div>
         <button onClick={() => changeDate(1)} disabled={isToday || loadingDate} className="w-9 h-9 flex items-center justify-center rounded-xl text-lg font-bold disabled:opacity-30" style={{ color: "var(--theme-text-muted)" }}>›</button>
       </div>
@@ -335,7 +335,7 @@ export default function DietClient({ initialDate }: Props) {
       {/* Daily kcal summary */}
       <div className="rounded-2xl border p-4 mb-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-semibold text-[#ede9ff]">🔥 Daily calories</p>
+          <p className="text-sm font-semibold text-[#ede9ff]">🔥 Calorie giornaliere</p>
           <div className="flex items-center gap-1.5">
             <span className="text-lg font-bold text-amber-400">{dailyKcal}</span>
             {showGoalEdit ? (
@@ -371,7 +371,7 @@ export default function DietClient({ initialDate }: Props) {
           />
         </div>
         {dailyKcal === 0 && (
-          <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>Add foods to each meal to track calories</p>
+          <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>Aggiungi alimenti ai pasti per tracciare le calorie</p>
         )}
         {dailyKcal > 0 && (
           <div className="flex gap-3 mt-2 flex-wrap">
@@ -495,7 +495,7 @@ export default function DietClient({ initialDate }: Props) {
               )}
 
               {entries.length === 0 && !log && (
-                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Tap + to add food</p>
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Tocca + per aggiungere alimenti</p>
               )}
             </div>
           );
@@ -514,7 +514,7 @@ export default function DietClient({ initialDate }: Props) {
             <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
               <div>
                 <h3 className="font-bold text-[#ede9ff]">{modalMeal.icon} {modalMeal.label}</h3>
-                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Add a food item</p>
+                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Aggiungi un alimento</p>
               </div>
               <button onClick={closeFoodModal} className="w-8 h-8 flex items-center justify-center rounded-xl text-lg" style={{ color: "var(--theme-text-muted)" }}>×</button>
             </div>
@@ -529,7 +529,7 @@ export default function DietClient({ initialDate }: Props) {
                         <p className="text-sm font-semibold text-[#ede9ff]">{selected.name}</p>
                         <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{selected.kcalPer100g} kcal/100g · {selected.category}</p>
                       </div>
-                      <button onClick={() => setSelected(null)} className="text-xs px-2 py-1 rounded-lg" style={{ color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}>change</button>
+                      <button onClick={() => setSelected(null)} className="text-xs px-2 py-1 rounded-lg" style={{ color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}>cambia</button>
                     </div>
                   )}
                   {customMode && (
@@ -537,7 +537,7 @@ export default function DietClient({ initialDate }: Props) {
                       <input
                         value={customName}
                         onChange={e => setCustomName(e.target.value)}
-                        placeholder="Food name"
+                        placeholder="Nome alimento"
                         autoFocus
                         className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
                         style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
@@ -559,7 +559,7 @@ export default function DietClient({ initialDate }: Props) {
                         type="number"
                         value={gramsInput}
                         onChange={e => setGramsInput(e.target.value)}
-                        placeholder="Grams"
+                        placeholder="Grammi"
                         min="0"
                         step="1"
                         autoFocus={!customMode}
@@ -578,7 +578,7 @@ export default function DietClient({ initialDate }: Props) {
                       disabled={saving || !gramsInput || (!selected && !customMode) || (customMode && (!customName.trim() || !customKcal))}
                       className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold disabled:opacity-50 active:scale-95 transition-all flex-shrink-0"
                     >
-                      {saving ? "..." : "Add"}
+                      {saving ? "..." : "Aggiungi"}
                     </button>
                   </div>
                 </div>
@@ -605,9 +605,9 @@ export default function DietClient({ initialDate }: Props) {
                     style={{ borderColor: "var(--theme-accent)", color: "var(--theme-accent)", background: "var(--theme-bg)" }}
                   >
                     {scanState === "scanning" ? (
-                      <><span className="animate-spin">⟳</span> Scanning…</>
+                      <><span className="animate-spin">⟳</span> Scansione…</>
                     ) : (
-                      <><span>📷</span> Scan barcode</>
+                      <><span>📷</span> Scansiona codice a barre</>
                     )}
                   </button>
 
@@ -653,7 +653,7 @@ export default function DietClient({ initialDate }: Props) {
                           onClick={applyScannedProduct}
                           className="w-full mt-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold active:scale-95 transition-all"
                         >
-                          Use this product →
+                          Usa questo prodotto →
                         </button>
                       </div>
                     </div>
@@ -665,7 +665,7 @@ export default function DietClient({ initialDate }: Props) {
                     <input
                       value={search}
                       onChange={e => { setSearch(e.target.value); searchOnline(e.target.value); }}
-                      placeholder="Type food name (e.g. pasta, pollo, pane...)"
+                      placeholder="Cerca alimento (es. pasta, pollo, pane...)"
                       className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
                       style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
                     />
@@ -694,7 +694,7 @@ export default function DietClient({ initialDate }: Props) {
 
                     {onlineResults.length > 0 && (
                       <>
-                        <p className="text-[10px] px-1 pt-1" style={{ color: "var(--theme-text-muted)" }}>🌐 Online results</p>
+                        <p className="text-[10px] px-1 pt-1" style={{ color: "var(--theme-text-muted)" }}>🌐 Risultati online</p>
                         {onlineResults.map((p, i) => (
                           <button
                             key={i}
@@ -721,7 +721,7 @@ export default function DietClient({ initialDate }: Props) {
                       className="w-full px-3 py-2.5 rounded-xl text-left text-sm border-dashed border transition-colors"
                       style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
                     >
-                      ✏️ Add manually with custom kcal/100g
+                      ✏️ Inserisci manualmente con kcal/100g
                     </button>
                   </div>
                 </div>
