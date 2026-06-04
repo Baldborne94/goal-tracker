@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { FOODS, type FoodItem } from "@/lib/foods";
+
+type BarcodeProduct = {
+  name: string; brand: string; kcalPer100g: number;
+  proteins: number; carbs: number; fat: number; fiber: number;
+  ingredients: string; imageUrl: string;
+};
 
 const MEALS = [
   { type: "breakfast",  icon: "🌅", label: "Breakfast",        time: "08:00" },
@@ -54,6 +60,12 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
   const [customKcal, setCustomKcal] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Barcode scanner
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const [scanState, setScanState] = useState<"idle" | "scanning" | "found" | "error">("idle");
+  const [scanError, setScanError] = useState("");
+  const [scannedProduct, setScannedProduct] = useState<BarcodeProduct | null>(null);
+
   // Weight
   const [weightInput, setWeightInput] = useState("");
   const [savingWeight, setSavingWeight] = useState(false);
@@ -84,7 +96,63 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
     setCustomMode(false);
     setCustomName("");
     setCustomKcal("");
+    setScanState("idle");
+    setScanError("");
+    setScannedProduct(null);
     setShowFoodModal(true);
+  }
+
+  async function handleBarcodeImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanState("scanning");
+    setScanError("");
+    setScannedProduct(null);
+
+    try {
+      let barcode = "";
+
+      // Try native BarcodeDetector first (Android Chrome)
+      if ("BarcodeDetector" in window) {
+        const bd = new (window as unknown as { BarcodeDetector: new (opts: object) => { detect: (img: ImageBitmap) => Promise<{ rawValue: string }[]> } }).BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"] });
+        const bitmap = await createImageBitmap(file);
+        const results = await bd.detect(bitmap);
+        if (results.length > 0) barcode = results[0].rawValue;
+      }
+
+      if (!barcode) {
+        setScanState("error");
+        setScanError("Barcode not detected. Try better lighting or enter it manually.");
+        return;
+      }
+
+      const res = await fetch(`/api/diet/barcode?code=${encodeURIComponent(barcode)}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        setScanState("error");
+        setScanError(err.error ?? "Product not found in Open Food Facts database.");
+        return;
+      }
+
+      const product: BarcodeProduct = await res.json();
+      setScannedProduct(product);
+      setCustomName(product.name);
+      setCustomKcal(String(product.kcalPer100g));
+      setScanState("found");
+    } catch {
+      setScanState("error");
+      setScanError("Scan failed. Check your connection or enter the barcode manually.");
+    } finally {
+      if (barcodeInputRef.current) barcodeInputRef.current.value = "";
+    }
+  }
+
+  function applyScannedProduct() {
+    if (!scannedProduct) return;
+    setSelected({ name: scannedProduct.name, kcalPer100g: scannedProduct.kcalPer100g, category: scannedProduct.brand || "Scanned" });
+    setScannedProduct(null);
+    setScanState("idle");
+    setGramsInput("");
   }
 
   function closeFoodModal() {
@@ -431,12 +499,86 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
             {/* Search (when no food selected) */}
             {!selected && !customMode && (
               <>
+                {/* Barcode scanner button */}
+                <div className="px-5 pb-3 flex-shrink-0">
+                  <input
+                    ref={barcodeInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleBarcodeImage}
+                  />
+                  <button
+                    onClick={() => barcodeInputRef.current?.click()}
+                    disabled={scanState === "scanning"}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition-colors active:scale-[0.98] disabled:opacity-50"
+                    style={{ borderColor: "var(--theme-accent)", color: "var(--theme-accent)", background: "var(--theme-bg)" }}
+                  >
+                    {scanState === "scanning" ? (
+                      <><span className="animate-spin">⟳</span> Scanning…</>
+                    ) : (
+                      <><span>📷</span> Scan barcode</>
+                    )}
+                  </button>
+
+                  {/* Scan error */}
+                  {scanState === "error" && (
+                    <div className="mt-2 px-3 py-2 rounded-xl text-xs" style={{ background: "var(--theme-bg)", color: "#f87171" }}>
+                      {scanError}
+                    </div>
+                  )}
+
+                  {/* Scanned product card */}
+                  {scanState === "found" && scannedProduct && (
+                    <div className="mt-2 rounded-xl border overflow-hidden" style={{ borderColor: "var(--theme-accent)" }}>
+                      <div className="px-3 py-3" style={{ background: "var(--theme-bg)" }}>
+                        <div className="flex items-start gap-3">
+                          {scannedProduct.imageUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={scannedProduct.imageUrl} alt="" className="w-12 h-12 object-contain rounded-lg flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-[#ede9ff] leading-tight">{scannedProduct.name}</p>
+                            {scannedProduct.brand && <p className="text-xs mt-0.5" style={{ color: "var(--theme-text-muted)" }}>{scannedProduct.brand}</p>}
+                          </div>
+                        </div>
+                        {/* Macros grid */}
+                        <div className="grid grid-cols-4 gap-1.5 mt-3">
+                          {[
+                            { label: "Kcal", value: scannedProduct.kcalPer100g, color: "text-amber-400" },
+                            { label: "Proteine", value: `${scannedProduct.proteins}g`, color: "text-[#ede9ff]" },
+                            { label: "Carboidrati", value: `${scannedProduct.carbs}g`, color: "text-[#ede9ff]" },
+                            { label: "Grassi", value: `${scannedProduct.fat}g`, color: "text-[#ede9ff]" },
+                          ].map(m => (
+                            <div key={m.label} className="text-center px-1 py-1.5 rounded-lg" style={{ background: "var(--theme-surface)" }}>
+                              <p className={`text-xs font-bold ${m.color}`}>{m.value}</p>
+                              <p className="text-[9px] mt-0.5" style={{ color: "var(--theme-text-muted)" }}>{m.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {scannedProduct.ingredients && (
+                          <p className="text-[10px] mt-2 leading-relaxed" style={{ color: "var(--theme-text-muted)" }}>
+                            <span className="font-semibold">Ingredienti: </span>{scannedProduct.ingredients}
+                            {scannedProduct.ingredients.length >= 300 ? "…" : ""}
+                          </p>
+                        )}
+                        <button
+                          onClick={applyScannedProduct}
+                          className="w-full mt-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black rounded-xl text-sm font-bold active:scale-95 transition-all"
+                        >
+                          Use this product →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="px-5 pb-3 flex-shrink-0">
                   <input
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder="Search food (e.g. pasta, pollo, pane...)"
-                    autoFocus
+                    placeholder="Or search food (e.g. pasta, pollo, pane...)"
                     className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
                     style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
                   />
