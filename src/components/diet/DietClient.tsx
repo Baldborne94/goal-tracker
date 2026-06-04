@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { FOODS, type FoodItem } from "@/lib/foods";
 
 type BarcodeProduct = {
@@ -66,6 +66,11 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
   const [scanError, setScanError] = useState("");
   const [scannedProduct, setScannedProduct] = useState<BarcodeProduct | null>(null);
 
+  // Online search
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [onlineResults, setOnlineResults] = useState<BarcodeProduct[]>([]);
+  const [onlineSearching, setOnlineSearching] = useState(false);
+
   // Weight
   const [weightInput, setWeightInput] = useState("");
   const [savingWeight, setSavingWeight] = useState(false);
@@ -88,6 +93,21 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
   }
 
   // ── food modal ─────────────────────────────────────────────────────────
+  const searchOnline = useCallback((q: string) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    setOnlineResults([]);
+    if (q.trim().length < 2) { setOnlineSearching(false); return; }
+    setOnlineSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/diet/search?q=${encodeURIComponent(q.trim())}`);
+        if (res.ok) setOnlineResults(await res.json());
+      } finally {
+        setOnlineSearching(false);
+      }
+    }, 600);
+  }, []);
+
   function openFoodModal(mealType: string) {
     setModalMealType(mealType);
     setSearch("");
@@ -99,6 +119,8 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
     setScanState("idle");
     setScanError("");
     setScannedProduct(null);
+    setOnlineResults([]);
+    setOnlineSearching(false);
     setShowFoodModal(true);
   }
 
@@ -152,6 +174,13 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
     setSelected({ name: scannedProduct.name, kcalPer100g: scannedProduct.kcalPer100g, category: scannedProduct.brand || "Scanned" });
     setScannedProduct(null);
     setScanState("idle");
+    setGramsInput("");
+  }
+
+  function applyOnlineProduct(p: BarcodeProduct) {
+    setSelected({ name: p.name, kcalPer100g: p.kcalPer100g, category: p.brand || "Online" });
+    setOnlineResults([]);
+    setSearch("");
     setGramsInput("");
   }
 
@@ -575,17 +604,23 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
                 </div>
 
                 <div className="px-5 pb-3 flex-shrink-0">
-                  <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Or search food (e.g. pasta, pollo, pane...)"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
-                    style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
-                  />
+                  <div className="relative">
+                    <input
+                      value={search}
+                      onChange={e => { setSearch(e.target.value); searchOnline(e.target.value); }}
+                      placeholder="Type food name (e.g. pasta, pollo, pane...)"
+                      className="w-full px-3 py-2.5 rounded-xl text-sm text-[#ede9ff] placeholder-[#4a3a7a] focus:outline-none focus:ring-2 focus:ring-amber-500/40 border"
+                      style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                    />
+                    {onlineSearching && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs animate-spin" style={{ color: "var(--theme-text-muted)" }}>⟳</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="overflow-y-auto flex-1 px-5 pb-5">
                   <div className="space-y-1.5">
+                    {/* Local food list */}
                     {filteredFoods.map(food => (
                       <button
                         key={food.name}
@@ -600,12 +635,38 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
                         <span className="text-xs font-semibold text-amber-400 flex-shrink-0 ml-2">{food.kcalPer100g} kcal/100g</span>
                       </button>
                     ))}
+
+                    {/* Online results from Open Food Facts */}
+                    {onlineResults.length > 0 && (
+                      <>
+                        <p className="text-[10px] px-1 pt-1" style={{ color: "var(--theme-text-muted)" }}>🌐 Online results</p>
+                        {onlineResults.map((p, i) => (
+                          <button
+                            key={i}
+                            onClick={() => applyOnlineProduct(p)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors active:scale-[0.98]"
+                            style={{ background: "var(--theme-bg)" }}
+                          >
+                            {p.imageUrl && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={p.imageUrl} alt="" className="w-9 h-9 object-contain rounded-lg flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-[#ede9ff] truncate">{p.name}</p>
+                              {p.brand && <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>{p.brand}</p>}
+                            </div>
+                            <span className="text-xs font-semibold text-amber-400 flex-shrink-0">{p.kcalPer100g} kcal/100g</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
                     <button
                       onClick={() => { setCustomMode(true); setSearch(""); }}
                       className="w-full px-3 py-2.5 rounded-xl text-left text-sm border-dashed border transition-colors"
                       style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
                     >
-                      ✏️ Custom food (not in list)
+                      ✏️ Add manually with custom kcal/100g
                     </button>
                   </div>
                 </div>
