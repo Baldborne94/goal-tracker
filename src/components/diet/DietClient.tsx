@@ -25,8 +25,6 @@ type FoodEntry = { id: string; mealType: string; foodName: string; grams: number
 
 type Props = {
   initialDate: string;
-  initialLogs: MealLog[];
-  recentWeights: WeightEntry[];
 };
 
 function toDateKey(d: Date) {
@@ -41,18 +39,26 @@ function formatDateLabel(dateStr: string) {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
-export default function DietClient({ initialDate, initialLogs, recentWeights: initialWeights }: Props) {
+export default function DietClient({ initialDate }: Props) {
   const [date, setDate] = useState(initialDate);
-  const [logs, setLogs] = useState<MealLog[]>(initialLogs);
+  const [logs, setLogs] = useState<MealLog[]>([]);
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
-  const [weights, setWeights] = useState<WeightEntry[]>(initialWeights);
+  const [weights, setWeights] = useState<WeightEntry[]>([]);
   const [loadingDate, setLoadingDate] = useState(false);
 
-  // Load food entries client-side to avoid server-side table dependency
+  // Load data client-side on mount
   useEffect(() => {
+    fetch(`/api/diet/logs?date=${initialDate}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(setLogs)
+      .catch(() => {});
+    fetch(`/api/peso`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data: WeightEntry[]) => setWeights(data.slice(0, 14)))
+      .catch(() => {});
     fetch(`/api/diet/food?date=${initialDate}`)
       .then(r => r.ok ? r.json() : [])
-      .then(data => setFoodEntries(data))
+      .then(setFoodEntries)
       .catch(() => {});
   }, [initialDate]);
 
@@ -141,7 +147,6 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
     try {
       let barcode = "";
 
-      // Try native BarcodeDetector first (Android Chrome)
       if ("BarcodeDetector" in window) {
         const bd = new (window as unknown as { BarcodeDetector: new (opts: object) => { detect: (img: ImageBitmap) => Promise<{ rawValue: string }[]> } }).BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"] });
         const bitmap = await createImageBitmap(file);
@@ -558,14 +563,12 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
                     )}
                   </button>
 
-                  {/* Scan error */}
                   {scanState === "error" && (
                     <div className="mt-2 px-3 py-2 rounded-xl text-xs" style={{ background: "var(--theme-bg)", color: "#f87171" }}>
                       {scanError}
                     </div>
                   )}
 
-                  {/* Scanned product card */}
                   {scanState === "found" && scannedProduct && (
                     <div className="mt-2 rounded-xl border overflow-hidden" style={{ borderColor: "var(--theme-accent)" }}>
                       <div className="px-3 py-3" style={{ background: "var(--theme-bg)" }}>
@@ -579,7 +582,6 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
                             {scannedProduct.brand && <p className="text-xs mt-0.5" style={{ color: "var(--theme-text-muted)" }}>{scannedProduct.brand}</p>}
                           </div>
                         </div>
-                        {/* Macros grid */}
                         <div className="grid grid-cols-4 gap-1.5 mt-3">
                           {[
                             { label: "Kcal", value: scannedProduct.kcalPer100g, color: "text-amber-400" },
@@ -627,7 +629,6 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
 
                 <div className="overflow-y-auto flex-1 px-5 pb-5">
                   <div className="space-y-1.5">
-                    {/* Local food list */}
                     {filteredFoods.map(food => (
                       <button
                         key={food.name}
@@ -643,7 +644,6 @@ export default function DietClient({ initialDate, initialLogs, recentWeights: in
                       </button>
                     ))}
 
-                    {/* Online results from Open Food Facts */}
                     {onlineResults.length > 0 && (
                       <>
                         <p className="text-[10px] px-1 pt-1" style={{ color: "var(--theme-text-muted)" }}>🌐 Online results</p>
