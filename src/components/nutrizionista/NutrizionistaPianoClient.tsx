@@ -74,6 +74,13 @@ export default function NutrizionistaPianoClient() {
       });
       const data = await res.json();
       if (data.action === "added") {
+        const MEAL_TYPE_MAP: Record<string, string> = {
+          colazione: "breakfast",
+          spuntino:  "snack_am",
+          pranzo:    "lunch",
+          merenda:   "snack_pm",
+        };
+        const dietMealType = MEAL_TYPE_MAP[meal] ?? meal;
         const dayPlan = getDayPlan(new Date(date + "T12:00:00"));
         const mealPlan = dayPlan.meals.find(m => m.time === meal);
         if (mealPlan) {
@@ -84,7 +91,7 @@ export default function NutrizionistaPianoClient() {
             fetch("/api/diet/food", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ date, mealType: meal, foodName: food.name, grams, kcalPer100g }),
+              body: JSON.stringify({ date, mealType: dietMealType, foodName: food.name, grams, kcalPer100g }),
             }).catch(() => {});
           }
         }
