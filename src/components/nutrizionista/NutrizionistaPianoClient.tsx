@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
-  WEEKLY_PLAN, getDayPlan, MEAL_ICONS, MEAL_REMINDERS, MEAL_ORDER,
+  getDayPlan, MEAL_ICONS, MEAL_REMINDERS, MEAL_ORDER,
   type MealTime, type DayPlan,
 } from "@/lib/meal-plan";
 import { cn } from "@/lib/utils";
 
 type Completion = { id: string; date: string; meal: string };
+type Doc = { id: string; title: string; mimeType: string; size: number; createdAt: string };
 type Tab = "oggi" | "settimana" | "note";
 
 function toDateStr(d: Date) {
@@ -85,11 +87,22 @@ export default function NutrizionistaPianoClient() {
 
   return (
     <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-amber-400">🥗 Piano Nutrizionista</h1>
-        <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Dott.ssa Michela Audiello</p>
+      {/* Header with back arrow */}
+      <div className="flex items-center gap-3">
+        <Link
+          href="/vita"
+          className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all active:scale-90"
+          style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
+        >
+          ←
+        </Link>
+        <div>
+          <h1 className="text-xl font-bold text-amber-400">🥗 Piano Nutrizionista</h1>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Dott.ssa Michela Audiello</p>
+        </div>
       </div>
 
+      {/* Tabs */}
       <div className="flex gap-1 rounded-xl p-1" style={{ background: "var(--theme-surface)" }}>
         {(["oggi", "settimana", "note"] as const).map(t => (
           <button
@@ -205,13 +218,13 @@ function MealCard({
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{MEAL_ICONS[meal.time]}</span>
+          <span className="text-2xl">{MEAL_ICONS[meal.time as MealTime]}</span>
           <div>
             <p className={cn("font-semibold text-sm", done ? "text-green-400" : "text-white")}>
               {meal.label}
             </p>
             <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
-              {MEAL_REMINDERS[meal.time]}
+              {MEAL_REMINDERS[meal.time as MealTime]}
             </p>
           </div>
         </div>
@@ -327,7 +340,71 @@ function SettimanaView({
 
 // ---- Note ----
 
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function NoteView() {
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/nutrizionista/docs")
+      .then(r => r.json())
+      .then(data => setDocs(data.docs || []));
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File troppo grande (max 5MB)");
+      return;
+    }
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(",")[1];
+      try {
+        const res = await fetch("/api/nutrizionista/docs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: file.name,
+            mimeType: file.type || "application/octet-stream",
+            data: base64,
+            size: file.size,
+          }),
+        });
+        const doc = await res.json();
+        if (doc.id) setDocs(prev => [doc, ...prev]);
+        else setUploadError(doc.error ?? "Errore durante il caricamento");
+      } catch {
+        setUploadError("Errore durante il caricamento");
+      }
+      setUploading(false);
+    };
+    reader.onerror = () => { setUploadError("Errore di lettura file"); setUploading(false); };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const deleteDoc = async (id: string) => {
+    setDocs(prev => prev.filter(d => d.id !== id));
+    await fetch(`/api/nutrizionista/docs/${id}`, { method: "DELETE" });
+  };
+
+  const docIcon = (mimeType: string) => {
+    if (mimeType === "application/pdf") return "📑";
+    if (mimeType.startsWith("image/")) return "🖼️";
+    return "📄";
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border p-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
@@ -349,18 +426,61 @@ function NoteView() {
         </ul>
       </div>
 
+      {/* Documenti */}
       <div className="rounded-2xl border p-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
-        <p className="font-semibold text-amber-400 mb-2">📄 Documenti</p>
-        <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>
-          Schede e documenti ricevuti dalla nutrizionista.
-        </p>
-        <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--theme-bg)" }}>
-          <span className="text-2xl">📑</span>
-          <div>
-            <p className="text-sm text-white font-medium">Piano alimentare mensile</p>
-            <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Dott.ssa Michela Audiello · 2026</p>
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-semibold text-amber-400">📄 Documenti</p>
+          <label className={cn(
+            "cursor-pointer text-xs px-3 py-1.5 rounded-lg font-medium transition-all",
+            uploading ? "opacity-50 cursor-not-allowed" : "bg-amber-500/20 text-amber-400 active:scale-95"
+          )}>
+            {uploading ? "Caricamento…" : "+ Carica"}
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              onChange={handleFileChange}
+              className="hidden"
+              disabled={uploading}
+            />
+          </label>
         </div>
+
+        {uploadError && (
+          <p className="text-xs text-red-400 mb-2">{uploadError}</p>
+        )}
+
+        {docs.length === 0 ? (
+          <p className="text-xs text-gray-500">
+            Nessun documento. Carica la scheda della nutrizionista (PDF, immagine — max 5MB).
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {docs.map(doc => (
+              <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--theme-bg)" }}>
+                <span className="text-xl shrink-0">{docIcon(doc.mimeType)}</span>
+                <div className="flex-1 min-w-0">
+                  <a
+                    href={`/api/nutrizionista/docs/${doc.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-white font-medium truncate block hover:text-amber-400 transition-colors"
+                  >
+                    {doc.title}
+                  </a>
+                  <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
+                    {formatSize(doc.size)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => deleteDoc(doc.id)}
+                  className="text-gray-600 hover:text-red-400 transition-colors p-1 text-lg leading-none shrink-0"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

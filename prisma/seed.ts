@@ -155,6 +155,18 @@ const MIGRATIONS = [
     CONSTRAINT "ShoppingItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
   `ALTER TABLE "ShoppingItem" ENABLE ROW LEVEL SECURITY`,
+  `CREATE TABLE IF NOT EXISTS "NutrizionistaDoc" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "mimeType" TEXT NOT NULL DEFAULT 'application/pdf',
+    "data" TEXT NOT NULL,
+    "size" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "NutrizionistaDoc_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "NutrizionistaDoc_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "NutrizionistaDoc" ENABLE ROW LEVEL SECURITY`,
 ];
 
 async function main() {
