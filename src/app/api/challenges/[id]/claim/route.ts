@@ -22,27 +22,51 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   );
   if (existing[0]?.completed) return NextResponse.json({ error: "Already claimed" }, { status: 400 });
 
-  // Verify condition
   const now = new Date();
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dayEnd = new Date(dayStart.getTime() + 86400000);
 
   let conditionMet = false;
+
   if (challenge.type === "complete_milestone") {
     const count = await prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } });
     conditionMet = count >= 1;
   } else if (challenge.type === "log_expense") {
     const count = await prisma.expense.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } });
     conditionMet = count >= 1;
-  } else if (challenge.type === "check_habit") {
-    const habits = await prisma.habit.findMany({ where: { userId }, include: { logs: { where: { date: today } } } });
-    conditionMet = habits.length > 0 && habits.every((h) => h.logs.length > 0);
+  } else if (challenge.type === "complete_3_milestones") {
+    const count = await prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } });
+    conditionMet = count >= 3;
+  } else if (challenge.type === "complete_quest") {
+    const count = await prisma.goal.count({ where: { userId, status: "completed", completedAt: { gte: dayStart, lt: dayEnd } } });
+    conditionMet = count >= 1;
   } else if (challenge.type === "log_weight") {
     const count = await prisma.weightEntry.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } });
     conditionMet = count >= 1;
-  } else if (challenge.type === "log_meal") {
-    const count = await prisma.mealLog.count({ where: { userId, date: today } });
-    conditionMet = count >= 1;
+  } else if (challenge.type === "daily_checkin") {
+    const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "QuestCheckIn" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]);
+    conditionMet = Number(rows[0]?.count ?? 0) >= 1;
+  } else if (challenge.type === "log_gym") {
+    const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "GymLog" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]);
+    conditionMet = Number(rows[0]?.count ?? 0) >= 1;
+  } else if (challenge.type === "complete_meals") {
+    const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "MealCompletion" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]);
+    conditionMet = Number(rows[0]?.count ?? 0) >= 4;
+  } else if (challenge.type === "check_shopping") {
+    const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "ShoppingItem" WHERE "userId" = $1 AND "checked" = true`,
+      userId
+    ).catch(() => [{ count: BigInt(0) }]);
+    conditionMet = Number(rows[0]?.count ?? 0) >= 3;
   }
 
   if (!conditionMet) return NextResponse.json({ error: "Condition not met" }, { status: 400 });

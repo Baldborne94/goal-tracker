@@ -2,13 +2,31 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-const DEFAULT_CHALLENGES = [
-  { id: "ch_milestone", title: "Early Bird",     description: "Complete at least 1 milestone today", xp: 15, type: "complete_milestone" },
-  { id: "ch_expense",   title: "Budget Tracker", description: "Log at least 1 expense today",        xp: 10, type: "log_expense" },
-  { id: "ch_habit",     title: "Habit Warrior",  description: "Complete all your habits today",      xp: 20, type: "check_habit" },
-  { id: "ch_weight",    title: "Iron Scale",     description: "Log your weight today",               xp: 10, type: "log_weight" },
-  { id: "ch_meal",      title: "Mindful Eater",  description: "Log a meal today",                    xp: 10, type: "log_meal" },
+// 4 rotation groups, each shown for 14 days before cycling
+const CHALLENGE_POOL = [
+  // Group 0
+  { id: "ch_g0_milestone", title: "Primo Passo",           description: "Completa almeno 1 milestone oggi",              xp: 15, type: "complete_milestone",    group: 0 },
+  { id: "ch_g0_gym",       title: "Guerriero della Palestra", description: "Registra una sessione in palestra oggi",      xp: 25, type: "log_gym",               group: 0 },
+  { id: "ch_g0_meals",     title: "Piano Nutrizionista",   description: "Spunta tutti e 4 i pasti del piano oggi",        xp: 15, type: "complete_meals",         group: 0 },
+  { id: "ch_g0_expense",   title: "Budget Tracker",        description: "Registra almeno 1 spesa oggi",                   xp: 10, type: "log_expense",            group: 0 },
+  // Group 1
+  { id: "ch_g1_miles3",    title: "Tre Conquiste",         description: "Completa 3 milestone oggi",                      xp: 30, type: "complete_3_milestones",  group: 1 },
+  { id: "ch_g1_gym",       title: "Sessione Intensa",      description: "Registra una sessione in palestra oggi",          xp: 25, type: "log_gym",               group: 1 },
+  { id: "ch_g1_meals",     title: "Nutri il Corpo",        description: "Spunta tutti e 4 i pasti del piano oggi",        xp: 15, type: "complete_meals",         group: 1 },
+  { id: "ch_g1_shopping",  title: "Cacciatore di Provviste", description: "Spunta almeno 3 prodotti dalla lista spesa",   xp: 10, type: "check_shopping",         group: 1 },
+  // Group 2
+  { id: "ch_g2_milestone", title: "Avanzamento",           description: "Completa almeno 1 milestone oggi",              xp: 15, type: "complete_milestone",    group: 2 },
+  { id: "ch_g2_gym",       title: "Corpo in Forma",        description: "Registra una sessione in palestra oggi",          xp: 25, type: "log_gym",               group: 2 },
+  { id: "ch_g2_meals",     title: "Piano Pasti Rispettato", description: "Spunta tutti e 4 i pasti del piano oggi",       xp: 15, type: "complete_meals",         group: 2 },
+  { id: "ch_g2_quest",     title: "Missione Completata",   description: "Completa una missione oggi",                     xp: 40, type: "complete_quest",         group: 2 },
+  // Group 3
+  { id: "ch_g3_checkin",   title: "Impegno Costante",      description: "Fai il check-in giornaliero su una missione",    xp: 15, type: "daily_checkin",          group: 3 },
+  { id: "ch_g3_gym",       title: "Allenamento del Giorno", description: "Registra una sessione in palestra oggi",        xp: 25, type: "log_gym",               group: 3 },
+  { id: "ch_g3_meals",     title: "Cibo Consapevole",      description: "Spunta tutti e 4 i pasti del piano oggi",        xp: 15, type: "complete_meals",         group: 3 },
+  { id: "ch_g3_weight",    title: "Iron Scale",            description: "Registra il tuo peso oggi",                      xp: 10, type: "log_weight",             group: 3 },
 ];
+
+const CURRENT_IDS = CHALLENGE_POOL.map(c => c.id);
 
 async function ensureTables() {
   await prisma.$executeRawUnsafe(`
@@ -18,9 +36,11 @@ async function ensureTables() {
       "description" TEXT NOT NULL,
       "xp" INTEGER NOT NULL DEFAULT 10,
       "type" TEXT NOT NULL,
+      "group" INTEGER NOT NULL DEFAULT 0,
       CONSTRAINT "DailyChallenge_pkey" PRIMARY KEY ("id")
     )
   `);
+  await prisma.$executeRawUnsafe(`ALTER TABLE "DailyChallenge" ADD COLUMN IF NOT EXISTS "group" INTEGER NOT NULL DEFAULT 0`);
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "UserDailyChallenge" (
       "id" TEXT NOT NULL,
@@ -35,18 +55,25 @@ async function ensureTables() {
       CONSTRAINT "UserDailyChallenge_challengeId_fkey" FOREIGN KEY ("challengeId") REFERENCES "DailyChallenge"("id") ON DELETE CASCADE ON UPDATE CASCADE
     )
   `);
-  // Remove any old challenges with random IDs (from seed.ts random generation)
-  const fixedIds = DEFAULT_CHALLENGES.map(c => `'${c.id}'`).join(",");
+  // Remove stale challenges
+  const fixedIds = CURRENT_IDS.map(id => `'${id}'`).join(",");
   await prisma.$executeRawUnsafe(`DELETE FROM "DailyChallenge" WHERE id NOT IN (${fixedIds})`);
-  for (const ch of DEFAULT_CHALLENGES) {
+  // Upsert all challenges
+  for (const ch of CHALLENGE_POOL) {
     await prisma.$executeRawUnsafe(
-      `INSERT INTO "DailyChallenge" ("id","title","description","xp","type") VALUES ($1,$2,$3,$4,$5) ON CONFLICT ("id") DO NOTHING`,
-      ch.id, ch.title, ch.description, ch.xp, ch.type
+      `INSERT INTO "DailyChallenge" ("id","title","description","xp","type","group") VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT ("id") DO UPDATE SET "title"=$2,"description"=$3,"xp"=$4,"type"=$5,"group"=$6`,
+      ch.id, ch.title, ch.description, ch.xp, ch.type, ch.group
     );
   }
 }
 
 let tablesReady = false;
+
+// Rotation: every 14 days, advance to next group (0→1→2→3→0)
+function currentGroup(): number {
+  return Math.floor(Math.floor(Date.now() / 86400000) / 14) % 4;
+}
 
 export async function GET() {
   const session = await auth();
@@ -63,8 +90,10 @@ export async function GET() {
     }
   }
 
+  const group = currentGroup();
   const challenges = await prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
-    `SELECT id, title, description, xp, type FROM "DailyChallenge" ORDER BY xp ASC`
+    `SELECT id, title, description, xp, type FROM "DailyChallenge" WHERE "group" = $1 ORDER BY xp ASC`,
+    group
   );
 
   if (challenges.length === 0) return NextResponse.json([]);
@@ -78,40 +107,55 @@ export async function GET() {
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dayEnd = new Date(dayStart.getTime() + 86400000);
 
-  let conditionMap: Record<string, boolean> = {
-    complete_milestone: false,
-    log_expense: false,
-    check_habit: false,
-    log_weight: false,
-    log_meal: false,
-  };
+  let conditionMap: Record<string, boolean> = {};
 
   try {
-    const [milestoneCount, expenseCount, habits, weightCount, mealCount] = await Promise.all([
+    const [milestoneCount, expenseCount, milestones3, completedQuestCount, weightCount] = await Promise.all([
       prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } }),
       prisma.expense.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }),
-      prisma.habit.findMany({ where: { userId }, include: { logs: { where: { date: today } } } }),
+      prisma.milestone.count({ where: { goal: { userId }, completed: true, completedAt: { gte: dayStart, lt: dayEnd } } }),
+      prisma.goal.count({ where: { userId, status: "completed", completedAt: { gte: dayStart, lt: dayEnd } } }),
       prisma.weightEntry.count({ where: { userId, createdAt: { gte: dayStart, lt: dayEnd } } }),
-      prisma.mealLog.count({ where: { userId, date: today } }),
     ]);
-    const allHabitsDone = habits.length > 0 && habits.every((h: { logs: unknown[] }) => h.logs.length > 0);
+
+    const questCheckin = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "QuestCheckIn" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]);
+
+    const gymCount = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "GymLog" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]);
+
+    const mealCount = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "MealCompletion" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]);
+
+    const shoppingChecked = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "ShoppingItem" WHERE "userId" = $1 AND "checked" = true`,
+      userId
+    ).catch(() => [{ count: BigInt(0) }]);
+
     conditionMap = {
-      complete_milestone: milestoneCount >= 1,
-      log_expense: expenseCount >= 1,
-      check_habit: allHabitsDone,
-      log_weight: weightCount >= 1,
-      log_meal: mealCount >= 1,
+      complete_milestone:    milestoneCount >= 1,
+      log_expense:           expenseCount >= 1,
+      complete_3_milestones: milestones3 >= 3,
+      complete_quest:        completedQuestCount >= 1,
+      log_weight:            weightCount >= 1,
+      daily_checkin:         Number(questCheckin[0]?.count ?? 0) >= 1,
+      log_gym:               Number(gymCount[0]?.count ?? 0) >= 1,
+      complete_meals:        Number(mealCount[0]?.count ?? 0) >= 4,
+      check_shopping:        Number(shoppingChecked[0]?.count ?? 0) >= 3,
     };
   } catch { /* challenges show as locked if condition checks fail */ }
 
-  const result = challenges.map((c) => {
-    const completion = completions.find((co) => co.challengeId === c.id);
-    return {
-      ...c,
-      completed: completion?.completed ?? false,
-      conditionMet: conditionMap[c.type] ?? false,
-    };
-  });
+  const result = challenges.map(c => ({
+    ...c,
+    completed: completions.find(co => co.challengeId === c.id)?.completed ?? false,
+    conditionMet: conditionMap[c.type] ?? false,
+  }));
 
   return NextResponse.json(result);
 }

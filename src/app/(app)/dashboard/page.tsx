@@ -100,6 +100,9 @@ export default async function DashboardPage() {
   const active = earlyActive;
   const completed = earlyCompleted;
 
+  // Rotation: challenges change every 14 days (4 groups)
+  const currentChallengeGroup = Math.floor(Math.floor(Date.now() / 86400000) / 14) % 4;
+
   const [topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, questCheckinTodayRaw, completedQuestCount] = await Promise.all([
     prisma.expense.groupBy({
       by: ["category"],
@@ -109,7 +112,8 @@ export default async function DashboardPage() {
       take: 1,
     }),
     prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
-      `SELECT id, title, description, xp, type FROM "DailyChallenge" ORDER BY xp ASC`
+      `SELECT id, title, description, xp, type FROM "DailyChallenge" WHERE "group" = $1 ORDER BY xp ASC`,
+      currentChallengeGroup
     ).catch(() => [] as { id: string; title: string; description: string; xp: number; type: string }[]),
     prisma.$queryRawUnsafe<{ challengeId: string; completed: boolean }[]>(
       `SELECT "challengeId", "completed" FROM "UserDailyChallenge" WHERE "userId" = $1 AND "date" = $2`,
@@ -122,6 +126,21 @@ export default async function DashboardPage() {
       userId, today
     ).catch(() => [{ count: BigInt(0) }]),
     prisma.goal.count({ where: { userId, status: "completed", completedAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
+  ]);
+
+  const [gymLogCount, mealCompletionCount, shoppingCheckedCount] = await Promise.all([
+    prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "GymLog" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]),
+    prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "MealCompletion" WHERE "userId" = $1 AND date = $2`,
+      userId, today
+    ).catch(() => [{ count: BigInt(0) }]),
+    prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*) as count FROM "ShoppingItem" WHERE "userId" = $1 AND "checked" = true`,
+      userId
+    ).catch(() => [{ count: BigInt(0) }]),
   ]);
 
   // Check-in quests scheduled for today
@@ -145,10 +164,13 @@ export default async function DashboardPage() {
 
   const conditionMap: Record<string, boolean> = {
     complete_milestone:    milestoneCount >= 1,
-    log_expense:           expenseCount >= 1,
-    daily_checkin:         Number(questCheckinTodayRaw[0]?.count ?? 0) >= 1,
     complete_3_milestones: milestoneCount >= 3,
     complete_quest:        completedQuestCount >= 1,
+    log_expense:           expenseCount >= 1,
+    daily_checkin:         Number(questCheckinTodayRaw[0]?.count ?? 0) >= 1,
+    log_gym:               Number(gymLogCount[0]?.count ?? 0) >= 1,
+    complete_meals:        Number(mealCompletionCount[0]?.count ?? 0) >= 4,
+    check_shopping:        Number(shoppingCheckedCount[0]?.count ?? 0) >= 3,
   };
   const initialChallenges = rawChallenges.map(c => ({
     ...c,
