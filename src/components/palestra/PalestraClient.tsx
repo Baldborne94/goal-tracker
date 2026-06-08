@@ -253,38 +253,24 @@ function ProgrammaView({ days, onDaysChange }: { days: GymDay[]; onDaysChange: (
                           style={{ borderColor: "var(--theme-surface-border)" }}
                         />
                         <div className="flex gap-2">
-                          <input
-                            type="number"
-                            value={editForm.sets ?? ""}
-                            onChange={e => setEditForm(f => ({ ...f, sets: parseInt(e.target.value) }))}
-                            placeholder="Serie"
-                            className="w-1/4 bg-transparent border rounded-lg px-2 py-1.5 text-sm text-center text-[#ede9ff] focus:outline-none"
-                            style={{ borderColor: "var(--theme-surface-border)" }}
-                          />
-                          <input
-                            type="number"
-                            value={editForm.repsMin ?? ""}
-                            onChange={e => setEditForm(f => ({ ...f, repsMin: e.target.value ? parseInt(e.target.value) : null }))}
-                            placeholder="Rep min"
-                            className="w-1/4 bg-transparent border rounded-lg px-2 py-1.5 text-sm text-center text-[#ede9ff] focus:outline-none"
-                            style={{ borderColor: "var(--theme-surface-border)" }}
-                          />
-                          <input
-                            type="number"
-                            value={editForm.repsMax ?? ""}
-                            onChange={e => setEditForm(f => ({ ...f, repsMax: e.target.value ? parseInt(e.target.value) : null }))}
-                            placeholder="Rep max"
-                            className="w-1/4 bg-transparent border rounded-lg px-2 py-1.5 text-sm text-center text-[#ede9ff] focus:outline-none"
-                            style={{ borderColor: "var(--theme-surface-border)" }}
-                          />
-                          <input
-                            type="number"
-                            value={editForm.restSec ?? ""}
-                            onChange={e => setEditForm(f => ({ ...f, restSec: e.target.value ? parseInt(e.target.value) : null }))}
-                            placeholder="Riposo s"
-                            className="w-1/4 bg-transparent border rounded-lg px-2 py-1.5 text-sm text-center text-[#ede9ff] focus:outline-none"
-                            style={{ borderColor: "var(--theme-surface-border)" }}
-                          />
+                          {[
+                            { label: "Serie", key: "sets" as const, val: editForm.sets },
+                            { label: "Rep min", key: "repsMin" as const, val: editForm.repsMin },
+                            { label: "Rep max", key: "repsMax" as const, val: editForm.repsMax },
+                            { label: "Riposo s", key: "restSec" as const, val: editForm.restSec },
+                          ].map(({ label, key, val }) => (
+                            <div key={key} className="flex-1 flex flex-col items-center gap-0.5">
+                              <span className="text-[10px] font-medium" style={{ color: "var(--theme-text-muted)" }}>{label}</span>
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                value={val ?? ""}
+                                onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value ? parseInt(e.target.value) : null }))}
+                                className="w-full bg-transparent border rounded-lg px-1 py-1.5 text-sm text-center text-[#ede9ff] focus:outline-none"
+                                style={{ borderColor: "var(--theme-surface-border)" }}
+                              />
+                            </div>
+                          ))}
                         </div>
                         <input
                           value={editForm.weightNote ?? ""}
@@ -319,7 +305,7 @@ function ProgrammaView({ days, onDaysChange }: { days: GymDay[]; onDaysChange: (
                         <div className="flex-1">
                           <p className="text-sm text-[#ede9ff]">{ex.name}</p>
                           <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
-                            {ex.sets}× {repsLabel(ex)}
+                            {ex.sets} serie × {repsLabel(ex)} rep
                             {ex.weightNote ? ` · ${ex.weightNote}` : ""}
                             {ex.restSec ? ` · ${ex.restSec}s riposo` : ""}
                           </p>
@@ -422,12 +408,14 @@ export default function PalestraClient() {
   const [sessionEntries, setSessionEntries] = useState<SessionEntries>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedDayId, setSavedDayId] = useState<string | null>(null);
   const [timerSec, setTimerSec] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [historyDayId, setHistoryDayId] = useState<string | null>(null);
   const [logs, setLogs] = useState<GymLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [logsVersion, setLogsVersion] = useState(0);
 
   useEffect(() => {
     fetch("/api/palestra/days")
@@ -449,7 +437,7 @@ export default function PalestraClient() {
       .then(r => r.json())
       .then(data => { setLogs(data.logs ?? []); setLogsLoading(false); })
       .catch(() => setLogsLoading(false));
-  }, [tab, historyDayId]);
+  }, [tab, historyDayId, logsVersion]);
 
   function selectDay(day: GymDay) {
     const entries: SessionEntries = {};
@@ -520,9 +508,11 @@ export default function PalestraClient() {
 
     if (r.ok) {
       setSaved(true);
+      setSavedDayId(selectedDayId);
       setDays(prev => prev.map(d => d.id === selectedDayId ? { ...d, lastLogDate: today } : d));
       setSelectedDayId(null);
       setSessionEntries({});
+      setLogsVersion(v => v + 1);
     }
     setSaving(false);
   }
@@ -586,10 +576,10 @@ export default function PalestraClient() {
         {tab === "storico" && (
           <StoricoView
             days={days}
-            historyDayId={historyDayId}
+            historyDayId={savedDayId ?? historyDayId}
             logs={logs}
             loading={logsLoading}
-            onSelectDay={id => { setHistoryDayId(id); setLogs([]); }}
+            onSelectDay={id => { setHistoryDayId(id); setSavedDayId(null); setLogs([]); }}
           />
         )}
       </div>
