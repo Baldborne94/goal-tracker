@@ -132,6 +132,29 @@ const MIGRATIONS = [
     CONSTRAINT "FoodEntry_pkey" PRIMARY KEY (id),
     CONSTRAINT "FoodEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
+  `CREATE TABLE IF NOT EXISTS "MealCompletion" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "meal" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "MealCompletion_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "MealCompletion_userId_date_meal_key" UNIQUE ("userId","date","meal"),
+    CONSTRAINT "MealCompletion_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "MealCompletion" ENABLE ROW LEVEL SECURITY`,
+  `CREATE TABLE IF NOT EXISTS "ShoppingItem" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "quantity" TEXT,
+    "checked" BOOLEAN NOT NULL DEFAULT false,
+    "category" TEXT NOT NULL DEFAULT 'altro',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ShoppingItem_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "ShoppingItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "ShoppingItem" ENABLE ROW LEVEL SECURITY`,
 ];
 
 async function main() {
