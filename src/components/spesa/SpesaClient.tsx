@@ -95,21 +95,23 @@ export default function SpesaClient() {
 
   const addSuggestion = async (food: { name: string; category: string }) => {
     const tempId = `tmp_${Date.now()}`;
+    // Show item immediately, reset filter so it's visible, collapse suggestions
     setItems(prev => [...prev, { id: tempId, name: food.name, quantity: null, checked: false, category: food.category }]);
+    setFilterCat(null);
+    setShowSuggestions(false);
     try {
       const res = await fetch("/api/spesa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: food.name, quantity: null, category: food.category }),
       });
-      const item = await res.json();
-      if (item.id) {
-        setItems(prev => prev.map(i => i.id === tempId ? item : i));
-      } else {
-        setItems(prev => prev.filter(i => i.id !== tempId));
+      if (res.ok) {
+        const item = await res.json();
+        if (item.id) setItems(prev => prev.map(i => i.id === tempId ? item : i));
       }
+      // On API error: item stays in list for this session (won't persist on refresh)
     } catch {
-      setItems(prev => prev.filter(i => i.id !== tempId));
+      // Network error: item stays in list for this session
     }
   };
 
