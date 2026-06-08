@@ -36,6 +36,8 @@ model User {
   dailyChallenges   UserDailyChallenge[]
   questCheckIns     QuestCheckIn[]
   recurringBills    RecurringBill[]
+  mealCompletions   MealCompletion[]
+  shoppingItems     ShoppingItem[]
 }
 
 model Account {
@@ -322,6 +324,30 @@ model RecurringBill {
   notifyDaysBefore Int      @default(3)
   active           Boolean  @default(true)
   createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MealCompletion {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // "YYYY-MM-DD"
+  meal      String   // "colazione" | "spuntino" | "pranzo" | "merenda"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, meal])
+}
+
+model ShoppingItem {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  quantity  String?
+  checked   Boolean  @default(false)
+  category  String   @default("altro")
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
