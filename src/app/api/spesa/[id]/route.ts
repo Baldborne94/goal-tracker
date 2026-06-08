@@ -14,12 +14,19 @@ export async function PATCH(
 
   const { id } = await params;
   await initNutrizionistaTables();
-  const { checked } = await req.json();
+  const body = await req.json();
 
-  await prisma.$executeRawUnsafe(
-    `UPDATE "ShoppingItem" SET "checked" = $1 WHERE "id" = $2 AND "userId" = $3`,
-    checked, id, session.user.id
-  );
+  if (typeof body.checked === "boolean") {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "ShoppingItem" SET "checked" = $1 WHERE "id" = $2 AND "userId" = $3`,
+      body.checked, id, session.user.id
+    );
+  } else if (body.name !== undefined) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "ShoppingItem" SET "name" = $1, "quantity" = $2 WHERE "id" = $3 AND "userId" = $4`,
+      body.name.trim(), body.quantity?.trim() || null, id, session.user.id
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

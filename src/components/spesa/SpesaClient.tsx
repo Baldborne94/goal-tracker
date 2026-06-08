@@ -115,6 +115,15 @@ export default function SpesaClient() {
     }
   };
 
+  const editItem = async (id: string, name: string, quantity: string | null) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, name, quantity } : i));
+    await fetch(`/api/spesa/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, quantity }),
+    });
+  };
+
   const toggleItem = async (item: ShoppingItem) => {
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, checked: !i.checked } : i));
     await fetch(`/api/spesa/${item.id}`, {
@@ -326,7 +335,7 @@ export default function SpesaClient() {
       {!loading && unchecked.length > 0 && (
         <div className="space-y-2">
           {unchecked.map(item => (
-            <ItemRow key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} />
+            <ItemRow key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} onEdit={editItem} />
           ))}
         </div>
       )}
@@ -337,7 +346,7 @@ export default function SpesaClient() {
             ✓ Nel carrello
           </p>
           {checked.map(item => (
-            <ItemRow key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} />
+            <ItemRow key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} onEdit={editItem} />
           ))}
         </div>
       )}
@@ -346,12 +355,73 @@ export default function SpesaClient() {
 }
 
 function ItemRow({
-  item, onToggle, onDelete,
+  item, onToggle, onDelete, onEdit,
 }: {
   item: ShoppingItem;
   onToggle: (item: ShoppingItem) => void;
   onDelete: (id: string) => void;
+  onEdit: (id: string, name: string, quantity: string | null) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(item.name);
+  const [editQty, setEditQty] = useState(item.quantity ?? "");
+
+  const startEdit = () => {
+    setEditName(item.name);
+    setEditQty(item.quantity ?? "");
+    setEditing(true);
+  };
+
+  const save = () => {
+    if (!editName.trim()) return;
+    onEdit(item.id, editName.trim(), editQty.trim() || null);
+    setEditing(false);
+  };
+
+  const cancel = () => setEditing(false);
+
+  if (editing) {
+    return (
+      <div
+        className="rounded-2xl border px-4 py-3 space-y-2"
+        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+      >
+        <input
+          autoFocus
+          value={editName}
+          onChange={e => setEditName(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+          className="w-full bg-transparent border rounded-xl px-3 py-2 text-sm outline-none"
+          style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text)" }}
+        />
+        <div className="flex gap-2">
+          <input
+            value={editQty}
+            onChange={e => setEditQty(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }}
+            placeholder="Quantità (es. 500g)"
+            className="flex-1 bg-transparent border rounded-xl px-3 py-2 text-sm outline-none"
+            style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text)" }}
+          />
+          <button
+            onClick={cancel}
+            className="px-3 py-2 rounded-xl text-sm border"
+            style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+          >
+            ✕
+          </button>
+          <button
+            onClick={save}
+            disabled={!editName.trim()}
+            className="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-black disabled:opacity-50"
+          >
+            Salva
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -372,7 +442,7 @@ function ItemRow({
 
       <span className="text-lg shrink-0">{catIcon(item.category)}</span>
 
-      <div className="flex-1 min-w-0">
+      <button onClick={startEdit} className="flex-1 min-w-0 text-left">
         <p className={cn(
           "text-sm font-medium truncate",
           item.checked ? "line-through text-gray-500" : "text-white"
@@ -382,7 +452,7 @@ function ItemRow({
         {item.quantity && (
           <p className="text-xs text-amber-400/70">{item.quantity}</p>
         )}
-      </div>
+      </button>
 
       <button
         onClick={() => onDelete(item.id)}
