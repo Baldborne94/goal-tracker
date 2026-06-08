@@ -112,8 +112,7 @@ export default async function DashboardPage() {
       take: 1,
     }),
     prisma.$queryRawUnsafe<{ id: string; title: string; description: string; xp: number; type: string }[]>(
-      `SELECT id, title, description, xp, type FROM "DailyChallenge" WHERE "group" = $1 ORDER BY xp ASC`,
-      currentChallengeGroup
+      `SELECT id, title, description, xp, type FROM "DailyChallenge" ORDER BY xp ASC`
     ).catch(() => [] as { id: string; title: string; description: string; xp: number; type: string }[]),
     prisma.$queryRawUnsafe<{ challengeId: string; completed: boolean }[]>(
       `SELECT "challengeId", "completed" FROM "UserDailyChallenge" WHERE "userId" = $1 AND "date" = $2`,
@@ -162,6 +161,16 @@ export default async function DashboardPage() {
     checkedInTodayIds = new Set(doneToday.map((d) => d.goalId));
   }
 
+  const CHALLENGE_GROUP_IDS: Record<number, string[]> = {
+    0: ["ch_g0_milestone", "ch_g0_gym", "ch_g0_meals", "ch_g0_expense"],
+    1: ["ch_g1_miles3",    "ch_g1_gym", "ch_g1_meals", "ch_g1_shopping"],
+    2: ["ch_g2_milestone", "ch_g2_gym", "ch_g2_meals", "ch_g2_quest"],
+    3: ["ch_g3_checkin",   "ch_g3_gym", "ch_g3_meals", "ch_g3_weight"],
+  };
+  const groupIdSet = new Set(CHALLENGE_GROUP_IDS[currentChallengeGroup] ?? []);
+  const groupChallenges = rawChallenges.filter(c => groupIdSet.has(c.id));
+  const visibleChallenges = groupChallenges.length > 0 ? groupChallenges : rawChallenges.slice(0, 4);
+
   const conditionMap: Record<string, boolean> = {
     complete_milestone:    milestoneCount >= 1,
     complete_3_milestones: milestoneCount >= 3,
@@ -172,7 +181,7 @@ export default async function DashboardPage() {
     complete_meals:        Number(mealCompletionCount[0]?.count ?? 0) >= 4,
     check_shopping:        Number(shoppingCheckedCount[0]?.count ?? 0) >= 3,
   };
-  const initialChallenges = rawChallenges.map(c => ({
+  const initialChallenges = visibleChallenges.map(c => ({
     ...c,
     completed: challengeCompletions.find(co => co.challengeId === c.id)?.completed ?? false,
     conditionMet: conditionMap[c.type] ?? false,

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import {
-  getDayPlan, MEAL_ICONS, MEAL_REMINDERS, MEAL_ORDER,
+  getDayPlan, MEAL_ICONS, MEAL_REMINDERS, MEAL_ORDER, MEAL_PLAN_KCAL,
   type MealTime, type DayPlan,
 } from "@/lib/meal-plan";
 import { cn } from "@/lib/utils";
@@ -67,11 +67,28 @@ export default function NutrizionistaPianoClient() {
       return next;
     });
     try {
-      await fetch("/api/nutrizionista/completions", {
+      const res = await fetch("/api/nutrizionista/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date, meal }),
       });
+      const data = await res.json();
+      if (data.action === "added") {
+        const dayPlan = getDayPlan(new Date(date + "T12:00:00"));
+        const mealPlan = dayPlan.meals.find(m => m.time === meal);
+        if (mealPlan) {
+          for (const food of mealPlan.foods) {
+            const gramsMatch = food.quantity.match(/^(\d+(?:\.\d+)?)/);
+            const grams = gramsMatch ? parseFloat(gramsMatch[1]) : 100;
+            const kcalPer100g = MEAL_PLAN_KCAL[food.name.toLowerCase()] ?? 100;
+            fetch("/api/diet/food", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ date, mealType: meal, foodName: food.name, grams, kcalPer100g }),
+            }).catch(() => {});
+          }
+        }
+      }
     } catch {
       setCompletions(prev => {
         const next = new Set(prev);
