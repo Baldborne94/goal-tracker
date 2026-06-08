@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { initNutrizionistaTables } from "@/lib/init-tables";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,7 @@ export async function GET(
   if (!session?.user?.id) return new Response("Unauthorized", { status: 401 });
 
   const { id } = await params;
+  await initNutrizionistaTables();
   const rows = await prisma.$queryRawUnsafe<DocFull[]>(
     `SELECT id, title, "mimeType", data, size FROM "NutrizionistaDoc" WHERE "id" = $1 AND "userId" = $2`,
     id, session.user.id
@@ -41,6 +43,7 @@ export async function DELETE(
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  await initNutrizionistaTables();
   await prisma.$executeRawUnsafe(
     `DELETE FROM "NutrizionistaDoc" WHERE "id" = $1 AND "userId" = $2`,
     id, session.user.id

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { initNutrizionistaTables } from "@/lib/init-tables";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,7 @@ type DocRow = { id: string; title: string; mimeType: string; size: number; creat
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await initNutrizionistaTables();
 
   const docs = await prisma.$queryRawUnsafe<DocRow[]>(
     `SELECT id, title, "mimeType", size, "createdAt" FROM "NutrizionistaDoc" WHERE "userId" = $1 ORDER BY "createdAt" DESC`,
@@ -21,6 +23,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await initNutrizionistaTables();
 
   const { title, mimeType, data, size } = await req.json();
   if (!title || !data) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
