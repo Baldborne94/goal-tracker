@@ -326,13 +326,25 @@ function ProgrammaView({ days, onDaysChange }: { days: GymDay[]; onDaysChange: (
 
 // ─── Storico Tab ───────────────────────────────────────────────────────────────
 
-function StoricoView({ days, historyDayId, logs, loading, onSelectDay }: {
+function StoricoView({ days, historyDayId, logs, loading, onSelectDay, onDeleteLog }: {
   days: GymDay[];
   historyDayId: string | null;
   logs: GymLog[];
   loading: boolean;
   onSelectDay: (id: string) => void;
+  onDeleteLog: (id: string) => void;
 }) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    await fetch(`/api/palestra/logs/${id}`, { method: "DELETE" });
+    onDeleteLog(id);
+    setDeletingId(null);
+    setConfirmId(null);
+  }
+
   return (
     <div className="pt-2">
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
@@ -370,9 +382,38 @@ function StoricoView({ days, historyDayId, logs, loading, onSelectDay }: {
               <div key={log.id} className="rounded-2xl border p-4" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-semibold text-[#ede9ff]">📅 {fmtDate(log.date)}</p>
-                  {log.durationMin && (
-                    <span className="text-xs text-amber-400">⏱ {log.durationMin} min</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {log.durationMin && (
+                      <span className="text-xs text-amber-400">⏱ {log.durationMin} min</span>
+                    )}
+                    {confirmId === log.id ? (
+                      <>
+                        <button
+                          onClick={() => handleDelete(log.id)}
+                          disabled={deletingId === log.id}
+                          className="text-xs px-2 py-1 rounded-lg font-semibold text-white"
+                          style={{ background: "rgba(239,68,68,0.8)" }}
+                        >
+                          {deletingId === log.id ? "..." : "Elimina"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmId(null)}
+                          className="text-xs px-2 py-1 rounded-lg border"
+                          style={{ color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmId(log.id)}
+                        className="text-xs px-2 py-1 rounded-lg border"
+                        style={{ color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {Object.values(grouped).length > 0 ? (
                   <div className="space-y-1">
@@ -580,6 +621,7 @@ export default function PalestraClient() {
             logs={logs}
             loading={logsLoading}
             onSelectDay={id => { setHistoryDayId(id); setSavedDayId(null); setLogs([]); }}
+            onDeleteLog={id => setLogs(prev => prev.filter(l => l.id !== id))}
           />
         )}
       </div>
