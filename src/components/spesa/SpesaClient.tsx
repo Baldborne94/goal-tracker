@@ -94,13 +94,23 @@ export default function SpesaClient() {
   };
 
   const addSuggestion = async (food: { name: string; category: string }) => {
-    const res = await fetch("/api/spesa", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: food.name, quantity: null, category: food.category }),
-    });
-    const item = await res.json();
-    setItems(prev => [...prev, item]);
+    const tempId = `tmp_${Date.now()}`;
+    setItems(prev => [...prev, { id: tempId, name: food.name, quantity: null, checked: false, category: food.category }]);
+    try {
+      const res = await fetch("/api/spesa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: food.name, quantity: null, category: food.category }),
+      });
+      const item = await res.json();
+      if (item.id) {
+        setItems(prev => prev.map(i => i.id === tempId ? item : i));
+      } else {
+        setItems(prev => prev.filter(i => i.id !== tempId));
+      }
+    } catch {
+      setItems(prev => prev.filter(i => i.id !== tempId));
+    }
   };
 
   const toggleItem = async (item: ShoppingItem) => {
