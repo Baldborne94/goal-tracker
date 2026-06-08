@@ -138,10 +138,14 @@ export default function SpesaClient() {
     await fetch(`/api/spesa/${id}`, { method: "DELETE" });
   };
 
-  const clearCompleted = async () => {
+  const resetCompleted = async () => {
     const done = items.filter(i => i.checked);
-    setItems(prev => prev.filter(i => !i.checked));
-    await Promise.all(done.map(i => fetch(`/api/spesa/${i.id}`, { method: "DELETE" })));
+    setItems(prev => prev.map(i => i.checked ? { ...i, checked: false } : i));
+    await Promise.all(done.map(i => fetch(`/api/spesa/${i.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checked: false }),
+    })));
   };
 
   const visible = (i: ShoppingItem) => !filterCat || i.category === filterCat;
@@ -170,11 +174,11 @@ export default function SpesaClient() {
         </div>
         {completedCount > 0 && (
           <button
-            onClick={clearCompleted}
+            onClick={resetCompleted}
             className="text-xs px-3 py-1.5 rounded-lg border mt-1 shrink-0"
             style={{ color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
           >
-            Svuota completati
+            🔄 Ricomincia la spesa
           </button>
         )}
       </div>
