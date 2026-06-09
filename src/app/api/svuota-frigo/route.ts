@@ -49,7 +49,7 @@ export async function POST(req: Request) {
           messages: [
             {
               role: "user",
-              content: `Sei un cuoco italiano creativo. Ho questi ingredienti in frigo:\n\n${ingredients.map(i => `• ${i}`).join("\n")}\n\nSuggeriscimi 3 ricette che posso fare con questi ingredienti (puoi assumere che ho sale, pepe, olio e acqua). Per ogni ricetta indica:\n- Nome della ricetta con emoji\n- Tempo di preparazione\n- Ingredienti necessari (evidenzia quelli che NON ho)\n- Procedimento in 3-5 passi brevi\n\nRispondi in italiano, in modo semplice e pratico.`,
+              content: `Sei un cuoco italiano creativo. Ho questi ingredienti in frigo:\n\n${ingredients.map(i => `• ${i}`).join("\n")}\n\nSuggeriscimi 3 ricette che utilizzino TUTTI questi ingredienti insieme nella stessa ricetta (puoi assumere che ho sale, pepe, olio e acqua). È fondamentale che ogni ricetta includa tutti gli ingredienti elencati sopra — non tralasciarne nessuno. Per ogni ricetta indica:\n- Nome della ricetta con emoji\n- Tempo di preparazione\n- Ingredienti (conferma quali di quelli che ho vengono usati + eventuali extra necessari)\n- Procedimento in 3-5 passi brevi\n\nRispondi in italiano, in modo semplice e pratico.`,
             },
           ],
         });
