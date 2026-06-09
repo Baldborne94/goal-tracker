@@ -192,13 +192,94 @@ function AllenaView({ days, selectedDay, entries, timerSec, saving, saved, onSel
 
 // ─── Programma Tab ─────────────────────────────────────────────────────────────
 
+const EMPTY_ADD_FORM = { name: "", muscleGroup: "", sets: 3, repsMin: null as number | null, repsMax: null as number | null, repsNote: null as string | null, restSec: 60 as number | null, weightNote: null as string | null };
+
+function ExerciseForm({
+  form, onChange, onSave, onCancel, saving, submitLabel,
+}: {
+  form: typeof EMPTY_ADD_FORM;
+  onChange: (f: typeof EMPTY_ADD_FORM) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving: boolean;
+  submitLabel: string;
+}) {
+  return (
+    <div className="rounded-xl p-3 space-y-2 mt-2" style={{ background: "var(--theme-bg)" }}>
+      <input
+        value={form.name}
+        onChange={e => onChange({ ...form, name: e.target.value })}
+        placeholder="Nome esercizio *"
+        className="w-full bg-transparent border rounded-lg px-3 py-1.5 text-sm text-[#ede9ff] focus:outline-none"
+        style={{ borderColor: "var(--theme-surface-border)" }}
+      />
+      <input
+        value={form.muscleGroup}
+        onChange={e => onChange({ ...form, muscleGroup: e.target.value })}
+        placeholder="Gruppo muscolare (es. Petto, Schiena…) *"
+        className="w-full bg-transparent border rounded-lg px-3 py-1.5 text-sm text-[#ede9ff] focus:outline-none"
+        style={{ borderColor: "var(--theme-surface-border)" }}
+      />
+      <div className="flex gap-2">
+        {([
+          { label: "Serie", key: "sets" as const },
+          { label: "Rep min", key: "repsMin" as const },
+          { label: "Rep max", key: "repsMax" as const },
+          { label: "Riposo s", key: "restSec" as const },
+        ] as const).map(({ label, key }) => (
+          <div key={key} className="flex-1 flex flex-col items-center gap-0.5">
+            <span className="text-[10px] font-medium" style={{ color: "var(--theme-text-muted)" }}>{label}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={form[key] ?? ""}
+              onChange={e => onChange({ ...form, [key]: e.target.value ? parseInt(e.target.value) : null })}
+              className="w-full bg-transparent border rounded-lg px-1 py-1.5 text-sm text-center text-[#ede9ff] focus:outline-none"
+              style={{ borderColor: "var(--theme-surface-border)" }}
+            />
+          </div>
+        ))}
+      </div>
+      <input
+        value={form.weightNote ?? ""}
+        onChange={e => onChange({ ...form, weightNote: e.target.value || null })}
+        placeholder="Note peso (es. ~60-80 kg)"
+        className="w-full bg-transparent border rounded-lg px-3 py-1.5 text-sm text-[#ede9ff] focus:outline-none"
+        style={{ borderColor: "var(--theme-surface-border)" }}
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={onSave}
+          disabled={saving || !form.name.trim() || !form.muscleGroup.trim()}
+          className="flex-1 py-1.5 rounded-xl text-xs font-bold text-black disabled:opacity-40"
+          style={{ background: "linear-gradient(to right, #f59e0b, #eab308)" }}
+        >
+          {saving ? "..." : submitLabel}
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex-1 py-1.5 rounded-xl text-xs border"
+          style={{ color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
+        >
+          Annulla
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProgrammaView({ days, onDaysChange }: { days: GymDay[]; onDaysChange: (days: GymDay[]) => void }) {
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [editingExId, setEditingExId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Exercise>>({});
+  const [editForm, setEditForm] = useState<typeof EMPTY_ADD_FORM>({ ...EMPTY_ADD_FORM });
+  const [addingDayId, setAddingDayId] = useState<string | null>(null);
+  const [addForm, setAddForm] = useState<typeof EMPTY_ADD_FORM>({ ...EMPTY_ADD_FORM });
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function startEdit(ex: Exercise) {
+    setAddingDayId(null);
+    setConfirmDeleteId(null);
     setEditingExId(ex.id);
     setEditForm({
       name: ex.name, muscleGroup: ex.muscleGroup, sets: ex.sets,
@@ -223,6 +304,38 @@ function ProgrammaView({ days, onDaysChange }: { days: GymDay[]; onDaysChange: (
     setSaving(false);
   }
 
+  function startAdd(dayId: string) {
+    setEditingExId(null);
+    setConfirmDeleteId(null);
+    setAddingDayId(dayId);
+    setAddForm({ ...EMPTY_ADD_FORM });
+  }
+
+  async function saveAdd(dayId: string) {
+    setSaving(true);
+    const res = await fetch("/api/palestra/exercises", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dayId, ...addForm }),
+    });
+    if (res.ok) {
+      const newEx = await res.json() as Exercise;
+      onDaysChange(days.map(d =>
+        d.id === dayId ? { ...d, exercises: [...d.exercises, newEx] } : d
+      ));
+      setAddingDayId(null);
+    }
+    setSaving(false);
+  }
+
+  async function deleteExercise(exId: string, dayId: string) {
+    await fetch(`/api/palestra/exercises/${exId}`, { method: "DELETE" });
+    onDaysChange(days.map(d =>
+      d.id === dayId ? { ...d, exercises: d.exercises.filter(e => e.id !== exId) } : d
+    ));
+    setConfirmDeleteId(null);
+  }
+
   return (
     <div className="space-y-3 pt-2">
       {days.map(day => {
@@ -230,7 +343,7 @@ function ProgrammaView({ days, onDaysChange }: { days: GymDay[]; onDaysChange: (
         return (
           <div key={day.id} className="rounded-2xl border overflow-hidden" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
             <button
-              onClick={() => setExpandedDay(isExpanded ? null : day.id)}
+              onClick={() => { setExpandedDay(isExpanded ? null : day.id); setEditingExId(null); setAddingDayId(null); setConfirmDeleteId(null); }}
               className="w-full flex items-center gap-3 p-4 text-left"
             >
               <span className="text-2xl">{day.emoji}</span>
@@ -240,81 +353,80 @@ function ProgrammaView({ days, onDaysChange }: { days: GymDay[]; onDaysChange: (
             </button>
 
             {isExpanded && (
-              <div className="border-t px-4 pb-4 space-y-2" style={{ borderColor: "var(--theme-surface-border)" }}>
+              <div className="border-t px-4 pb-4 space-y-1" style={{ borderColor: "var(--theme-surface-border)" }}>
                 {day.exercises.map(ex => (
                   <div key={ex.id}>
                     {editingExId === ex.id ? (
-                      <div className="rounded-xl p-3 space-y-2 mt-2" style={{ background: "var(--theme-bg)" }}>
-                        <input
-                          value={editForm.name ?? ""}
-                          onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                          placeholder="Nome esercizio"
-                          className="w-full bg-transparent border rounded-lg px-3 py-1.5 text-sm text-[#ede9ff] focus:outline-none"
-                          style={{ borderColor: "var(--theme-surface-border)" }}
-                        />
-                        <div className="flex gap-2">
-                          {[
-                            { label: "Serie", key: "sets" as const, val: editForm.sets },
-                            { label: "Rep min", key: "repsMin" as const, val: editForm.repsMin },
-                            { label: "Rep max", key: "repsMax" as const, val: editForm.repsMax },
-                            { label: "Riposo s", key: "restSec" as const, val: editForm.restSec },
-                          ].map(({ label, key, val }) => (
-                            <div key={key} className="flex-1 flex flex-col items-center gap-0.5">
-                              <span className="text-[10px] font-medium" style={{ color: "var(--theme-text-muted)" }}>{label}</span>
-                              <input
-                                type="number"
-                                inputMode="numeric"
-                                value={val ?? ""}
-                                onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value ? parseInt(e.target.value) : null }))}
-                                className="w-full bg-transparent border rounded-lg px-1 py-1.5 text-sm text-center text-[#ede9ff] focus:outline-none"
-                                style={{ borderColor: "var(--theme-surface-border)" }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                        <input
-                          value={editForm.weightNote ?? ""}
-                          onChange={e => setEditForm(f => ({ ...f, weightNote: e.target.value || null }))}
-                          placeholder="Note peso (es. ~60-80 kg)"
-                          className="w-full bg-transparent border rounded-lg px-3 py-1.5 text-sm text-[#ede9ff] focus:outline-none"
-                          style={{ borderColor: "var(--theme-surface-border)" }}
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={saveEdit}
-                            disabled={saving}
-                            className="flex-1 py-1.5 rounded-xl text-xs font-bold text-black"
-                            style={{ background: "linear-gradient(to right, #f59e0b, #eab308)" }}
-                          >
-                            {saving ? "..." : "Salva"}
-                          </button>
-                          <button
-                            onClick={() => setEditingExId(null)}
-                            className="flex-1 py-1.5 rounded-xl text-xs border"
-                            style={{ color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
-                          >
-                            Annulla
-                          </button>
-                        </div>
-                      </div>
+                      <ExerciseForm
+                        form={editForm}
+                        onChange={setEditForm}
+                        onSave={saveEdit}
+                        onCancel={() => setEditingExId(null)}
+                        saving={saving}
+                        submitLabel="Salva"
+                      />
                     ) : (
-                      <button
-                        onClick={() => startEdit(ex)}
-                        className="w-full text-left flex items-center gap-2 py-2 rounded-xl px-1 active:bg-white/5"
-                      >
-                        <div className="flex-1">
+                      <div className="flex items-center gap-1 py-1.5 rounded-xl px-1">
+                        <button
+                          onClick={() => startEdit(ex)}
+                          className="flex-1 text-left active:bg-white/5 rounded-lg px-1"
+                        >
                           <p className="text-sm text-[#ede9ff]">{ex.name}</p>
                           <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
                             {ex.sets} serie × {repsLabel(ex)} rep
                             {ex.weightNote ? ` · ${ex.weightNote}` : ""}
                             {ex.restSec ? ` · ${ex.restSec}s riposo` : ""}
                           </p>
-                        </div>
-                        <span className="text-xs" style={{ color: "var(--theme-text-muted)" }}>✏️</span>
-                      </button>
+                        </button>
+                        <button
+                          onClick={() => startEdit(ex)}
+                          className="p-1.5 text-sm"
+                          style={{ color: "var(--theme-text-muted)" }}
+                        >✏️</button>
+                        {confirmDeleteId === ex.id ? (
+                          <>
+                            <button
+                              onClick={() => deleteExercise(ex.id, day.id)}
+                              className="text-xs px-2 py-1 rounded-lg font-semibold text-white"
+                              style={{ background: "rgba(239,68,68,0.8)" }}
+                            >Elimina</button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="text-xs px-2 py-1 rounded-lg border"
+                              style={{ color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
+                            >No</button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => { setEditingExId(null); setConfirmDeleteId(ex.id); }}
+                            className="p-1.5 text-sm"
+                            style={{ color: "var(--theme-text-muted)" }}
+                          >🗑</button>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
+
+                {/* Add exercise */}
+                {addingDayId === day.id ? (
+                  <ExerciseForm
+                    form={addForm}
+                    onChange={setAddForm}
+                    onSave={() => saveAdd(day.id)}
+                    onCancel={() => setAddingDayId(null)}
+                    saving={saving}
+                    submitLabel="Aggiungi"
+                  />
+                ) : (
+                  <button
+                    onClick={() => startAdd(day.id)}
+                    className="w-full mt-2 py-2 rounded-xl text-xs font-semibold border-dashed border transition-all active:scale-95"
+                    style={{ color: "var(--theme-accent)", borderColor: "var(--theme-accent)", background: "transparent" }}
+                  >
+                    + Aggiungi esercizio
+                  </button>
+                )}
               </div>
             )}
           </div>
