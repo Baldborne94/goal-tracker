@@ -39,6 +39,7 @@ export default function NutrizionistaPianoClient() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const today = new Date();
   const todayStr = toDateStr(today);
@@ -139,13 +140,27 @@ export default function NutrizionistaPianoClient() {
       )}
 
       {tab === "settimana" && (
-        <SettimanaView
-          weekDates={weekDates}
-          today={today}
-          weekOffset={weekOffset}
-          setWeekOffset={setWeekOffset}
-          isCompleted={isCompleted}
-        />
+        selectedDate ? (
+          <DayView
+            date={selectedDate}
+            dateStr={toDateStr(selectedDate)}
+            dayPlan={getDayPlan(selectedDate)}
+            isCompleted={isCompleted}
+            toggleMeal={toggleMeal}
+            toggling={toggling}
+            loading={loading}
+            onBack={() => setSelectedDate(null)}
+          />
+        ) : (
+          <SettimanaView
+            weekDates={weekDates}
+            today={today}
+            weekOffset={weekOffset}
+            setWeekOffset={setWeekOffset}
+            isCompleted={isCompleted}
+            onSelectDay={setSelectedDate}
+          />
+        )
       )}
 
       {tab === "note" && <NoteView />}
@@ -196,6 +211,65 @@ function OggiView({
             done={isCompleted(todayStr, meal.time)}
             onToggle={toggleMeal}
             isToggling={toggling === `${todayStr}:${meal.time}`}
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
+// ---- DayView (detail for any selected day) ----
+
+function DayView({
+  date, dateStr, dayPlan, isCompleted, toggleMeal, toggling, loading, onBack,
+}: {
+  date: Date;
+  dateStr: string;
+  dayPlan: DayPlan;
+  isCompleted: (date: string, meal: string) => boolean;
+  toggleMeal: (date: string, meal: string) => void;
+  toggling: string | null;
+  loading: boolean;
+  onBack: () => void;
+}) {
+  const dayLabel = date.toLocaleDateString("it-IT", { weekday: "long" });
+  const dateLabel = date.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+  const done = MEAL_ORDER.filter(m => isCompleted(dateStr, m)).length;
+
+  return (
+    <div className="space-y-4">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-sm font-medium active:scale-95 transition-all"
+        style={{ color: "var(--theme-text-muted)" }}
+      >
+        ‹ Torna alla settimana
+      </button>
+
+      <div className="rounded-2xl border p-4 space-y-2" style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}>
+        <p className="font-bold text-white capitalize">{dayLabel}, {dateLabel}</p>
+        <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
+          {done} / 4 pasti completati
+        </p>
+        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--theme-bg)" }}>
+          <div
+            className="h-full bg-green-500 rounded-full transition-all duration-500"
+            style={{ width: `${(done / 4) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-center py-8 text-sm text-gray-500">Caricamento…</p>
+      ) : (
+        dayPlan.meals.map(meal => (
+          <MealCard
+            key={meal.time}
+            meal={meal}
+            dateStr={dateStr}
+            done={isCompleted(dateStr, meal.time)}
+            onToggle={toggleMeal}
+            isToggling={toggling === `${dateStr}:${meal.time}`}
           />
         ))
       )}
@@ -263,13 +337,14 @@ function MealCard({
 // ---- Settimana ----
 
 function SettimanaView({
-  weekDates, today, weekOffset, setWeekOffset, isCompleted,
+  weekDates, today, weekOffset, setWeekOffset, isCompleted, onSelectDay,
 }: {
   weekDates: Date[];
   today: Date;
   weekOffset: number;
   setWeekOffset: (n: number) => void;
   isCompleted: (date: string, meal: string) => boolean;
+  onSelectDay: (d: Date) => void;
 }) {
   const todayStr = toDateStr(today);
   const weekStart = weekDates[0].toLocaleDateString("it-IT", { day: "numeric", month: "short" });
@@ -306,9 +381,10 @@ function SettimanaView({
         const mealsDone = MEAL_ORDER.filter(m => isCompleted(ds, m)).length;
 
         return (
-          <div
+          <button
             key={ds}
-            className={cn("rounded-2xl border p-3 flex items-center gap-3", isToday && "border-amber-500/40")}
+            onClick={() => onSelectDay(d)}
+            className={cn("w-full text-left rounded-2xl border p-3 flex items-center gap-3 transition-all active:scale-[0.98]", isToday && "border-amber-500/40")}
             style={{
               background: isToday ? "rgba(245,158,11,0.05)" : "var(--theme-surface)",
               borderColor: isToday ? undefined : "var(--theme-surface-border)",
@@ -337,7 +413,8 @@ function SettimanaView({
                 {mealsDone}/4
               </p>
             </div>
-          </div>
+            <span className="shrink-0 text-gray-600 text-lg leading-none">›</span>
+          </button>
         );
       })}
     </div>
