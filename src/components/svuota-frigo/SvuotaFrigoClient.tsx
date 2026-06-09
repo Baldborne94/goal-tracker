@@ -54,7 +54,7 @@ export default function SvuotaFrigoClient() {
     setIngredients(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const generateRecipes = async (ingrOverride?: string[]) => {
+  const generateRecipes = async (ingrOverride?: string[], replaceId?: string) => {
     const ingr = ingrOverride ?? ingredients;
     if (!ingr.length) return;
     setStreamResult("");
@@ -81,7 +81,6 @@ export default function SvuotaFrigoClient() {
         fullContent += chunk;
         setStreamResult(prev => prev + chunk);
       }
-      // Auto-save after successful generation
       if (fullContent.trim() && !fullContent.includes("⚠️ Errore")) {
         const saveRes = await fetch("/api/svuota-frigo/save", {
           method: "POST",
@@ -90,8 +89,13 @@ export default function SvuotaFrigoClient() {
         });
         if (saveRes.ok) {
           const newRecipe = await saveRes.json() as SavedRecipe;
-          setSaved(prev => [newRecipe, ...prev]);
-          // Clear the form after saving
+          // If regenerating, delete the old recipe and replace it in list
+          if (replaceId) {
+            fetch(`/api/svuota-frigo/${replaceId}`, { method: "DELETE" }).catch(() => {});
+            setSaved(prev => prev.map(r => r.id === replaceId ? newRecipe : r));
+          } else {
+            setSaved(prev => [newRecipe, ...prev]);
+          }
           setIngredients([]);
           setStreamResult("");
           setExpandedId(newRecipe.id);
@@ -276,7 +280,7 @@ export default function SvuotaFrigoClient() {
                     <button
                       onClick={() => {
                         setExpandedId(null);
-                        generateRecipes(recipe.ingredients);
+                        generateRecipes(recipe.ingredients, recipe.id);
                       }}
                       disabled={loading}
                       className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95 font-medium disabled:opacity-40"
