@@ -54,8 +54,9 @@ export default function SvuotaFrigoClient() {
     setIngredients(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const generateRecipes = async () => {
-    if (!ingredients.length) return;
+  const generateRecipes = async (ingrOverride?: string[]) => {
+    const ingr = ingrOverride ?? ingredients;
+    if (!ingr.length) return;
     setStreamResult("");
     setLoading(true);
     let fullContent = "";
@@ -63,7 +64,7 @@ export default function SvuotaFrigoClient() {
       const res = await fetch("/api/svuota-frigo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ingredients }),
+        body: JSON.stringify({ ingredients: ingr }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Errore sconosciuto" }));
@@ -85,7 +86,7 @@ export default function SvuotaFrigoClient() {
         const saveRes = await fetch("/api/svuota-frigo/save", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ingredients, content: fullContent }),
+          body: JSON.stringify({ ingredients: ingr, content: fullContent }),
         });
         if (saveRes.ok) {
           const newRecipe = await saveRes.json() as SavedRecipe;
@@ -183,7 +184,7 @@ export default function SvuotaFrigoClient() {
       {/* Action buttons */}
       <div className="flex gap-3">
         <button
-          onClick={generateRecipes}
+          onClick={() => generateRecipes()}
           disabled={!ingredients.length || loading}
           className="flex-1 py-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
           style={{ background: "var(--theme-accent)", color: "var(--theme-bg)" }}
@@ -274,18 +275,17 @@ export default function SvuotaFrigoClient() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        setIngredients(recipe.ingredients);
-                        setStreamResult("");
                         setExpandedId(null);
-                        setTimeout(() => inputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                        generateRecipes(recipe.ingredients);
                       }}
-                      className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95 font-medium"
+                      disabled={loading}
+                      className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95 font-medium disabled:opacity-40"
                       style={{
                         background: "var(--theme-accent)",
                         color: "var(--theme-bg)",
                       }}
                     >
-                      🔄 Riusa ingredienti
+                      🔄 Rigenera
                     </button>
                     <button
                       onClick={() => deleteRecipe(recipe.id)}
