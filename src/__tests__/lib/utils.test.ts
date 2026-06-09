@@ -87,9 +87,9 @@ describe("getPriorityColor", () => {
 });
 
 describe("getPriorityLabel", () => {
-  it("high → 'High'", () => expect(getPriorityLabel("high")).toBe("High"));
-  it("medium → 'Medium'", () => expect(getPriorityLabel("medium")).toBe("Medium"));
-  it("low → 'Low'", () => expect(getPriorityLabel("low")).toBe("Low"));
+  it("high → 'Alta'", () => expect(getPriorityLabel("high")).toBe("Alta"));
+  it("medium → 'Media'", () => expect(getPriorityLabel("medium")).toBe("Media"));
+  it("low → 'Bassa'", () => expect(getPriorityLabel("low")).toBe("Bassa"));
   it("unknown → echoes the input", () => expect(getPriorityLabel("critical")).toBe("critical"));
 });
 

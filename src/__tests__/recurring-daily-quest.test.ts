@@ -37,8 +37,8 @@ const prismaMock = {
     deleteMany: vi.fn(),
   },
   user: { update: vi.fn() },
-  $queryRawUnsafe: vi.fn(),
-  $executeRawUnsafe: vi.fn(),
+  $queryRawUnsafe: vi.fn().mockResolvedValue([]),
+  $executeRawUnsafe: vi.fn().mockResolvedValue(undefined),
 };
 
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
@@ -180,7 +180,8 @@ describe("Recurring quest with daily check-in", () => {
       prismaMock.goal.findFirst.mockResolvedValueOnce(baseExistingGoal);
       prismaMock.goal.update.mockResolvedValueOnce({ ...baseExistingGoal, status: "completed", progress: 100, milestones: [], tags: [], category: null });
       prismaMock.user.update.mockResolvedValueOnce({});
-      prismaMock.$queryRawUnsafe.mockResolvedValueOnce(checkInFields);
+      prismaMock.$queryRawUnsafe.mockResolvedValueOnce([]);           // first call: progress gate check
+      prismaMock.$queryRawUnsafe.mockResolvedValueOnce(checkInFields); // second call: read fields for clone
       prismaMock.goal.create.mockResolvedValueOnce({ id: "goal_clone" });
 
       const { PATCH } = await import("@/app/api/goals/[id]/route");

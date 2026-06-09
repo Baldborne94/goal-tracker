@@ -58,21 +58,21 @@ describe("CLASSES — integrity", () => {
 
 describe("getClassDef", () => {
   it("returns the correct class for a valid key", () => {
-    expect(getClassDef("necromancer").name).toBe("Necromancer");
-    expect(getClassDef("paladin").name).toBe("Paladin");
-    expect(getClassDef("bard").name).toBe("Bard");
+    expect(getClassDef("necromancer").name).toBe("Negromante");
+    expect(getClassDef("paladin").name).toBe("Paladino");
+    expect(getClassDef("bard").name).toBe("Bardo");
   });
 
   it("returns fighter as default for unknown key", () => {
-    expect(getClassDef("dragon").name).toBe("Fighter");
+    expect(getClassDef("dragon").name).toBe("Guerriero");
   });
 
   it("returns fighter for null", () => {
-    expect(getClassDef(null).name).toBe("Fighter");
+    expect(getClassDef(null).name).toBe("Guerriero");
   });
 
   it("returns fighter for undefined", () => {
-    expect(getClassDef(undefined).name).toBe("Fighter");
+    expect(getClassDef(undefined).name).toBe("Guerriero");
   });
 });
 

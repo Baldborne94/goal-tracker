@@ -61,7 +61,7 @@ describe("getLevel", () => {
     const fighter = getLevel(0, "fighter");
     const necromancer = getLevel(0, "necromancer");
     expect(fighter.label).not.toBe(necromancer.label);
-    expect(necromancer.label).toBe("Bone Collector");
+    expect(necromancer.label).toBe("Raccoglitore di Ossa");
   });
 
   it("falls back to fighter tier when class is null", () => {

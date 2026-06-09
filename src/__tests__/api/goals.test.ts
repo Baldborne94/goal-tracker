@@ -8,8 +8,8 @@ const prismaMock = {
   goal: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn(), count: vi.fn() },
   milestone: { findMany: vi.fn(), findFirst: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn(), update: vi.fn(), count: vi.fn() },
   user: { update: vi.fn() },
-  $queryRawUnsafe: vi.fn(),
-  $executeRawUnsafe: vi.fn(),
+  $queryRawUnsafe: vi.fn().mockResolvedValue([]),
+  $executeRawUnsafe: vi.fn().mockResolvedValue(undefined),
 };
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 
