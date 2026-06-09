@@ -52,6 +52,15 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
     // Sync localStorage with DB values on mount
     localStorage.setItem("reminder-enabled", String(dbReminderEnabled));
     localStorage.setItem("reminder-time", dbReminderTime);
+
+    // Re-read permission when the PWA returns to the foreground: the user may
+    // have changed it in the OS/site settings while the app was backgrounded,
+    // and the cached Notification.permission would otherwise show stale state.
+    const refresh = () => {
+      if (document.visibilityState === "visible") setNotifPermission(Notification.permission);
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, [dbReminderEnabled, dbReminderTime]);
 
   useEffect(() => {
