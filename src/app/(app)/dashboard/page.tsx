@@ -101,7 +101,7 @@ export default async function DashboardPage() {
   const completed = earlyCompleted;
 
   // Rotation: challenges change every 14 days (4 groups)
-  const currentChallengeGroup = Math.floor(Math.floor(Date.now() / 86400000) / 14) % 4;
+  const currentChallengeGroup = Math.floor(Math.floor(Date.now() / 86400000) / 7) % 4;
 
   const [topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, questCheckinTodayRaw, completedQuestCount] = await Promise.all([
     prisma.expense.groupBy({

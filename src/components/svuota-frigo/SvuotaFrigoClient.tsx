@@ -271,17 +271,33 @@ export default function SvuotaFrigoClient() {
                   >
                     {recipe.content}
                   </div>
-                  <button
-                    onClick={() => deleteRecipe(recipe.id)}
-                    className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                    style={{
-                      background: "var(--theme-bg)",
-                      color: "var(--theme-text-muted)",
-                      border: "1px solid var(--theme-surface-border)",
-                    }}
-                  >
-                    🗑 Elimina ricetta
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setIngredients(recipe.ingredients);
+                        setExpandedId(null);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95 font-medium"
+                      style={{
+                        background: "var(--theme-accent)",
+                        color: "var(--theme-bg)",
+                      }}
+                    >
+                      🔄 Riusa ingredienti
+                    </button>
+                    <button
+                      onClick={() => deleteRecipe(recipe.id)}
+                      className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                      style={{
+                        background: "var(--theme-bg)",
+                        color: "var(--theme-text-muted)",
+                        border: "1px solid var(--theme-surface-border)",
+                      }}
+                    >
+                      🗑 Elimina
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

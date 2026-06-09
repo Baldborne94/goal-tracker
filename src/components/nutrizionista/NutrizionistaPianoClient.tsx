@@ -73,16 +73,17 @@ export default function NutrizionistaPianoClient() {
         body: JSON.stringify({ date, meal }),
       });
       const data = await res.json();
+      const MEAL_TYPE_MAP: Record<string, string> = {
+        colazione: "breakfast",
+        spuntino:  "snack_am",
+        pranzo:    "lunch",
+        merenda:   "snack_pm",
+      };
+      const dietMealType = MEAL_TYPE_MAP[meal] ?? meal;
+      const dayPlan = getDayPlan(new Date(date + "T12:00:00"));
+      const mealPlan = dayPlan.meals.find(m => m.time === meal);
+
       if (data.action === "added") {
-        const MEAL_TYPE_MAP: Record<string, string> = {
-          colazione: "breakfast",
-          spuntino:  "snack_am",
-          pranzo:    "lunch",
-          merenda:   "snack_pm",
-        };
-        const dietMealType = MEAL_TYPE_MAP[meal] ?? meal;
-        const dayPlan = getDayPlan(new Date(date + "T12:00:00"));
-        const mealPlan = dayPlan.meals.find(m => m.time === meal);
         if (mealPlan) {
           for (const food of mealPlan.foods) {
             const gramsMatch = food.quantity.match(/^(\d+(?:\.\d+)?)/);
@@ -94,6 +95,13 @@ export default function NutrizionistaPianoClient() {
               body: JSON.stringify({ date, mealType: dietMealType, foodName: food.name, grams, kcalPer100g }),
             }).catch(() => {});
           }
+        }
+      } else if (data.action === "removed") {
+        if (mealPlan && mealPlan.foods.length > 0) {
+          const foodNames = mealPlan.foods.map(f => f.name).join(",");
+          fetch(`/api/diet/food?date=${date}&mealType=${dietMealType}&foodNames=${encodeURIComponent(foodNames)}`, {
+            method: "DELETE",
+          }).catch(() => {});
         }
       }
     } catch {
