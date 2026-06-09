@@ -13,7 +13,13 @@ type Doc = { id: string; title: string; mimeType: string; size: number; createdA
 type Tab = "oggi" | "settimana" | "note";
 
 function toDateStr(d: Date) {
-  return d.toISOString().slice(0, 10);
+  // Use the LOCAL calendar date, not UTC. toISOString() converts to UTC, which
+  // near midnight rolls the date to the previous/next day and makes meal checks
+  // land under the wrong weekday in the grid (which is built in local time).
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function getWeekDates(date: Date): Date[] {
