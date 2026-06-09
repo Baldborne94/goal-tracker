@@ -11,6 +11,13 @@ export default async function VitaPage() {
         <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>I tuoi tracker personali</p>
       </div>
 
+      <div
+        className="rounded-2xl border px-4 py-3 text-xs leading-relaxed"
+        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+      >
+        💡 <span className="font-semibold" style={{ color: "var(--theme-text)" }}>Da dove iniziare:</span> registra il peso e logga i pasti del giorno — sbloccano le sfide giornaliere e popolano le statistiche dell&apos;Eroe.
+      </div>
+
       <Link
         href="/peso"
         className="flex items-center gap-4 border rounded-2xl p-5 active:scale-95 transition-transform"
@@ -33,19 +40,6 @@ export default async function VitaPage() {
         <div>
           <p className="text-white font-semibold">Dieta</p>
           <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Pasti giornalieri e tracciamento nutrizione</p>
-        </div>
-        <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
-      </Link>
-
-      <Link
-        href="/workout"
-        className="flex items-center gap-4 border rounded-2xl p-5 active:scale-95 transition-transform"
-        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
-      >
-        <span className="text-4xl">🏋️</span>
-        <div>
-          <p className="text-white font-semibold">Allenamento</p>
-          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Esercizi, kcal bruciate e storico sessioni</p>
         </div>
         <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
       </Link>
@@ -85,6 +79,19 @@ export default async function VitaPage() {
         <div>
           <p className="text-white font-semibold">Lista della Spesa</p>
           <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Aggiungi prodotti e spunta quelli acquistati</p>
+        </div>
+        <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
+      </Link>
+
+      <Link
+        href="/svuota-frigo"
+        className="flex items-center gap-4 border rounded-2xl p-5 active:scale-95 transition-transform"
+        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+      >
+        <span className="text-4xl">🧊</span>
+        <div>
+          <p className="text-white font-semibold">Svuota Frigo</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Inserisci gli ingredienti e scopri cosa cucinare</p>
         </div>
         <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
       </Link>

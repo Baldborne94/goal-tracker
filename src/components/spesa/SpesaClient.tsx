@@ -138,10 +138,14 @@ export default function SpesaClient() {
     await fetch(`/api/spesa/${id}`, { method: "DELETE" });
   };
 
-  const clearCompleted = async () => {
+  const resetCompleted = async () => {
     const done = items.filter(i => i.checked);
-    setItems(prev => prev.filter(i => !i.checked));
-    await Promise.all(done.map(i => fetch(`/api/spesa/${i.id}`, { method: "DELETE" })));
+    setItems(prev => prev.map(i => i.checked ? { ...i, checked: false } : i));
+    await Promise.all(done.map(i => fetch(`/api/spesa/${i.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checked: false }),
+    })));
   };
 
   const visible = (i: ShoppingItem) => !filterCat || i.category === filterCat;
@@ -170,11 +174,11 @@ export default function SpesaClient() {
         </div>
         {completedCount > 0 && (
           <button
-            onClick={clearCompleted}
+            onClick={resetCompleted}
             className="text-xs px-3 py-1.5 rounded-lg border mt-1 shrink-0"
             style={{ color: "var(--theme-text-muted)", borderColor: "var(--theme-surface-border)" }}
           >
-            Svuota completati
+            🔄 Ricomincia la spesa
           </button>
         )}
       </div>
@@ -425,41 +429,55 @@ function ItemRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all",
-        item.checked && "opacity-60"
+        "rounded-2xl border px-4 py-3 transition-all",
+        item.checked && "opacity-70"
       )}
       style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
     >
-      <button
-        onClick={() => onToggle(item)}
-        className={cn(
-          "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all text-xs font-bold",
-          item.checked ? "bg-green-500 border-green-500 text-white" : "border-gray-600"
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onToggle(item)}
+          className={cn(
+            "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all text-xs font-bold",
+            item.checked ? "bg-green-500 border-green-500 text-white" : "border-gray-600"
+          )}
+        >
+          {item.checked && "✓"}
+        </button>
+
+        <span className="text-lg shrink-0">{catIcon(item.category)}</span>
+
+        {item.checked ? (
+          <button onClick={() => onToggle(item)} className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-medium truncate line-through text-gray-500">{item.name}</p>
+            {item.quantity && <p className="text-xs text-amber-400/70">{item.quantity}</p>}
+          </button>
+        ) : (
+          <button onClick={startEdit} className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-medium truncate text-white">{item.name}</p>
+            {item.quantity && <p className="text-xs text-amber-400/70">{item.quantity}</p>}
+          </button>
         )}
-      >
-        {item.checked && "✓"}
-      </button>
 
-      <span className="text-lg shrink-0">{catIcon(item.category)}</span>
+        <button
+          onClick={() => onDelete(item.id)}
+          className="text-gray-600 hover:text-red-400 transition-colors p-1 text-lg leading-none"
+        >
+          ×
+        </button>
+      </div>
 
-      <button onClick={startEdit} className="flex-1 min-w-0 text-left">
-        <p className={cn(
-          "text-sm font-medium truncate",
-          item.checked ? "line-through text-gray-500" : "text-white"
-        )}>
-          {item.name}
-        </p>
-        {item.quantity && (
-          <p className="text-xs text-amber-400/70">{item.quantity}</p>
-        )}
-      </button>
-
-      <button
-        onClick={() => onDelete(item.id)}
-        className="text-gray-600 hover:text-red-400 transition-colors p-1 text-lg leading-none"
-      >
-        ×
-      </button>
+      {item.checked && (
+        <div className="mt-2 pt-2 border-t flex justify-start" style={{ borderColor: "var(--theme-surface-border)" }}>
+          <button
+            onClick={() => onToggle(item)}
+            className="text-xs px-3 py-1 rounded-lg font-medium transition-all active:scale-95"
+            style={{ background: "var(--theme-bg)", color: "var(--theme-text-muted)" }}
+          >
+            ↩ Rimetti in lista
+          </button>
+        </div>
+      )}
     </div>
   );
 }

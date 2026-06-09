@@ -83,3 +83,30 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ id, mealType, foodName, grams: g, kcalPer100g: kp, kcal, proteins: pr, carbs: ca, fat: fa });
 }
+
+export async function DELETE(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const url = new URL(req.url);
+  const date = url.searchParams.get("date");
+  const mealType = url.searchParams.get("mealType");
+  const foodNamesRaw = url.searchParams.get("foodNames");
+
+  if (!date || !mealType || !foodNamesRaw) {
+    return NextResponse.json({ error: "Missing params" }, { status: 400 });
+  }
+
+  const foodNames = foodNamesRaw.split(",").map(n => n.trim()).filter(Boolean);
+  if (!foodNames.length) return NextResponse.json({ ok: true });
+
+  if (!tableReady) { await ensureTable().catch(() => {}); tableReady = true; }
+
+  const placeholders = foodNames.map((_, i) => `$${i + 4}`).join(", ");
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM "FoodEntry" WHERE "userId" = $1 AND date = $2 AND "mealType" = $3 AND "foodName" IN (${placeholders})`,
+    session.user.id, date, mealType, ...foodNames
+  ).catch(() => {});
+
+  return NextResponse.json({ ok: true });
+}

@@ -103,7 +103,7 @@ describe("GET /api/bills", () => {
     prismaMock.$queryRawUnsafe.mockResolvedValueOnce(bills);
 
     const { GET } = await import("@/app/api/bills/route");
-    const res = await GET(new Request("http://localhost/api/bills"));
+    const res = await GET();
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -114,14 +114,14 @@ describe("GET /api/bills", () => {
   it("returns 401 when not authenticated", async () => {
     vi.mocked(auth).mockResolvedValueOnce(null as never);
     const { GET } = await import("@/app/api/bills/route");
-    const res = await GET(new Request("http://localhost/api/bills"));
+    const res = await GET();
     expect(res.status).toBe(401);
   });
 
   it("returns empty array when no bills exist", async () => {
     prismaMock.$queryRawUnsafe.mockResolvedValueOnce([]);
     const { GET } = await import("@/app/api/bills/route");
-    const res = await GET(new Request("http://localhost/api/bills"));
+    const res = await GET();
     expect(await res.json()).toEqual([]);
   });
 });

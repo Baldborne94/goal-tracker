@@ -8,8 +8,8 @@ const prismaMock = {
   goal: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn(), count: vi.fn() },
   milestone: { findMany: vi.fn(), findFirst: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn(), update: vi.fn(), count: vi.fn() },
   user: { update: vi.fn() },
-  $queryRawUnsafe: vi.fn(),
-  $executeRawUnsafe: vi.fn(),
+  $queryRawUnsafe: vi.fn().mockResolvedValue([]),
+  $executeRawUnsafe: vi.fn().mockResolvedValue(undefined),
 };
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 
@@ -48,7 +48,7 @@ describe("Auth guard", () => {
   it("returns 401 on GET goals when not authenticated", async () => {
     vi.mocked(auth).mockResolvedValueOnce(null as never);
     const { GET } = await import("@/app/api/goals/route");
-    const res = await GET(new Request("http://localhost/api/goals"));
+    const res = await GET();
     expect(res.status).toBe(401);
   });
 

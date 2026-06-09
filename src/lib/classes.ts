@@ -93,7 +93,7 @@ export const CLASSES: ClassDef[] = [
     description: "Studioso che padroneggia le arti arcane",
     theme: "crimson", group: "arcane",
     tiers: mk(
-      ["Apprendista", "Evocatore", "Invocatore", "Mago", "Arcimago", "Alto Mago", "Gran Magistro", "Onnisciente"],
+      ["Apprendista", "Evocatore", "Invocatore", "Incantatore", "Arcimago", "Alto Mago", "Gran Magistro", "Onnisciente"],
       ["📖", "✋", "🔮", "🧙", "📜", "🌟", "🔱", "✨"]
     ),
   },

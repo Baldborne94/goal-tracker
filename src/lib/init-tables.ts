@@ -4,6 +4,8 @@ import { prisma } from "./db";
 // (seed swallows errors on unreachable DB). Run lazy CREATE TABLE IF NOT EXISTS
 // once per Lambda warm instance before first write.
 let initialized = false;
+let svuotaFrigoInitialized = false;
+let aiUsageInitialized = false;
 let gymInitialized = false;
 
 export async function initGymTables() {
@@ -95,4 +97,31 @@ export async function initNutrizionistaTables() {
     CONSTRAINT "NutrizionistaDoc_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
   initialized = true;
+}
+
+export async function initSvuotaFrigoTable() {
+  if (svuotaFrigoInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "SvuotaFrigoRecipe" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "ingredients" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SvuotaFrigoRecipe_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "SvuotaFrigoRecipe_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  svuotaFrigoInitialized = true;
+}
+
+export async function initAiUsageTable() {
+  if (aiUsageInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "AiUsage" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "endpoint" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "AiUsage_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "AiUsage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  aiUsageInitialized = true;
 }

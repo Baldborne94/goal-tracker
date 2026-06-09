@@ -361,6 +361,30 @@ export const WEEKLY_PLAN: DayPlan[] = [
   },
 ];
 
+// Approximate kcal per 100g for foods in the weekly plan
+export const MEAL_PLAN_KCAL: Record<string, number> = {
+  "yogurt greco 0%": 57, "yogurt bianco": 61, "yogurt": 61,
+  "pane integrale tostato": 254, "pane": 265, "gnocchi": 165,
+  "crema nocciole e cacao": 547, "burro arachidi": 588,
+  "caffè": 2, "succo arancia": 45, "latte": 47, "spremuta": 40,
+  "mandorle": 576, "nocciole": 628, "noci": 654,
+  "barretta proteica": 350, "cioccolato 85%": 560, "biscotti": 480,
+  "pasta integrale": 352, "pasta lenticchie": 340, "riso basmati": 350,
+  "fagioli sc.": 91, "patate": 77, "gallette mais": 380,
+  "tonno": 116, "salmone": 208, "salmone affumicato": 179,
+  "uovo": 155, "uovo sodo": 155, "albume": 52,
+  "tacchino": 107, "hamburger pollo": 165, "prosciutto": 268, "sgombro": 205,
+  "mozzarella": 250, "parmigiano": 392, "asiago": 366, "sottilette": 290,
+  "burro": 750, "olio": 884,
+  "rucola": 25, "lattuga": 14, "spinaci": 23, "finocchi": 31,
+  "pomodori": 18, "zucchine": 17, "melanzane": 25, "peperone": 31,
+  "cipolla": 40, "carote": 41, "olive nere": 115,
+  "fragole": 32, "lamponi": 52, "ciliegie": 63, "albicocche": 48,
+  "pesca": 39, "mela": 52, "avocado": 160,
+  "marmellata": 250, "aceto balsamico": 88, "basilico": 23,
+  "gelato frutta": 100,
+};
+
 // JS getDay(): 0=Sun, 1=Mon, ..., 6=Sat
 // WEEKLY_PLAN: 0=Lunedì, 1=Martedì, ..., 6=Domenica
 export function getDayPlan(date: Date): DayPlan {
