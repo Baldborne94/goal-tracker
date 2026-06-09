@@ -28,6 +28,17 @@ export default function NotificationButton() {
     if (Notification.permission === "granted") {
       ensureSubscribed().catch(() => {});
     }
+
+    // Re-read permission when the PWA returns to the foreground: the user may
+    // have unblocked notifications in the OS/site settings while the app was
+    // backgrounded, so the cached "denied" state would otherwise stay stale.
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      setStatus(Notification.permission as Status);
+      if (Notification.permission === "granted") ensureSubscribed().catch(() => {});
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, []);
 
   async function ensureSubscribed() {
