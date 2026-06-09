@@ -19,6 +19,7 @@ model User {
   reminderTime        String  @default("09:00")
   onboardingComplete  Boolean @default(false)
   heroClass           String?
+  kcalGoal            Int?    @default(2000)
   timezone            String  @default("UTC")
   createdAt           DateTime @default(now())
 
@@ -39,6 +40,15 @@ model User {
   mealCompletions   MealCompletion[]
   shoppingItems     ShoppingItem[]
   nutrizionistaDocs NutrizionistaDoc[]
+  gymDays           GymDay[]
+  gymExercises      GymExercise[]
+  gymLogs           GymLog[]
+  foodEntries       FoodEntry[]
+  workoutSessions   WorkoutSession[]
+  sleepLogs         SleepLog[]
+  waterLogs         WaterLog[]
+  bodyMeasurements  BodyMeasurement[]
+  svuotaFrigoRecipes SvuotaFrigoRecipe[]
 }
 
 model Account {
@@ -361,6 +371,173 @@ model ShoppingItem {
   checked   Boolean  @default(false)
   category  String   @default("altro")
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Palestra (gym program) ──────────────────────────────────────────────
+// NOTE: these tables are created at runtime via raw SQL in src/lib/init-tables.ts
+// (lazy CREATE TABLE IF NOT EXISTS). The models below mirror that schema for
+// type-safety and documentation. Tables are NOT created via `prisma db push`
+// (hangs on Supabase pgBouncer advisory locks) — see CLAUDE.md.
+
+model GymDay {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  emoji     String   @default("💪")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises GymExercise[]
+  logs      GymLog[]
+}
+
+model GymExercise {
+  id          String  @id @default(cuid())
+  userId      String
+  dayId       String
+  name        String
+  muscleGroup String
+  sets        Int     @default(3)
+  repsMin     Int?
+  repsMax     Int?
+  repsNote    String?
+  restSec     Int?    @default(60)
+  weightNote  String?
+  order       Int     @default(0)
+
+  user User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day  GymDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+}
+
+model GymLog {
+  id          String   @id @default(cuid())
+  userId      String
+  dayId       String
+  date        String   // "YYYY-MM-DD"
+  durationMin Int?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day     GymDay        @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  entries GymSetEntry[]
+}
+
+model GymSetEntry {
+  id         String @id @default(cuid())
+  logId      String
+  exerciseId String
+  setNumber  Int
+  reps       Int?
+  weight     Float?
+
+  log GymLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+}
+
+// ── Dieta (diet log) ────────────────────────────────────────────────────
+
+model FoodEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  date        String   // "YYYY-MM-DD"
+  mealType    String   // breakfast | snack_am | lunch | snack_pm | dinner
+  foodName    String
+  grams       Float
+  kcalPer100g Float
+  kcal        Float
+  proteins    Float    @default(0)
+  carbs       Float    @default(0)
+  fat         Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WaterLog {
+  id      String @id @default(cuid())
+  userId  String
+  date    String // "YYYY-MM-DD"
+  glasses Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// ── Workout / cardio (kcal burned) ──────────────────────────────────────
+
+model WorkoutSession {
+  id         String   @id @default(cuid())
+  userId     String
+  date       String   // "YYYY-MM-DD"
+  kcalBurned Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutExercise[]
+
+  @@unique([userId, date])
+}
+
+model WorkoutExercise {
+  id           String   @id @default(cuid())
+  sessionId    String
+  userId       String
+  name         String
+  category     String   @default("Strength")
+  exerciseType String   @default("strength")
+  sets         Int?
+  reps         Int?
+  weightKg     Float?
+  durationMin  Int?
+  met          Float?
+  kcalBurned   Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// ── Sonno e misure corporee ─────────────────────────────────────────────
+
+model SleepLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // "YYYY-MM-DD"
+  hours     Float
+  quality   Int      @default(3)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model BodyMeasurement {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // "YYYY-MM-DD"
+  height    Float?
+  waist     Float?
+  hips      Float?
+  chest     Float?
+  bicep     Float?
+  bodyFat   Float?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Svuota Frigo (AI recipe suggestions) ────────────────────────────────
+
+model SvuotaFrigoRecipe {
+  id          String   @id @default(cuid())
+  userId      String
+  ingredients String   // JSON-encoded string[] of ingredient names
+  content     String   // AI-generated recipe text
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
