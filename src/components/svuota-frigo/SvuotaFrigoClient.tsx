@@ -275,8 +275,9 @@ export default function SvuotaFrigoClient() {
                     <button
                       onClick={() => {
                         setIngredients(recipe.ingredients);
+                        setStreamResult("");
                         setExpandedId(null);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        setTimeout(() => inputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
                       }}
                       className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95 font-medium"
                       style={{
