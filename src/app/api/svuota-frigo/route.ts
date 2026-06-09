@@ -1,10 +1,29 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { initSvuotaFrigoTable } from "@/lib/init-tables";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  await initSvuotaFrigoTable();
+  const recipes = await prisma.$queryRawUnsafe<
+    { id: string; ingredients: string; content: string; createdAt: Date }[]
+  >(
+    `SELECT id, ingredients, content, "createdAt" FROM "SvuotaFrigoRecipe" WHERE "userId" = $1 ORDER BY "createdAt" DESC`,
+    session.user.id
+  );
+
+  return NextResponse.json(
+    recipes.map(r => ({ ...r, ingredients: JSON.parse(r.ingredients) as string[] }))
+  );
+}
 
 export async function POST(req: Request) {
   const session = await auth();

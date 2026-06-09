@@ -1,13 +1,36 @@
 "use client";
 
-import { useState, useRef, useCallback, KeyboardEvent } from "react";
+import { useState, useRef, useCallback, useEffect, KeyboardEvent } from "react";
+
+type SavedRecipe = {
+  id: string;
+  ingredients: string[];
+  content: string;
+  createdAt: string;
+};
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export default function SvuotaFrigoClient() {
   const [input, setInput] = useState("");
   const [ingredients, setIngredients] = useState<string[]>([]);
-  const [result, setResult] = useState("");
+  const [streamResult, setStreamResult] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState<SavedRecipe[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/svuota-frigo")
+      .then(r => r.json())
+      .then((data: SavedRecipe[]) => setSaved(Array.isArray(data) ? data : []))
+      .catch(() => setSaved([]))
+      .finally(() => setLoadingSaved(false));
+  }, []);
 
   const addIngredient = useCallback(() => {
     const trimmed = input.trim();
@@ -33,8 +56,9 @@ export default function SvuotaFrigoClient() {
 
   const generateRecipes = async () => {
     if (!ingredients.length) return;
-    setResult("");
+    setStreamResult("");
     setLoading(true);
+    let fullContent = "";
     try {
       const res = await fetch("/api/svuota-frigo", {
         method: "POST",
@@ -43,7 +67,7 @@ export default function SvuotaFrigoClient() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Errore sconosciuto" }));
-        setResult(`⚠️ ${err.error ?? "Errore nella generazione"}`);
+        setStreamResult(`⚠️ ${err.error ?? "Errore nella generazione"}`);
         return;
       }
       const reader = res.body?.getReader();
@@ -52,16 +76,40 @@ export default function SvuotaFrigoClient() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        setResult(prev => prev + decoder.decode(value, { stream: true }));
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        setStreamResult(prev => prev + chunk);
+      }
+      // Auto-save after successful generation
+      if (fullContent.trim() && !fullContent.includes("⚠️ Errore")) {
+        const saveRes = await fetch("/api/svuota-frigo/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ingredients, content: fullContent }),
+        });
+        if (saveRes.ok) {
+          const newRecipe = await saveRes.json() as SavedRecipe;
+          setSaved(prev => [newRecipe, ...prev]);
+          // Clear the form after saving
+          setIngredients([]);
+          setStreamResult("");
+          setExpandedId(newRecipe.id);
+        }
       }
     } finally {
       setLoading(false);
     }
   };
 
+  const deleteRecipe = async (id: string) => {
+    await fetch(`/api/svuota-frigo/${id}`, { method: "DELETE" });
+    setSaved(prev => prev.filter(r => r.id !== id));
+    if (expandedId === id) setExpandedId(null);
+  };
+
   const reset = () => {
     setIngredients([]);
-    setResult("");
+    setStreamResult("");
     setInput("");
     inputRef.current?.focus();
   };
@@ -82,7 +130,6 @@ export default function SvuotaFrigoClient() {
       >
         <p className="text-sm font-semibold text-white">Ingredienti disponibili</p>
 
-        {/* Chips */}
         {ingredients.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {ingredients.map((ing, i) => (
@@ -104,7 +151,6 @@ export default function SvuotaFrigoClient() {
           </div>
         )}
 
-        {/* Input row */}
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -151,7 +197,7 @@ export default function SvuotaFrigoClient() {
             <>🍳 Genera Ricette</>
           )}
         </button>
-        {(ingredients.length > 0 || result) && (
+        {ingredients.length > 0 && (
           <button
             onClick={reset}
             className="px-4 py-3 rounded-2xl text-sm font-medium transition-all active:scale-95"
@@ -166,24 +212,84 @@ export default function SvuotaFrigoClient() {
         )}
       </div>
 
-      {/* Streaming result */}
-      {result && (
+      {/* Streaming in progress */}
+      {streamResult && (
         <div
           className="rounded-2xl border p-4 space-y-2"
           style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
         >
-          <p className="text-sm font-semibold text-white">💡 Ricette suggerite</p>
+          <p className="text-sm font-semibold text-white">💡 Generando ricette…</p>
           <div
             className="text-sm leading-relaxed whitespace-pre-wrap"
             style={{ color: "var(--theme-text)" }}
           >
-            {result}
+            {streamResult}
             {loading && <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: "var(--theme-accent)" }} />}
           </div>
         </div>
       )}
 
-      {!result && !loading && ingredients.length === 0 && (
+      {/* Saved recipes */}
+      {!loadingSaved && (
+        <div className="space-y-3">
+          {saved.length > 0 && (
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--theme-text-muted)" }}>
+              Ricette salvate
+            </p>
+          )}
+          {saved.map(recipe => (
+            <div
+              key={recipe.id}
+              className="rounded-2xl border overflow-hidden"
+              style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+            >
+              {/* Header row */}
+              <button
+                onClick={() => setExpandedId(expandedId === recipe.id ? null : recipe.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left"
+              >
+                <span className="text-lg">🍳</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">
+                    {recipe.ingredients.join(", ")}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>
+                    {formatDate(recipe.createdAt)}
+                  </p>
+                </div>
+                <span className="text-sm transition-transform" style={{ color: "var(--theme-text-muted)", transform: expandedId === recipe.id ? "rotate(90deg)" : "none" }}>
+                  ›
+                </span>
+              </button>
+
+              {/* Expanded content */}
+              {expandedId === recipe.id && (
+                <div className="px-4 pb-4 space-y-3 border-t" style={{ borderColor: "var(--theme-surface-border)" }}>
+                  <div
+                    className="text-sm leading-relaxed whitespace-pre-wrap pt-3"
+                    style={{ color: "var(--theme-text)" }}
+                  >
+                    {recipe.content}
+                  </div>
+                  <button
+                    onClick={() => deleteRecipe(recipe.id)}
+                    className="text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                    style={{
+                      background: "var(--theme-bg)",
+                      color: "var(--theme-text-muted)",
+                      border: "1px solid var(--theme-surface-border)",
+                    }}
+                  >
+                    🗑 Elimina ricetta
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loadingSaved && saved.length === 0 && !streamResult && ingredients.length === 0 && (
         <div
           className="rounded-2xl border p-6 text-center"
           style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
