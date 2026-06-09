@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { initSvuotaFrigoTable } from "@/lib/init-tables";
+import { checkAndRecordAiUsage } from "@/lib/rate-limit";
+import { logError } from "@/lib/log";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -33,9 +35,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "ANTHROPIC_API_KEY non configurata" }, { status: 500 });
   }
 
+  const userId = session.user.id;
   const { ingredients } = await req.json() as { ingredients: string[] };
   if (!ingredients?.length) {
     return NextResponse.json({ error: "Nessun ingrediente fornito" }, { status: 400 });
+  }
+
+  // Rate limit — the owner's API key is billed for every call, so cap per user/day.
+  try {
+    const rate = await checkAndRecordAiUsage(userId, "svuota-frigo");
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: `Hai raggiunto il limite di ${rate.limit} generazioni per oggi. Riprova domani.` },
+        { status: 429 }
+      );
+    }
+  } catch (err) {
+    // Fail open on infra error so a real user isn't blocked, but record it.
+    logError("svuota-frigo.rate_limit_failed", err, { userId });
   }
 
   const encoder = new TextEncoder();
@@ -63,6 +80,7 @@ export async function POST(req: Request) {
           }
         }
       } catch (err) {
+        logError("svuota-frigo.generation_failed", err, { userId });
         const msg = err instanceof Error ? err.message : "Errore sconosciuto";
         controller.enqueue(encoder.encode(`\n\n⚠️ Errore: ${msg}`));
       } finally {

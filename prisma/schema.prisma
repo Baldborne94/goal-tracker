@@ -49,6 +49,7 @@ model User {
   waterLogs         WaterLog[]
   bodyMeasurements  BodyMeasurement[]
   svuotaFrigoRecipes SvuotaFrigoRecipe[]
+  aiUsage           AiUsage[]
 }
 
 model Account {
@@ -540,4 +541,17 @@ model SvuotaFrigoRecipe {
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Per-user log of paid AI generations, used for daily rate limiting.
+// See src/lib/rate-limit.ts.
+model AiUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   // e.g. "svuota-frigo"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, endpoint, createdAt])
 }

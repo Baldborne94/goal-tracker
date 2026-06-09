@@ -5,6 +5,7 @@ import { prisma } from "./db";
 // once per Lambda warm instance before first write.
 let initialized = false;
 let svuotaFrigoInitialized = false;
+let aiUsageInitialized = false;
 let gymInitialized = false;
 
 export async function initGymTables() {
@@ -110,4 +111,17 @@ export async function initSvuotaFrigoTable() {
     CONSTRAINT "SvuotaFrigoRecipe_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
   svuotaFrigoInitialized = true;
+}
+
+export async function initAiUsageTable() {
+  if (aiUsageInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "AiUsage" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "endpoint" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "AiUsage_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "AiUsage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  aiUsageInitialized = true;
 }
