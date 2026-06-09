@@ -127,13 +127,17 @@ export default async function DashboardPage() {
     prisma.goal.count({ where: { userId, status: "completed", completedAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
   ]);
 
-  const [gymLogCount, mealCompletionCount, shoppingCheckedCount] = await Promise.all([
+  const [gymLogCount, mealLogCount, shoppingCheckedCount] = await Promise.all([
     prisma.$queryRawUnsafe<{ count: bigint }[]>(
       `SELECT COUNT(*) as count FROM "GymLog" WHERE "userId" = $1 AND date = $2`,
       userId, today
     ).catch(() => [{ count: BigInt(0) }]),
     prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM "MealCompletion" WHERE "userId" = $1 AND date = $2`,
+      `SELECT COUNT(*) as count FROM (
+         SELECT 1 FROM "MealCompletion" WHERE "userId" = $1 AND date = $2
+         UNION ALL
+         SELECT 1 FROM "FoodEntry" WHERE "userId" = $1 AND date = $2
+       ) t`,
       userId, today
     ).catch(() => [{ count: BigInt(0) }]),
     prisma.$queryRawUnsafe<{ count: bigint }[]>(
@@ -178,7 +182,7 @@ export default async function DashboardPage() {
     log_expense:           expenseCount >= 1,
     daily_checkin:         Number(questCheckinTodayRaw[0]?.count ?? 0) >= 1,
     log_gym:               Number(gymLogCount[0]?.count ?? 0) >= 1,
-    complete_meals:        Number(mealCompletionCount[0]?.count ?? 0) >= 4,
+    complete_meals:        Number(mealLogCount[0]?.count ?? 0) >= 1,
     check_shopping:        Number(shoppingCheckedCount[0]?.count ?? 0) >= 3,
   };
   const initialChallenges = visibleChallenges.map(c => ({

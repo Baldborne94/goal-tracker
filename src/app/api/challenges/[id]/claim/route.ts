@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -57,10 +59,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     conditionMet = Number(rows[0]?.count ?? 0) >= 1;
   } else if (challenge.type === "complete_meals") {
     const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM "MealCompletion" WHERE "userId" = $1 AND date = $2`,
+      `SELECT COUNT(*) as count FROM (
+         SELECT 1 FROM "MealCompletion" WHERE "userId" = $1 AND date = $2
+         UNION ALL
+         SELECT 1 FROM "FoodEntry" WHERE "userId" = $1 AND date = $2
+       ) t`,
       userId, today
     ).catch(() => [{ count: BigInt(0) }]);
-    conditionMet = Number(rows[0]?.count ?? 0) >= 4;
+    conditionMet = Number(rows[0]?.count ?? 0) >= 1;
   } else if (challenge.type === "check_shopping") {
     const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
       `SELECT COUNT(*) as count FROM "ShoppingItem" WHERE "userId" = $1 AND "checked" = true`,
