@@ -221,9 +221,9 @@ export default function TutorialClient({
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-4 pb-8 flex flex-col" style={{ minHeight: "100dvh" }}>
+    <div className="max-w-lg mx-auto px-4 pt-6 pb-28 flex flex-col justify-center" style={{ minHeight: "100dvh" }}>
       {/* Progress dots */}
-      <div className="flex items-center justify-center gap-1.5 mb-4">
+      <div className="flex items-center justify-center gap-1.5 mb-6">
         {SLIDES.map((s, idx) => (
           <button
             key={idx}
@@ -239,9 +239,9 @@ export default function TutorialClient({
       </div>
 
       {/* Carousel viewport */}
-      <div className="flex-1 overflow-hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="overflow-hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div
-          className="flex h-full transition-transform duration-300 ease-out"
+          className="flex items-stretch transition-transform duration-300 ease-out"
           style={{ transform: `translateX(-${i * 100}%)` }}
         >
           {SLIDES.map((s, idx) => (
@@ -303,7 +303,7 @@ function Slide({
     slide.kind === "welcome" && isFirstTime && name ? `Benvenuto, ${name}!` : slide.title;
 
   return (
-    <div className="h-full flex flex-col items-center text-center">
+    <div className="h-full flex flex-col items-center justify-center text-center" style={{ minHeight: "56vh" }}>
       {/* Icon */}
       <div
         className="mt-2 mb-6 w-28 h-28 rounded-3xl flex items-center justify-center"
