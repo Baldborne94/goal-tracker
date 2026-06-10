@@ -1,71 +1,180 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { markOnboardingComplete } from "@/app/(app)/profile/actions";
 import { getClassDef } from "@/lib/classes";
 
-const SECTIONS = [
+type Slide = {
+  kind?: "welcome" | "levels" | "final";
+  icon: string;
+  accent: string;
+  tag: string;
+  title: string;
+  body?: string;
+  bullets?: string[];
+  tip?: string;
+};
+
+const SLIDES: Slide[] = [
   {
-    icon: "⚔️",
-    title: "Missioni e Tappe",
-    color: "#f59e0b",
-    steps: [
-      "Crea una missione con titolo, scadenza, categoria e priorità",
-      "Dividila in tappe — ognuna è un passo concreto avanti",
-      "Completa le tappe per guadagnare XP e avanzare la barra di progresso",
-      "Quando tutte le tappe sono completate, segna la missione come conclusa",
-    ],
-    tip: "💡 Nessuna tappa? Abilita il check-in giornaliero e traccia i progressi giorno per giorno.",
+    kind: "welcome",
+    icon: "📖",
+    accent: "#a78bfa",
+    tag: "Benvenuto",
+    title: "Come si gioca",
+    body: "Goal Tracker trasforma i tuoi obiettivi in missioni da eroe. Scorri per scoprire tutto: missioni, XP, finanze, dieta, palestra e molto altro.",
+    tip: "💡 Puoi rileggere questa guida quando vuoi dal pulsante ? nella bacheca.",
   },
   {
-    icon: "✨",
-    title: "XP e Livelli",
-    color: "#a78bfa",
-    steps: [
-      "Ogni tappa completata guadagna XP (predefinito: 10 XP ciascuna)",
-      "Gli XP si accumulano e fanno salire di livello il tuo eroe automaticamente",
-      "8 livelli: Recluta → Guerriero → Cavaliere → Condottiero → Re → Imperatore → Leggenda → Divino",
-      "L'icona del tuo livello attuale appare nella barra di navigazione",
+    icon: "⚔️",
+    accent: "#f59e0b",
+    tag: "Missioni",
+    title: "Missioni e Tappe",
+    bullets: [
+      "Crea una missione con titolo, scadenza, categoria e priorità",
+      "Dividila in tappe — ogni tappa è un passo concreto avanti",
+      "Completa le tappe per guadagnare XP e far salire la barra di progresso",
+      "Quando tutte le tappe sono completate, la missione si conclude",
     ],
-    tip: "💡 L'icona del livello nella barra cambia man mano che sali — tienila d'occhio!",
+    tip: "💡 Niente tappe? Abilita il check-in giornaliero e traccia i progressi giorno per giorno.",
   },
   {
     icon: "📅",
+    accent: "#34d399",
+    tag: "Costanza",
     title: "Check-in Giornaliero e Serie",
-    color: "#34d399",
-    steps: [
-      "Abilita il check-in giornaliero su qualsiasi missione dalle impostazioni",
+    bullets: [
+      "Abilita il check-in giornaliero su qualsiasi missione",
       "Torna ogni giorno e premi Check In per guadagnare XP",
       "Puoi limitare i check-in a giorni specifici della settimana",
-      "I giorni consecutivi di check-in formano una serie mostrata nella bacheca",
+      "I giorni consecutivi formano una serie mostrata nella bacheca",
     ],
     tip: "💡 La serie si azzera se salti un giorno pianificato — la costanza è la chiave!",
   },
   {
-    icon: "💎",
-    title: "Tesoro",
-    color: "#38bdf8",
-    steps: [
-      "Imposta un budget mensile nella sezione Tesoro",
-      "Registra le spese per categoria (cibo, trasporti, abbonamenti…)",
-      "Il grafico a ciambella e il trend mostrano dove vanno i tuoi soldi",
-      "Chiudi il mese sotto budget per guadagnare 25 XP bonus + trofeo",
+    icon: "🔁",
+    accent: "#60a5fa",
+    tag: "Ricorrenza",
+    title: "Missioni Ricorrenti",
+    bullets: [
+      "Imposta una missione come ricorrente: settimanale o mensile",
+      "Quando la completi, si rigenera in automatico con una nuova scadenza",
+      "Le tappe vengono ricopiate sulla nuova istanza",
+      "Perfette per abitudini che si ripetono nel tempo",
     ],
-    tip: "💡 Puoi importare gli estratti conto direttamente dai file Excel di ISYbank.",
+    tip: "💡 Combina ricorrenza + check-in per le routine che vuoi mantenere ogni settimana.",
+  },
+  {
+    kind: "levels",
+    icon: "✨",
+    accent: "#c084fc",
+    tag: "Progressione",
+    title: "XP e Livelli",
+    bullets: [
+      "Ogni tappa completata vale XP (predefinito: 10 XP)",
+      "Gli XP si accumulano e fanno salire di livello il tuo eroe",
+      "L'icona del livello nella barra cambia man mano che cresci",
+    ],
   },
   {
     icon: "⚡",
+    accent: "#fb923c",
+    tag: "Sfide",
     title: "Sfide Giornaliere",
-    color: "#fb923c",
-    steps: [
-      "Cinque sfide bonus sono disponibili ogni giorno",
-      "Condizioni: completa tappe, registra spese, fai check-in…",
+    bullets: [
+      "Ogni giorno trovi cinque sfide bonus nella bacheca",
+      "Condizioni varie: completa tappe, registra spese, fai check-in, logga un pasto…",
       "Quando la condizione è soddisfatta, il pulsante Riscatta si illumina",
-      "Riscatta i tuoi XP prima di mezzanotte — le sfide si resettano ogni giorno",
+      "Riscatta gli XP prima di mezzanotte — le sfide si resettano ogni giorno",
     ],
-    tip: "💡 Tutte e 5 completate? Stai avendo una grande giornata — mantieni lo slancio!",
+    tip: "💡 Il gruppo di sfide ruota ogni 7 giorni per tenerle sempre fresche.",
+  },
+  {
+    icon: "💎",
+    accent: "#38bdf8",
+    tag: "Tesoro",
+    title: "Finanze (Tesoro)",
+    bullets: [
+      "Imposta un budget mensile e registra le spese per categoria",
+      "Il grafico a ciambella e il trend a 12 mesi mostrano dove vanno i soldi",
+      "Importa gli estratti conto direttamente dai file Excel di ISYbank",
+      "Chiudi il mese sotto budget per 25 XP bonus + trofeo",
+    ],
+    tip: "💡 Usa i filtri per categoria nel registro giornaliero per analizzare le uscite.",
+  },
+  {
+    icon: "🥗",
+    accent: "#4ade80",
+    tag: "Alchimia",
+    title: "Dieta e Nutrizionista",
+    bullets: [
+      "Dieta: registra gli alimenti e tieni sotto controllo le calorie giornaliere",
+      "Piano Nutrizionista: segui il piano pasti giorno per giorno",
+      "Nella vista Settimana tocca un giorno per aprirne il piano completo",
+      "Spuntare un pasto del nutrizionista lo registra in automatico nella dieta",
+    ],
+    tip: "💡 Despuntare un pasto lo rimuove anche dalla dieta — restano sempre sincronizzati.",
+  },
+  {
+    icon: "⚗️",
+    accent: "#2dd4bf",
+    tag: "Allenamento",
+    title: "Palestra, Peso e Abitudini",
+    bullets: [
+      "Palestra: gestisci il programma, aggiungi o rimuovi esercizi e logga gli allenamenti",
+      "Peso: aggiungi le misurazioni e segui l'andamento nel tempo",
+      "Abitudini: traccia le abitudini quotidiane con un tocco",
+      "Routine: organizza le tue routine ricorrenti",
+    ],
+    tip: "💡 Tutta la sezione Vita è pensata per il benessere oltre alle missioni.",
+  },
+  {
+    icon: "🧑‍🍳",
+    accent: "#f472b6",
+    tag: "Intelligenza Artificiale",
+    title: "Svuota Frigo",
+    bullets: [
+      "Indica gli ingredienti che hai in casa",
+      "L'AI ti propone ricette che li usano tutti insieme",
+      "Le ricette restano salvate finché non le elimini tu",
+      "Premi Rigenera per sostituire una ricetta con una nuova idea",
+    ],
+    tip: "💡 C'è un limite giornaliero di generazioni AI per tenere tutto sostenibile.",
+  },
+  {
+    icon: "🔔",
+    accent: "#facc15",
+    tag: "Promemoria",
+    title: "Notifiche",
+    bullets: [
+      "Notifiche Push: ricevi i promemoria anche con l'app chiusa",
+      "Promemoria Giornaliero: un avviso all'orario che scegli tu",
+      "Attiva tutto dalla scheda Eroe → sezione Notifiche",
+      "Se le hai bloccate, riabilitale dalle impostazioni del telefono",
+    ],
+    tip: "💡 Su Android, dopo aver sbloccato il permesso, riapri l'app per aggiornare lo stato.",
+  },
+  {
+    icon: "🛡️",
+    accent: "#fb7185",
+    tag: "Eroe",
+    title: "Profilo, Temi e Trofei",
+    bullets: [
+      "Personalizza nome e classe del tuo eroe",
+      "Scegli tra 4 temi: Warrior, Ocean, Forest, Crimson",
+      "Sblocca trofei completando obiettivi e traguardi",
+      "Consulta le tue statistiche; puoi azzerare tutto se vuoi ricominciare",
+    ],
+    tip: "💡 Il tema scelto ti segue su tutti i dispositivi — è salvato sul tuo profilo.",
+  },
+  {
+    kind: "final",
+    icon: "🎯",
+    accent: "#f59e0b",
+    tag: "Pronto?",
+    title: "Inizia l'avventura",
+    body: "Ora conosci tutto il necessario per dominare le tue missioni. Il tuo regno ti aspetta, eroe.",
   },
 ];
 
@@ -79,126 +188,207 @@ export default function TutorialClient({
   heroClass?: string | null;
 }) {
   const router = useRouter();
+  const [i, setI] = useState(0);
   const [loading, setLoading] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
-  async function handleStart() {
+  const cls = getClassDef(heroClass);
+  const last = SLIDES.length - 1;
+  const atFirst = i === 0;
+  const atLast = i === last;
+
+  const go = (n: number) => setI(Math.max(0, Math.min(last, n)));
+
+  async function finish() {
     setLoading(true);
     try {
-      await markOnboardingComplete();
+      if (isFirstTime) await markOnboardingComplete();
     } catch {
       // ignore — still navigate
     }
     router.push("/dashboard");
   }
 
-  const cls = getClassDef(heroClass);
-  const levelTiers = cls.tiers;
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (dx <= -50) go(i + 1);
+    else if (dx >= 50) go(i - 1);
+    touchStartX.current = null;
+  }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-4 pb-10">
-
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="text-6xl mb-3 animate-bounce" style={{ animationDuration: "2s" }}>📖</div>
-        <h1 className="text-2xl font-bold text-[#ede9ff] mb-1">
-          {isFirstTime && name ? `Benvenuto, ${name}!` : "Come si gioca"}
-        </h1>
-        <p className="text-sm" style={{ color: "var(--theme-text-muted)" }}>
-          Tutto quello che devi sapere per dominare le tue missioni.
-        </p>
-      </div>
-
-      {/* Sections */}
-      <div className="space-y-4 mb-8">
-        {SECTIONS.map((s) => (
-          <div
-            key={s.title}
-            className="rounded-2xl border p-5"
-            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
-          >
-            {/* Section header */}
-            <div className="flex items-center gap-3 mb-4">
-              <span
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ background: s.color + "22", border: `1px solid ${s.color}44` }}
-              >
-                {s.icon}
-              </span>
-              <h2 className="text-base font-bold text-[#ede9ff]">{s.title}</h2>
-            </div>
-
-            {/* Steps */}
-            <div className="space-y-2.5 mb-3">
-              {s.steps.map((step, i) => (
-                <div key={i} className="flex items-start gap-2.5">
-                  <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
-                    style={{ background: s.color + "33", color: s.color }}
-                  >
-                    {i + 1}
-                  </span>
-                  <p className="text-sm text-[#c4b5fd]">{step}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Tip */}
-            <p
-              className="text-xs rounded-xl px-3 py-2"
-              style={{ background: "var(--theme-bg)", color: "var(--theme-text-muted)" }}
-            >
-              {s.tip}
-            </p>
-          </div>
+    <div className="max-w-lg mx-auto px-4 pt-4 pb-8 flex flex-col" style={{ minHeight: "100dvh" }}>
+      {/* Progress dots */}
+      <div className="flex items-center justify-center gap-1.5 mb-4">
+        {SLIDES.map((s, idx) => (
+          <button
+            key={idx}
+            onClick={() => go(idx)}
+            aria-label={`Vai alla slide ${idx + 1}`}
+            className="h-1.5 rounded-full transition-all"
+            style={{
+              width: idx === i ? 22 : 6,
+              background: idx === i ? s.accent : "var(--theme-surface-border)",
+            }}
+          />
         ))}
       </div>
 
-      {/* Level tiers reference */}
-      <div
-        className="rounded-2xl border p-5 mb-8"
-        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">{cls.icon}</span>
-          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--theme-text-muted)" }}>
-            Percorso livelli — {cls.name}
-          </p>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {levelTiers.map((t) => (
-            <div key={t.label} className="text-center">
-              <div className="text-xl mb-0.5">{t.icon}</div>
-              <p className="text-xs font-semibold text-[#ede9ff]">{t.label}</p>
-              <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{t.min.toLocaleString()} XP</p>
+      {/* Carousel viewport */}
+      <div className="flex-1 overflow-hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div
+          className="flex h-full transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${i * 100}%)` }}
+        >
+          {SLIDES.map((s, idx) => (
+            <div key={idx} className="w-full flex-shrink-0 px-1">
+              <Slide slide={s} name={name} isFirstTime={isFirstTime} cls={cls} active={idx === i} />
             </div>
           ))}
         </div>
       </div>
 
-      {/* CTA */}
-      {isFirstTime ? (
-        <>
+      {/* Footer nav */}
+      <div className="flex items-center justify-between gap-3 mt-6">
+        <button
+          onClick={() => (atFirst ? finish() : go(i - 1))}
+          disabled={loading}
+          className="px-4 py-3 rounded-2xl text-sm font-medium active:scale-95 transition-all disabled:opacity-50"
+          style={{ color: "var(--theme-text-muted)" }}
+        >
+          {atFirst ? "Salta" : "← Indietro"}
+        </button>
+
+        {atLast ? (
           <button
-            onClick={handleStart}
+            onClick={finish}
             disabled={loading}
-            className="block w-full py-4 rounded-2xl font-bold text-center text-base shadow-lg shadow-amber-900/30 active:scale-95 transition-all mb-3 disabled:opacity-60"
+            className="flex-1 py-3.5 rounded-2xl font-bold text-center text-base shadow-lg shadow-amber-900/30 active:scale-95 transition-all disabled:opacity-60"
             style={{ background: "linear-gradient(to right, #f59e0b, #eab308)", color: "#000" }}
           >
-            {loading ? "Caricamento…" : "⚔️ Inizia la mia avventura"}
+            {loading ? "Caricamento…" : isFirstTime ? "⚔️ Inizia la mia avventura" : "Torna alla bacheca"}
           </button>
-          <p className="text-center text-xs" style={{ color: "var(--theme-text-muted)" }}>
-            Puoi rileggere questa guida in qualsiasi momento dal pulsante{" "}
-            <span className="font-bold text-[#ede9ff]">?</span> nella bacheca.
-          </p>
-        </>
-      ) : (
-        <Link
-          href="/dashboard"
-          className="block w-full py-4 rounded-2xl font-bold text-center text-base border active:scale-95 transition-all"
-          style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
+        ) : (
+          <button
+            onClick={() => go(i + 1)}
+            className="flex-1 py-3.5 rounded-2xl font-bold text-center text-base active:scale-95 transition-all"
+            style={{ background: SLIDES[i].accent, color: "#0a0a0a" }}
+          >
+            Avanti →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Slide({
+  slide,
+  name,
+  isFirstTime,
+  cls,
+  active,
+}: {
+  slide: Slide;
+  name?: string | null;
+  isFirstTime: boolean;
+  cls: ReturnType<typeof getClassDef>;
+  active: boolean;
+}) {
+  const title =
+    slide.kind === "welcome" && isFirstTime && name ? `Benvenuto, ${name}!` : slide.title;
+
+  return (
+    <div className="h-full flex flex-col items-center text-center">
+      {/* Icon */}
+      <div
+        className="mt-2 mb-6 w-28 h-28 rounded-3xl flex items-center justify-center"
+        style={{
+          background: `${slide.accent}1f`,
+          border: `1px solid ${slide.accent}44`,
+        }}
+      >
+        <span
+          className={active ? "text-6xl animate-bounce" : "text-6xl"}
+          style={{ animationDuration: "2s" }}
         >
-          ← Torna alla bacheca
-        </Link>
+          {slide.icon}
+        </span>
+      </div>
+
+      {/* Tag */}
+      <p
+        className="text-xs font-bold uppercase tracking-[0.2em] mb-2"
+        style={{ color: slide.accent }}
+      >
+        {slide.tag}
+      </p>
+
+      {/* Title */}
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-3">{title}</h1>
+
+      {/* Body */}
+      {slide.body && (
+        <p className="text-sm leading-relaxed mb-2" style={{ color: "var(--theme-text-muted)" }}>
+          {slide.body}
+        </p>
+      )}
+
+      {/* Bullets */}
+      {slide.bullets && (
+        <div className="w-full text-left space-y-2.5 mt-3">
+          {slide.bullets.map((b, k) => (
+            <div key={k} className="flex items-start gap-2.5">
+              <span className="text-sm mt-0.5 flex-shrink-0" style={{ color: slide.accent }}>
+                ✦
+              </span>
+              <p className="text-sm text-[#c4b5fd] leading-snug">{b}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Level tiers (levels slide only) */}
+      {slide.kind === "levels" && (
+        <div
+          className="w-full rounded-2xl border p-4 mt-5"
+          style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <span className="text-lg">{cls.icon}</span>
+            <p
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "var(--theme-text-muted)" }}
+            >
+              Percorso livelli — {cls.name}
+            </p>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {cls.tiers.map((t) => (
+              <div key={t.label} className="text-center">
+                <div className="text-xl mb-0.5">{t.icon}</div>
+                <p className="text-[11px] font-semibold text-[#ede9ff] leading-tight">{t.label}</p>
+                <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>
+                  {t.min.toLocaleString()} XP
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tip */}
+      {slide.tip && (
+        <p
+          className="text-xs rounded-xl px-3 py-2.5 mt-5 w-full"
+          style={{ background: "var(--theme-surface)", color: "var(--theme-text-muted)" }}
+        >
+          {slide.tip}
+        </p>
       )}
     </div>
   );
