@@ -86,9 +86,7 @@ export default async function ProfilePage() {
       user={JSON.parse(JSON.stringify(user))}
       stats={stats}
       streak={streak}
-      dbReminderEnabled={user?.reminderEnabled ?? false}
-      dbReminderTime={user?.reminderTime ?? "09:00"}
-      categoryStats={categoryStats}
+categoryStats={categoryStats}
       weeklyMilestones={weeklyMilestones}
       heroClass={heroClass}
     />
