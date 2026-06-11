@@ -45,7 +45,8 @@ async function sendPush(
     } catch (err: unknown) {
       const status = err && typeof err === "object" && "statusCode" in err ? (err as { statusCode: number }).statusCode : 0;
       console.error(`[push] send failed endpoint=${sub.endpoint.slice(-20)} status=${status}`, err);
-      if (status === 410) {
+      // 404/410 mean the subscription is dead — remove it so it stops wasting sends
+      if (status === 404 || status === 410) {
         await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {});
       }
     }
