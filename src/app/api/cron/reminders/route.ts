@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getWebPush } from "@/lib/vapid";
+import { initSentReminderTable } from "@/lib/init-tables";
 
 export const runtime = "nodejs";
 
@@ -63,6 +64,7 @@ export async function GET(req: Request) {
   }
 
   const webpush = getWebPush();
+  await initSentReminderTable();
 
   const users = await prisma.user.findMany({
     where: { pushSubscriptions: { some: {} } },

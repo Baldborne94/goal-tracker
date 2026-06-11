@@ -7,6 +7,27 @@ let initialized = false;
 let svuotaFrigoInitialized = false;
 let aiUsageInitialized = false;
 let gymInitialized = false;
+let sentReminderInitialized = false;
+
+// Tracks which scheduled reminders have already been delivered today, so an
+// external cron running every few minutes never sends a duplicate push.
+// Created lazily here because the build-time seed is skipped when the DB is
+// unreachable — if this table is missing, the cron's claim() silently fails
+// and every reminder gets skipped.
+export async function initSentReminderTable() {
+  if (sentReminderInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "SentReminder" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SentReminder_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "SentReminder_userId_key_date_key" UNIQUE ("userId","key","date"),
+    CONSTRAINT "SentReminder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  sentReminderInitialized = true;
+}
 
 export async function initGymTables() {
   if (gymInitialized) return;
