@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { initSentReminderTable } from "@/lib/init-tables";
 
 export const runtime = "nodejs";
 
 // Debug endpoint: shows current push state for the logged-in user.
 // Useful for diagnosing why reminders aren't arriving.
 export async function GET() {
+  try {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = session.user.id;
+  await initSentReminderTable();
 
   const [userRows, goals, subs, sentToday] = await Promise.all([
     prisma.$queryRawUnsafe<{ timezone: string; reminderEnabled: boolean; reminderTime: string }[]>(
@@ -53,4 +56,7 @@ export async function GET() {
     })),
     sentToday: sentToday.filter(s => s.date === todayLocal),
   });
+  } catch (err) {
+    return NextResponse.json({ error: String(err instanceof Error ? err.message : err) }, { status: 200 });
+  }
 }
