@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
-import { updateProfileName, updateTheme, updateReminder, updateHeroClass } from "@/app/(app)/profile/actions";
+import { updateProfileName, updateTheme, updateHeroClass } from "@/app/(app)/profile/actions";
 import NotificationButton from "@/components/NotificationButton";
 import { getLevel, getLevelProgress, LEVEL_THRESHOLDS } from "@/lib/levels";
 import { CLASSES, CLASS_GROUPS, getClassDef } from "@/lib/classes";
@@ -23,7 +23,7 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 type CategoryStat = { name: string; color: string; total: number; completed: number };
 
-export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabled = false, dbReminderTime = "09:00", categoryStats = [], weeklyMilestones = [0, 0, 0, 0], heroClass: initialHeroClass = null }: { user: User | null; stats: Stats; streak?: number; dbReminderEnabled?: boolean; dbReminderTime?: string; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; heroClass?: string | null }) {
+export default function ProfileClient({ user, stats, streak = 0, categoryStats = [], weeklyMilestones = [0, 0, 0, 0], heroClass: initialHeroClass = null }: { user: User | null; stats: Stats; streak?: number; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; heroClass?: string | null }) {
   const router = useRouter();
   const { theme, colors, setTheme } = useTheme();
   const [heroClass, setHeroClass] = useState<string | null>(initialHeroClass);
@@ -41,64 +41,6 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
   const [displayName, setDisplayName] = useState(user?.name ?? "");
   const [nameStatus, setNameStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  const [notifPermission, setNotifPermission] = useState<string>("default");
-  const [notifEnabled, setNotifEnabled] = useState(dbReminderEnabled);
-  const [notifTime, setNotifTime] = useState(dbReminderTime);
-  const [notifRequesting, setNotifRequesting] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    setNotifPermission(Notification.permission);
-    // Sync localStorage with DB values on mount
-    localStorage.setItem("reminder-enabled", String(dbReminderEnabled));
-    localStorage.setItem("reminder-time", dbReminderTime);
-
-    // Re-read permission when the PWA returns to the foreground: the user may
-    // have changed it in the OS/site settings while the app was backgrounded,
-    // and the cached Notification.permission would otherwise show stale state.
-    const refresh = () => {
-      if (document.visibilityState === "visible") setNotifPermission(Notification.permission);
-    };
-    document.addEventListener("visibilitychange", refresh);
-    return () => document.removeEventListener("visibilitychange", refresh);
-  }, [dbReminderEnabled, dbReminderTime]);
-
-  useEffect(() => {
-    if (!notifEnabled || notifPermission !== "granted") return;
-    const now = new Date();
-    const [h, m] = notifTime.split(":").map(Number);
-    if (isNaN(h) || isNaN(m)) return;
-    const target = new Date(now);
-    target.setHours(h, m, 0, 0);
-    if (target <= now) target.setDate(target.getDate() + 1);
-    const ms = target.getTime() - now.getTime();
-    const id = setTimeout(() => {
-      new Notification("⚔️ Ora delle missioni!", {
-        body: "Non interrompere la serie! Completa una milestone oggi.",
-      });
-    }, ms);
-    return () => clearTimeout(id);
-  }, [notifEnabled, notifTime, notifPermission]);
-
-  async function requestNotifPermission() {
-    if (!("Notification" in window)) return;
-    setNotifRequesting(true);
-    const perm = await Notification.requestPermission();
-    setNotifPermission(perm);
-    setNotifRequesting(false);
-  }
-
-  function toggleReminder(enabled: boolean) {
-    setNotifEnabled(enabled);
-    localStorage.setItem("reminder-enabled", String(enabled));
-    updateReminder(enabled, notifTime);
-  }
-
-  function saveReminderTime(time: string) {
-    setNotifTime(time);
-    localStorage.setItem("reminder-time", time);
-    updateReminder(notifEnabled, time);
-  }
 
   async function saveName() {
     if (!nameInput.trim()) return;
@@ -409,54 +351,6 @@ export default function ProfileClient({ user, stats, streak = 0, dbReminderEnabl
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Daily reminder */}
-      <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
-        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">⏰ Promemoria Giornaliero</h2>
-
-        {notifPermission === "denied" ? (
-          <p className="text-xs text-red-400">Notifiche bloccate dal browser. Abilitale nelle impostazioni del browser per usare i promemoria.</p>
-        ) : notifPermission !== "granted" ? (
-          <div>
-            <p className="text-xs text-[#6b5a9e] mb-3">Ricevi un promemoria giornaliero per mantenere la tua serie attiva.</p>
-            <button
-              onClick={requestNotifPermission}
-              disabled={notifRequesting}
-              className="w-full py-2.5 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-900/10 transition-colors disabled:opacity-50"
-            >
-              {notifRequesting ? "..." : "🔔 Attiva notifiche"}
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[#ede9ff]">Promemoria giornaliero</span>
-              <button
-                onClick={() => toggleReminder(!notifEnabled)}
-                className="w-11 h-6 rounded-full transition-colors relative"
-                style={{background: notifEnabled ? "var(--theme-accent)" : "var(--theme-surface-border)"}}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifEnabled ? "translate-x-6" : "translate-x-1"}`}
-                />
-              </button>
-            </div>
-            {notifEnabled && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-[#9d8ac7]">Ricordami alle</span>
-                <input
-                  type="time"
-                  value={notifTime}
-                  onChange={(e) => saveReminderTime(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl text-[#ede9ff] text-sm focus:outline-none border"
-                  style={{background: "var(--theme-bg, #0f0d22)", borderColor: "var(--theme-surface-border)"}}
-                />
-              </div>
-            )}
-            <p className="text-xs text-[#4a3a7a]">Funziona mentre l&apos;app è aperta nel browser.</p>
-          </div>
-        )}
       </div>
 
       {/* Push notifications */}
