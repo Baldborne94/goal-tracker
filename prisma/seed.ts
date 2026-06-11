@@ -167,6 +167,19 @@ const MIGRATIONS = [
     CONSTRAINT "NutrizionistaDoc_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
   `ALTER TABLE "NutrizionistaDoc" ENABLE ROW LEVEL SECURITY`,
+  // Tracks which scheduled reminders have already been sent today, so an
+  // external cron that runs every few minutes never delivers a duplicate push.
+  `CREATE TABLE IF NOT EXISTS "SentReminder" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SentReminder_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "SentReminder_userId_key_date_key" UNIQUE ("userId","key","date"),
+    CONSTRAINT "SentReminder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "SentReminder" ENABLE ROW LEVEL SECURITY`,
 ];
 
 async function main() {
