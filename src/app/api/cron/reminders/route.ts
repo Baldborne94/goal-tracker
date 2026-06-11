@@ -4,6 +4,31 @@ import { getWebPush } from "@/lib/vapid";
 
 export const runtime = "nodejs";
 
+// How many minutes after a reminder's scheduled time we'll still deliver it.
+// This absorbs scheduler drift (an external cron may run every few minutes and
+// can be delayed). Combined with the per-day dedup below, a reminder fires
+// exactly once even if several cron runs fall inside the window.
+const WINDOW_MINUTES = 15;
+
+function minutesOfDay(hhmm: string) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Returns true the first time a given reminder key is claimed for `date`.
+// Backed by a UNIQUE(userId, key, date) constraint so concurrent/overlapping
+// cron runs can never both win — the second INSERT hits ON CONFLICT and the
+// affected-row count comes back as 0.
+async function claim(userId: string, key: string, date: string) {
+  const id = `sr_${Math.random().toString(36).slice(2, 11)}`;
+  const inserted = await prisma.$executeRawUnsafe(
+    `INSERT INTO "SentReminder" ("id","userId","key","date") VALUES ($1,$2,$3,$4)
+     ON CONFLICT ("userId","key","date") DO NOTHING`,
+    id, userId, key, date
+  ).catch(() => 0);
+  return inserted === 1;
+}
+
 async function sendPush(
   webpush: ReturnType<typeof getWebPush>,
   subs: { endpoint: string; p256dh: string; auth: string }[],
@@ -63,13 +88,20 @@ export async function GET(req: Request) {
       minute: "2-digit",
       hour12: false,
     }).format(now);
+    const nowMin = minutesOfDay(userTime);
 
     const todayLocal = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(now);
     const dayOfWeek = new Date(now.toLocaleString("en-US", { timeZone: tz })).getDay();
     const dayOfMonth = parseInt(todayLocal.split("-")[2]);
 
-    // Reminder notifications (daily / weekly / monthly)
-    for (const goal of user.goals.filter((g) => g.reminderTime === userTime)) {
+    // True when `scheduled` (HH:MM local) falls inside the delivery window ending now.
+    const inWindow = (scheduled: string) => {
+      const diff = nowMin - minutesOfDay(scheduled);
+      return diff >= 0 && diff < WINDOW_MINUTES;
+    };
+
+    // Reminder notifications (daily / weekly / monthly / custom)
+    for (const goal of user.goals.filter((g) => g.reminderTime && inWindow(g.reminderTime))) {
       const freq = goal.reminderFrequency ?? "daily";
       const customDays = goal.reminderDays ? goal.reminderDays.split(",").map(Number) : [];
       const shouldFire =
@@ -79,6 +111,7 @@ export async function GET(req: Request) {
         (freq === "custom" && customDays.includes(dayOfWeek));
 
       if (!shouldFire) continue;
+      if (!(await claim(user.id, `goal-${goal.id}`, todayLocal))) continue;
 
       const freqLabel = freq === "weekly" ? "weekly" : freq === "monthly" ? "monthly" : "daily";
       sent += await sendPush(webpush, user.pushSubscriptions, {
@@ -88,8 +121,8 @@ export async function GET(req: Request) {
       });
     }
 
-    // Deadline warnings at 09:00 local time
-    if (userTime === "09:00") {
+    // Deadline warnings + bills + monthly upkeep, delivered in the window after 09:00 local time
+    if (inWindow("09:00")) {
       const [y, mo, d] = todayLocal.split("-").map(Number);
 
       for (const daysLeft of [7, 3, 1]) {
@@ -99,6 +132,7 @@ export async function GET(req: Request) {
         for (const goal of user.goals.filter((g) => g.targetDate)) {
           const goalDate = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(goal.targetDate!));
           if (goalDate === targetStr) {
+            if (!(await claim(user.id, `deadline-${daysLeft}d-${goal.id}`, todayLocal))) continue;
             sent += await sendPush(webpush, user.pushSubscriptions, {
               title: `⏰ Quest expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}: ${goal.title}`,
               body: daysLeft === 1 ? "Last chance — finish strong today!" : `Only ${daysLeft} days left. Push through!`,
@@ -123,6 +157,7 @@ export async function GET(req: Request) {
             ? bill.dueDay - dayOfMonth
             : (daysInMonth - dayOfMonth) + bill.dueDay;
           if (daysUntilDue === bill.notifyDaysBefore) {
+            if (!(await claim(user.id, `bill-${bill.id}-${todayLocal.slice(0, 7)}`, todayLocal))) continue;
             const suffix = bill.dueDay === 1 ? "st" : bill.dueDay === 2 ? "nd" : bill.dueDay === 3 ? "rd" : "th";
             sent += await sendPush(webpush, user.pushSubscriptions, {
               title: `💳 Payment in ${bill.notifyDaysBefore} day${bill.notifyDaysBefore === 1 ? "" : "s"}: ${bill.title}`,
