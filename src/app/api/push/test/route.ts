@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       );
       sent++;
     } catch (err: unknown) {
-      if (err && typeof err === "object" && "statusCode" in err && (err as { statusCode: number }).statusCode === 410) {
+      const status = err && typeof err === "object" && "statusCode" in err ? (err as { statusCode: number }).statusCode : 0;
+      if (status === 404 || status === 410) {
         await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {});
       }
     }
