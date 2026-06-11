@@ -68,6 +68,8 @@ export async function GET(req: Request) {
     select: {
       id: true,
       timezone: true,
+      reminderEnabled: true,
+      reminderTime: true,
       pushSubscriptions: { select: { endpoint: true, p256dh: true, auth: true } },
       goals: {
         where: { status: "active" },
@@ -99,6 +101,19 @@ export async function GET(req: Request) {
       const diff = nowMin - minutesOfDay(scheduled);
       return diff >= 0 && diff < WINDOW_MINUTES;
     };
+
+    // Hero daily reminder (Profile → "promemoria giornaliero"). Delivered as a
+    // real push so it arrives with the app closed, instead of the in-app
+    // setTimeout notification that only fires while the PWA is open.
+    if (user.reminderEnabled && user.reminderTime && inWindow(user.reminderTime)) {
+      if (await claim(user.id, "daily-reminder", todayLocal)) {
+        sent += await sendPush(webpush, user.pushSubscriptions, {
+          title: "⚔️ Ora delle missioni!",
+          body: "Non interrompere la serie! Completa una milestone oggi.",
+          tag: "daily-reminder",
+        });
+      }
+    }
 
     // Reminder notifications (daily / weekly / monthly / custom)
     for (const goal of user.goals.filter((g) => g.reminderTime && inWindow(g.reminderTime))) {
