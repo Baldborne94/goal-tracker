@@ -9,9 +9,11 @@ self.addEventListener("push", function (event) {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/icon-192.svg",
-      badge: "/icon-192.svg",
+      icon: "/icon-192.png",
+      badge: "/badge-96.png",
       tag: data.tag || "goal-reminder",
+      renotify: true,
+      requireInteraction: false,
     })
   );
 });

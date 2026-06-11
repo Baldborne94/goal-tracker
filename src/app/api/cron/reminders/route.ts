@@ -5,10 +5,9 @@ import { getWebPush } from "@/lib/vapid";
 export const runtime = "nodejs";
 
 // How many minutes after a reminder's scheduled time we'll still deliver it.
-// This absorbs scheduler drift (an external cron may run every few minutes and
-// can be delayed). Combined with the per-day dedup below, a reminder fires
-// exactly once even if several cron runs fall inside the window.
-const WINDOW_MINUTES = 15;
+// GitHub Actions free-tier cron can be delayed 15-30+ min under load.
+// Combined with per-day dedup, a reminder fires exactly once per day.
+const WINDOW_MINUTES = 30;
 
 function minutesOfDay(hhmm: string) {
   const [h, m] = hhmm.split(":").map(Number);
@@ -43,7 +42,9 @@ async function sendPush(
       );
       sent++;
     } catch (err: unknown) {
-      if (err && typeof err === "object" && "statusCode" in err && (err as { statusCode: number }).statusCode === 410) {
+      const status = err && typeof err === "object" && "statusCode" in err ? (err as { statusCode: number }).statusCode : 0;
+      console.error(`[push] send failed endpoint=${sub.endpoint.slice(-20)} status=${status}`, err);
+      if (status === 410) {
         await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {});
       }
     }
@@ -111,7 +112,9 @@ export async function GET(req: Request) {
         (freq === "custom" && customDays.includes(dayOfWeek));
 
       if (!shouldFire) continue;
-      if (!(await claim(user.id, `goal-${goal.id}`, todayLocal))) continue;
+      const claimed = await claim(user.id, `goal-${goal.id}`, todayLocal);
+      console.log(`[cron/reminders] goal=${goal.id} title="${goal.title}" time=${goal.reminderTime} tz=${tz} userTime=${userTime} inWindow=${inWindow(goal.reminderTime!)} claimed=${claimed}`);
+      if (!claimed) continue;
 
       const freqLabel = freq === "weekly" ? "weekly" : freq === "monthly" ? "monthly" : "daily";
       sent += await sendPush(webpush, user.pushSubscriptions, {
@@ -205,5 +208,6 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, time: new Date().toISOString() });
+  console.log(`[cron/reminders] done users=${users.length} sent=${sent} time=${new Date().toISOString()}`);
+  return NextResponse.json({ ok: true, sent, users: users.length, time: new Date().toISOString() });
 }
