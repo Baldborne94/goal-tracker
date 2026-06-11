@@ -10,15 +10,12 @@ export async function POST(req: Request) {
   const { subscription, timezone } = await req.json();
   const { endpoint, keys } = subscription;
 
+  // Always persist timezone so the cron fires at the right local time
   if (timezone) {
-    try {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { timezone },
-      });
-    } catch {
-      // timezone column may not exist yet — skip
-    }
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { timezone },
+    }).catch(() => {});
   }
 
   await prisma.pushSubscription.upsert({
@@ -35,6 +32,14 @@ export async function POST(req: Request) {
       auth: keys.auth,
     },
   });
+
+  // Clear today's SentReminder entries so reminders that were skipped
+  // due to a wrong timezone fire again on the next cron run.
+  const today = new Date().toISOString().slice(0, 10);
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM "SentReminder" WHERE "userId" = $1 AND "date" = $2`,
+    session.user.id, today
+  ).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }
