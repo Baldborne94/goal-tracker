@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, KeyboardEvent } from "react";
+import React, { useState, useRef, useCallback, useEffect, KeyboardEvent } from "react";
 
 type SavedRecipe = {
   id: string;
@@ -8,6 +8,50 @@ type SavedRecipe = {
   content: string;
   createdAt: string;
 };
+
+function parseBold(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) =>
+    part.startsWith("**") && part.endsWith("**")
+      ? <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>
+      : <span key={i}>{part}</span>
+  );
+}
+
+function renderMarkdown(content: string) {
+  const lines = content.split("\n");
+  const result: React.ReactElement[] = [];
+  let listBuffer: string[] = [];
+
+  const flushList = () => {
+    if (!listBuffer.length) return;
+    result.push(
+      <ul key={`ul${result.length}`} className="space-y-1 my-1 pl-1">
+        {listBuffer.map((item, i) => (
+          <li key={i} className="flex gap-1.5 items-start text-sm leading-relaxed">
+            <span className="shrink-0 mt-0.5" style={{ color: "var(--theme-accent)" }}>›</span>
+            <span>{parseBold(item)}</span>
+          </li>
+        ))}
+      </ul>
+    );
+    listBuffer = [];
+  };
+
+  lines.forEach((line, idx) => {
+    if (line.startsWith("- ")) { listBuffer.push(line.slice(2)); return; }
+    flushList();
+    if (line.trim() === "---") {
+      result.push(<hr key={idx} className="my-3 border-t" style={{ borderColor: "var(--theme-surface-border)" }} />);
+    } else if (/^#{1,3} /.test(line)) {
+      result.push(<p key={idx} className="text-sm font-bold mt-3 mb-1" style={{ color: "var(--theme-accent)" }}>{parseBold(line.replace(/^#{1,3} /, ""))}</p>);
+    } else if (line.trim() !== "") {
+      result.push(<p key={idx} className="text-sm leading-relaxed">{parseBold(line)}</p>);
+    }
+  });
+  flushList();
+  return result;
+}
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -223,14 +267,17 @@ export default function SvuotaFrigoClient() {
           className="rounded-2xl border p-4 space-y-2"
           style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
         >
-          <p className="text-sm font-semibold text-white">💡 Generando ricette…</p>
-          <div
-            className="text-sm leading-relaxed whitespace-pre-wrap"
-            style={{ color: "var(--theme-text)" }}
-          >
-            {streamResult}
-            {loading && <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: "var(--theme-accent)" }} />}
-          </div>
+          <p className="text-sm font-semibold text-white">{loading ? "💡 Generando ricette…" : "💡 Ricette generate"}</p>
+          {loading ? (
+            <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--theme-text)" }}>
+              {streamResult}
+              <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse rounded-sm" style={{ background: "var(--theme-accent)" }} />
+            </div>
+          ) : (
+            <div className="text-sm leading-relaxed space-y-1" style={{ color: "var(--theme-text)" }}>
+              {renderMarkdown(streamResult)}
+            </div>
+          )}
         </div>
       )}
 
@@ -270,11 +317,8 @@ export default function SvuotaFrigoClient() {
               {/* Expanded content */}
               {expandedId === recipe.id && (
                 <div className="px-4 pb-4 space-y-3 border-t" style={{ borderColor: "var(--theme-surface-border)" }}>
-                  <div
-                    className="text-sm leading-relaxed whitespace-pre-wrap pt-3"
-                    style={{ color: "var(--theme-text)" }}
-                  >
-                    {recipe.content}
+                  <div className="text-sm leading-relaxed pt-3 space-y-1" style={{ color: "var(--theme-text)" }}>
+                    {renderMarkdown(recipe.content)}
                   </div>
                   <div className="flex gap-2">
                     <button
