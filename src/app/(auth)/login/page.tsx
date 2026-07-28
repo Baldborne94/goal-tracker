@@ -32,7 +32,12 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      const res = await signIn("google-native", { idToken: native.idToken, redirect: false });
+      // Una delle due è valorizzata a seconda del percorso nativo riuscito.
+      const res = await signIn("google-native", {
+        idToken: native.idToken ?? "",
+        serverAuthCode: native.serverAuthCode ?? "",
+        redirect: false,
+      });
       if (res?.ok) {
         window.location.href = "/dashboard";
         return;

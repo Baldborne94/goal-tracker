@@ -14,6 +14,42 @@ type GoogleTokenInfo = {
   picture?: string;
 };
 
+/**
+ * Scambia con Google l'authorization code prodotto dal Sign-In nativo in
+ * modalità offline e restituisce l'ID token risultante.
+ *
+ * Il codice arriva da `requestOfflineAccess` sul client Android ed è legato al
+ * client **web**: lo scambio usa quindi client id e secret del client web e non
+ * porta `redirect_uri`, che in questo flusso non esiste.
+ *
+ * Restituisce null su qualsiasi errore: il chiamante nega l'accesso, e l'ID
+ * token viene comunque validato a valle come quello del percorso online, così
+ * la verifica di audience ed emittente resta una sola.
+ */
+async function exchangeServerAuthCode(code: string): Promise<string | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  try {
+    const res = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: "authorization_code",
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { id_token?: string };
+    return data.id_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
@@ -35,10 +71,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       id: "google-native",
       name: "Google (app Android)",
-      credentials: { idToken: {} },
+      credentials: { idToken: {}, serverAuthCode: {} },
       async authorize(credentials) {
-        const idToken = credentials?.idToken;
-        if (typeof idToken !== "string" || !idToken) return null;
+        // Il guscio manda l'una o l'altra credenziale a seconda del percorso
+        // nativo riuscito: ID token dal Credential Manager, oppure un
+        // authorization code dall'API di autorizzazione, che va scambiato.
+        let idToken = typeof credentials?.idToken === "string" ? credentials.idToken : "";
+        if (!idToken && typeof credentials?.serverAuthCode === "string" && credentials.serverAuthCode) {
+          idToken = (await exchangeServerAuthCode(credentials.serverAuthCode)) ?? "";
+        }
+        if (!idToken) return null;
 
         const res = await fetch(
           `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
