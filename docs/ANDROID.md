@@ -32,23 +32,34 @@ i permessi o il plugin.
 
 ## Scaricare l'APK senza installare niente (consigliato)
 
-L'APK **non è nel repository**: va compilato. Il modo più semplice è farlo fare
-a GitHub, che ha già l'SDK Android pronto.
+L'APK **non è nel repository**: va compilato. Ci pensa GitHub, che ha già
+l'SDK Android pronto.
 
-1. Vai su **Actions → Build APK Android** nel repo su GitHub.
-2. Premi **Run workflow**, scegli il branch e conferma. Lascia vuoto il campo
-   dell'URL per usare la produzione su Vercel.
-3. Aspetta ~3 minuti che il job diventi verde.
-4. Apri il run e scarica l'artifact **`goal-tracker-debug-apk`** in fondo alla
-   pagina: è uno zip che contiene `app-debug.apk`.
-5. Scompatta e installa l'APK sul telefono.
+### Dal telefono — release
 
-Funziona anche dal browser del telefono, basta essere loggati su GitHub: così
-scarichi e installi senza passare dal PC. Gli artifact restano disponibili 90
-giorni.
+**https://github.com/Baldborne94/goal-tracker/releases/latest**
 
-Il workflow riparte da solo a ogni push su `main` che tocchi `android/`,
-`capacitor.config.ts` o `public/`.
+Tocca `goal-tracker.apk` e installalo. È un link diretto e pubblico: non
+serve essere loggati, non è uno zip. L'indirizzo non cambia mai — ogni build
+su `main` sostituisce il file.
+
+### Dal PC — artifact di Actions
+
+Utile per provare l'APK di una PR prima del merge:
+
+1. **Actions → Build APK Android**, apri il run che ti interessa
+2. In fondo alla pagina, riquadro **Artifacts** → `goal-tracker-debug-apk`
+3. È uno zip: scompattalo per ottenere `app-debug.apk`
+
+Gli artifact **richiedono di essere loggati su GitHub** e restano 90 giorni.
+Dal browser del telefono spesso non sono nemmeno cliccabili: per quello c'è
+la release. Se ci provi comunque, attiva «Sito desktop» nel menu del browser.
+
+### Buildare a mano
+
+Il workflow ha anche **Run workflow** (`workflow_dispatch`), dove puoi
+indicare un URL diverso da caricare. Parte da solo a ogni push su `main` che
+tocchi `android/`, `capacitor.config.ts` o `public/`.
 
 ## Prerequisiti sul PC (solo per la build locale)
 

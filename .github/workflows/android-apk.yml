@@ -38,6 +38,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Serve per pubblicare la release con l'APK allegato.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -72,3 +75,24 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 90
+
+      # Gli artifact qui sopra richiedono di essere loggati su GitHub e si
+      # scaricano come .zip: dal browser del telefono spesso non sono nemmeno
+      # cliccabili. Una release espone invece il .apk come link diretto e
+      # pubblico, installabile con un tocco.
+      - name: Pubblica l'APK come release scaricabile
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk goal-tracker.apk
+          # Tag fisso: l'indirizzo /releases/latest resta sempre lo stesso.
+          gh release view apk-latest >/dev/null 2>&1 \
+            || gh release create apk-latest --title "APK più recente" --notes "Build in corso."
+          gh release upload apk-latest goal-tracker.apk --clobber
+          gh release edit apk-latest --notes \
+            "APK di debug compilato da main (commit ${GITHUB_SHA:0:7}, $(date -u '+%d/%m/%Y %H:%M UTC')).
+
+          Scarica \`goal-tracker.apk\` qui sotto e aprilo sul telefono: Android chiederà di autorizzare l'installazione da origini sconosciute.
+
+          Richiede Android 8.0 o superiore (Health Connect non esiste sotto quella versione)."
