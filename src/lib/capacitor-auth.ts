@@ -24,8 +24,16 @@ export async function isNativePlatform(): Promise<boolean> {
   }
 }
 
+/**
+ * Il flusso nativo può consegnare due credenziali diverse a seconda della
+ * strada che riesce a percorrere:
+ * - `idToken` dal Credential Manager (modalità online), verificabile subito;
+ * - `serverAuthCode` dall'API di autorizzazione (modalità offline), che il
+ *   server deve scambiare con Google per ottenere l'identità.
+ */
 export type NativeGoogleResult =
-  | { ok: true; idToken: string }
+  | { ok: true; idToken: string; serverAuthCode?: undefined }
+  | { ok: true; serverAuthCode: string; idToken?: undefined }
   | { ok: false; reason: "cancelled" | "config" | "error"; detail: string };
 
 /** L'annullamento dell'utente non è un guasto: va riconosciuto per non mostrare diagnostica inutile. */
@@ -62,22 +70,48 @@ export async function nativeGoogleIdToken(): Promise<NativeGoogleResult> {
   // quello web", che altrimenti è indistinguibile da un guasto del dispositivo.
   const idHint = `client: ${webClientId.slice(0, 24)}…`;
 
+  // Prima si tenta la modalità online (Credential Manager): è la più diretta e
+  // restituisce subito un ID token. Su alcuni dispositivi però fallisce con
+  // "[16] Account reauth failed" anche a configurazione OAuth corretta, e nulla
+  // lato app può rimediare. In quel caso si ripiega sulla modalità offline, che
+  // usa l'API di autorizzazione di Google — un percorso diverso, che non tocca
+  // il Credential Manager — e restituisce un authorization code.
+  const online = await attempt("online", webClientId);
+  if (online.ok || online.reason === "cancelled") return online;
+
+  const offline = await attempt("offline", webClientId);
+  if (offline.ok || offline.reason === "cancelled") return offline;
+
+  // Entrambe fallite: si riportano tutte e due, perché i due percorsi falliscono
+  // per ragioni diverse e vedere una sola metà porta fuori strada.
+  return {
+    ok: false,
+    reason: "error",
+    detail: `online: ${online.detail} | offline: ${offline.detail} — ${idHint}`,
+  };
+}
+
+async function attempt(
+  mode: "online" | "offline",
+  webClientId: string
+): Promise<NativeGoogleResult> {
   try {
     const { SocialLogin } = await import("@capgo/capacitor-social-login");
-    await SocialLogin.initialize({ google: { webClientId } });
+    await SocialLogin.initialize({ google: { webClientId, mode } });
     const { result } = await SocialLogin.login({ provider: "google", options: {} });
+
     if ("idToken" in result && result.idToken) return { ok: true, idToken: result.idToken };
+    if ("serverAuthCode" in result && result.serverAuthCode) {
+      return { ok: true, serverAuthCode: result.serverAuthCode };
+    }
+
     return {
       ok: false,
       reason: "error",
-      detail: `Il plugin non ha restituito un ID token (responseType: ${"responseType" in result ? result.responseType : "sconosciuto"}). ${idHint}`,
+      detail: `nessuna credenziale (responseType: ${"responseType" in result ? result.responseType : "sconosciuto"})`,
     };
   } catch (e) {
     const raw = e instanceof Error ? e.message : String(e);
-    return {
-      ok: false,
-      reason: isUserCancellation(raw) ? "cancelled" : "error",
-      detail: `${raw} — ${idHint}`,
-    };
+    return { ok: false, reason: isUserCancellation(raw) ? "cancelled" : "error", detail: raw };
   }
 }

@@ -175,6 +175,23 @@ verificato server-side dal provider `google-native` in `src/lib/auth.ts`
 same-origin, quindi il cookie finisce nella WebView senza problemi di
 isolamento delle Custom Tab.
 
+**Due percorsi nativi, provati in quest'ordine.** La modalità *online* passa
+dal Credential Manager e restituisce direttamente un ID token. Su alcuni
+dispositivi però fallisce con `[16] Account reauth failed` anche a
+configurazione OAuth corretta e verificata, e non c'è nulla lato app che possa
+rimediare: è stato di Play Services sul telefono. Per questo, se l'online
+fallisce (e l'utente non ha annullato), si ripiega sulla modalità *offline*,
+che usa l'API di autorizzazione di Google — percorso del tutto diverso — e
+restituisce un `serverAuthCode`. Il server lo scambia presso Google
+(`exchangeServerAuthCode` in `src/lib/auth.ts`) e ottiene un ID token che
+finisce nella stessa identica validazione dell'altro percorso.
+
+La modalità offline richiede che `MainActivity` implementi
+`ModifiedMainActivityForSocialLoginPlugin` e inoltri al plugin i risultati di
+`startIntentSenderForResult`: senza, il plugin rifiuta di partire. È il motivo
+per cui `android/app/src/main/java/app/vercel/goaltracker/MainActivity.java`
+non è più la classe vuota generata da Capacitor — **non va rigenerata**.
+
 ### Setup necessario (una volta sola)
 
 1. **Vercel** → env var `NEXT_PUBLIC_GOOGLE_CLIENT_ID` con lo stesso valore di
