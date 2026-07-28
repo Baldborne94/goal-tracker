@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, tags, milestones, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType, dailyCheckIn, checkInXP, checkInDays } = body;
+  const { title, description, priority, targetDate, categoryId, tags, milestones, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType, dailyCheckIn, checkInXP, checkInDays, healthMetric, healthTarget } = body;
 
   if (!title)
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -95,6 +95,17 @@ export async function POST(req: Request) {
       tags: { include: { tag: true } },
     },
   });
+
+  // Collegamento alla metrica Salute via SQL grezzo: se il DB non ha ancora le
+  // colonne (seed non eseguito), la missione viene comunque creata.
+  if (healthMetric) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Goal" SET "healthMetric" = $1, "healthTarget" = $2 WHERE id = $3`,
+      String(healthMetric),
+      Number(healthTarget) || null,
+      goal.id
+    ).catch(() => {});
+  }
 
   return NextResponse.json(goal, { status: 201 });
 }

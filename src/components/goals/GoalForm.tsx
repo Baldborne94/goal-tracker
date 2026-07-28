@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { METRICS, getMetric } from "@/lib/health";
 
 type Category = { id: string; name: string; color: string };
 type ReminderFrequency = "daily" | "weekly" | "monthly" | "custom";
@@ -27,6 +28,8 @@ type Props = {
     dailyCheckIn?: boolean;
     checkInXP?: number;
     checkInDays?: string | null;
+    healthMetric?: string | null;
+    healthTarget?: number | null;
     tags: string[];
     milestones: string[] | MilestoneInit[];
   };
@@ -84,6 +87,10 @@ export default function GoalForm({ categories, initialData }: Props) {
   const [dailyCheckIn, setDailyCheckIn] = useState(initialData?.dailyCheckIn ?? false);
   const [checkInXP, setCheckInXP] = useState(initialData?.checkInXP ?? 5);
   const [checkInDays, setCheckInDays] = useState<string | null>(initialData?.checkInDays ?? null);
+  const [healthMetric, setHealthMetric] = useState<string | null>(initialData?.healthMetric ?? null);
+  const [healthTarget, setHealthTarget] = useState<string>(
+    initialData?.healthTarget != null ? String(initialData.healthTarget) : ""
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -142,6 +149,8 @@ export default function GoalForm({ categories, initialData }: Props) {
         dailyCheckIn,
         checkInXP: dailyCheckIn ? checkInXP : undefined,
         checkInDays: dailyCheckIn ? checkInDays : undefined,
+        healthMetric: dailyCheckIn && healthMetric ? healthMetric : null,
+        healthTarget: dailyCheckIn && healthMetric ? Number(healthTarget) || null : null,
       }),
     });
 
@@ -622,6 +631,43 @@ export default function GoalForm({ categories, initialData }: Props) {
               {checkInDays !== null && (
                 <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>
                   {checkInDays.split(",").length}×/settimana · {checkInDays.split(",").map((d) => WEEKDAYS[Number(d)]).join(", ")}
+                </p>
+              )}
+            </div>
+
+            {/* Auto check-in dai dati del braccialetto */}
+            <div className="pt-1 border-t" style={{ borderColor: "var(--theme-surface-border)" }}>
+              <p className="text-xs mt-3 mb-2" style={{ color: "var(--theme-text-muted)" }}>
+                ❤️ Spunta automatica dai dati Salute
+              </p>
+              <div className="flex gap-2">
+                <select
+                  value={healthMetric ?? ""}
+                  onChange={(e) => setHealthMetric(e.target.value || null)}
+                  className="flex-1 px-3 py-2 rounded-xl border text-white text-sm focus:outline-none"
+                  style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                >
+                  <option value="">Nessuna — spunto io</option>
+                  {METRICS.map((m) => (
+                    <option key={m.key} value={m.key}>{m.icon} {m.label}</option>
+                  ))}
+                </select>
+                {healthMetric && (
+                  <input
+                    type="number"
+                    value={healthTarget}
+                    onChange={(e) => setHealthTarget(e.target.value)}
+                    placeholder="Soglia"
+                    min="1"
+                    className="w-28 px-3 py-2 rounded-xl border text-white text-sm text-center focus:outline-none"
+                    style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+                  />
+                )}
+              </div>
+              {healthMetric && (
+                <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>
+                  Soglia in {getMetric(healthMetric)?.unit === "minute" ? "minuti" : getMetric(healthMetric)?.unit === "meter" ? "metri" : getMetric(healthMetric)?.unit}.
+                  La missione si spunta da sola quando il totale del giorno la raggiunge.
                 </p>
               )}
             </div>

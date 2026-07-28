@@ -37,7 +37,7 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType, dailyCheckIn, checkInXP, checkInDays, milestonesKept, milestonesAdded } = body;
+  const { title, description, priority, targetDate, categoryId, progress, status, reminderTime, reminderFrequency, reminderDay, reminderDays, isRecurring, recurrenceType, dailyCheckIn, checkInXP, checkInDays, healthMetric, healthTarget, milestonesKept, milestonesAdded } = body;
 
   const existing = await prisma.goal.findFirst({
     where: { id, userId: session.user.id },
@@ -102,6 +102,18 @@ export async function PATCH(
       dailyCheckIn ? (checkInDays ?? null) : null,
       id
     );
+  }
+
+  // Metrica Salute collegata: disattivare il check-in giornaliero scollega
+  // anche la spunta automatica, altrimenti resterebbe attiva e invisibile.
+  if (healthMetric !== undefined || dailyCheckIn !== undefined) {
+    const linked = dailyCheckIn === false ? null : (healthMetric || null);
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Goal" SET "healthMetric" = $1, "healthTarget" = $2 WHERE id = $3`,
+      linked,
+      linked ? (Number(healthTarget) || null) : null,
+      id
+    ).catch(() => {});
   }
 
   // Handle milestone edits

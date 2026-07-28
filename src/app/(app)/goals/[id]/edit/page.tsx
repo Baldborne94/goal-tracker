@@ -34,6 +34,8 @@ export default async function EditGoalPage({
     dailyCheckIn?: boolean;
     checkInXP?: number;
     checkInDays?: string | null;
+    healthMetric?: string | null;
+    healthTarget?: number | null;
   };
 
   const initialData = {
@@ -52,6 +54,8 @@ export default async function EditGoalPage({
     dailyCheckIn: g.dailyCheckIn ?? false,
     checkInXP: g.checkInXP ?? 5,
     checkInDays: g.checkInDays ?? null,
+    healthMetric: g.healthMetric ?? null,
+    healthTarget: g.healthTarget ?? null,
     tags: goal.tags.map((gt: { tag: { name: string } }) => gt.tag.name),
     milestones: goal.milestones.map((m: { id: string; title: string; completed: boolean }) => ({
       id: m.id,
