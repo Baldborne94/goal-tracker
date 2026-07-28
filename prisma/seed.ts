@@ -210,10 +210,42 @@ const MIGRATIONS = [
   `ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthTarget" DOUBLE PRECISION`,
 ];
 
-async function main() {
+/**
+ * Applica le migration una per una, isolando i fallimenti.
+ *
+ * Prima il ciclo si fermava al primo errore: bastava un `ALTER TABLE` su una
+ * tabella mai creata (era il caso di "MealLog") per lasciare indietro, in
+ * silenzio, tutte le migration successive — 24 su 54. Il danno resta invisibile
+ * finché non si aggiunge una colonna a schema.prisma: da lì Prisma la elenca in
+ * ogni SELECT, e ogni query su quella tabella inizia a fallire in produzione.
+ *
+ * Gli statement sono tutti idempotenti e autonomi (nessuna transazione
+ * comune), quindi saltarne uno non compromette i successivi.
+ */
+async function runMigrations() {
+  const failed: { sql: string; message: string }[] = [];
+
   for (const sql of MIGRATIONS) {
-    await prisma.$executeRawUnsafe(sql);
+    try {
+      await prisma.$executeRawUnsafe(sql);
+    } catch (e) {
+      failed.push({
+        sql: sql.replace(/\s+/g, " ").slice(0, 90),
+        message: (e as Error).message.split("\n")[0],
+      });
+    }
   }
+
+  console.log(`Migrations: ${MIGRATIONS.length - failed.length}/${MIGRATIONS.length} applied.`);
+  // Rumoroso di proposito: una migration saltata va vista nei log della build,
+  // non scoperta da un 500 in produzione.
+  for (const f of failed) {
+    console.warn(`  ⚠ skipped: ${f.sql}… → ${f.message}`);
+  }
+}
+
+async function main() {
+  await runMigrations();
 
   for (const cat of DEFAULT_CATEGORIES) {
     await prisma.category.upsert({
