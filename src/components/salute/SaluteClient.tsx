@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   METRICS,
@@ -43,6 +43,11 @@ const RANGES = [
   { days: 7, label: "7 giorni" },
   { days: 30, label: "30 giorni" },
 ];
+
+// Ogni quanto rileggere Health Connect mentre la schermata è aperta. Più
+// stretto sarebbe inutile: Health Connect si popola quando decide la sorgente
+// (Samsung Health o Health Sync), non a nostra richiesta.
+const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
 function MetricBarChart({ metricType, metrics, days }: { metricType: string; metrics: ApiMetric[]; days: number }) {
   const series = dailySeries(metrics, metricType, days);
@@ -140,54 +145,106 @@ export default function SaluteClient() {
     }
   }, []);
 
+
+  const syncingRef = useRef(false);
+  const lastSyncAt = useRef(0);
+
+  /**
+   * Legge Health Connect e manda al server quello che trova.
+   *
+   * `interactive` distingue il tocco su Aggiorna da un giro automatico. Solo
+   * il primo può aprire il foglio dei permessi — richiederli a ogni apertura
+   * della schermata sarebbe invadente — e solo il primo riporta errori ed
+   * esito: un sync automatico che fallisce non deve interrompere la lettura
+   * dei dati già in pagina.
+   */
+  const runSync = useCallback(
+    async (interactive: boolean) => {
+      if (syncingRef.current) return;
+      syncingRef.current = true;
+      if (interactive) {
+        setSyncing(true);
+        setError(null);
+        setOutcome(null);
+      }
+
+      try {
+        const avail = await checkAvailability();
+        setAvailability(avail);
+        if (!avail.available) {
+          if (interactive) setError(avail.message);
+          return;
+        }
+
+        if (interactive) await requestPermissions();
+
+        const { samples, denied, empty, failed } = await readAllMetrics(30);
+        const normalized = normalizeSamples(samples);
+
+        const res = await fetch("/api/health/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ metrics: normalized }),
+        });
+        if (!res.ok) {
+          if (interactive) setError((await res.json().catch(() => ({}))).error ?? "Sincronizzazione fallita");
+          return;
+        }
+
+        const data = await res.json();
+        lastSyncAt.current = Date.now();
+        const result: SyncOutcome = {
+          saved: data.saved ?? 0,
+          autoCheckIns: data.autoCheckIns ?? [],
+          denied,
+          empty,
+          failed,
+        };
+        // In automatico si resta in silenzio, tranne quando c'è qualcosa da
+        // festeggiare: una missione che si è spuntata da sola va detta.
+        if (interactive || result.autoCheckIns.length > 0) setOutcome(result);
+        await load();
+      } catch (e) {
+        if (interactive) setError((e as Error).message);
+      } finally {
+        syncingRef.current = false;
+        if (interactive) setSyncing(false);
+      }
+    },
+    [load]
+  );
+
+  const sync = useCallback(() => runSync(true), [runSync]);
+
+  // All'apertura: prima i dati già salvati (immediati), poi un giro silenzioso
+  // per prendere quello che nel frattempo è arrivato in Health Connect.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const avail = await checkAvailability();
-      if (cancelled) return;
-      setAvailability(avail);
       await load();
+      if (!cancelled) await runSync(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [load]);
+  }, [load, runSync]);
 
-  const sync = useCallback(async () => {
-    setSyncing(true);
-    setError(null);
-    setOutcome(null);
-    try {
-      const avail = await checkAvailability();
-      setAvailability(avail);
-      if (!avail.available) {
-        setError(avail.message);
-        return;
-      }
-
-      await requestPermissions();
-      const { samples, denied, empty, failed } = await readAllMetrics(30);
-      const normalized = normalizeSamples(samples);
-
-      const res = await fetch("/api/health/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ metrics: normalized }),
-      });
-      if (!res.ok) {
-        setError((await res.json().catch(() => ({}))).error ?? "Sincronizzazione fallita");
-        return;
-      }
-
-      const data = await res.json();
-      setOutcome({ saved: data.saved ?? 0, autoCheckIns: data.autoCheckIns ?? [], denied, empty, failed });
-      await load();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSyncing(false);
-    }
-  }, [load]);
+  // Mentre la schermata resta aperta, e ogni volta che l'app torna in primo
+  // piano. È il massimo avvicinamento al tempo reale ottenibile: il ritardo
+  // residuo è quello con cui la sorgente riempie Health Connect.
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastSyncAt.current < AUTO_SYNC_INTERVAL_MS) return;
+      void runSync(false);
+    };
+    const timer = window.setInterval(tick, 60_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [runSync]);
 
   const today = localDateKey(new Date());
   const todayValue = (key: string): number | null => {
