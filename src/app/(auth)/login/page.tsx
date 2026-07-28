@@ -7,27 +7,38 @@ import { isNativePlatform, nativeGoogleIdToken } from "@/lib/capacitor-auth";
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   async function handleGoogle() {
     setLoading(true);
     setError(null);
+    setErrorDetail(null);
 
     // Dentro l'APK il flusso OAuth web è vietato da Google
     // (disallowed_useragent): si passa dal Sign-In nativo. Niente fallback
     // web sul nativo — fallirebbe comunque, meglio un errore chiaro.
     if (await isNativePlatform()) {
-      const idToken = await nativeGoogleIdToken();
-      if (!idToken) {
-        setError("Accesso annullato o non riuscito. Riprova.");
+      const native = await nativeGoogleIdToken();
+      if (!native.ok) {
+        if (native.reason === "cancelled") {
+          setError("Accesso annullato. Riprova quando vuoi.");
+        } else {
+          setError("Accesso non riuscito.");
+          // Il dettaglio grezzo distingue i tre guasti possibili (variabile
+          // d'ambiente, client OAuth Android/SHA-1, firma APK): senza,
+          // dall'esterno sono indistinguibili.
+          setErrorDetail(native.detail);
+        }
         setLoading(false);
         return;
       }
-      const res = await signIn("google-native", { idToken, redirect: false });
+      const res = await signIn("google-native", { idToken: native.idToken, redirect: false });
       if (res?.ok) {
         window.location.href = "/dashboard";
         return;
       }
-      setError("Il server ha rifiutato l'accesso. Riprova tra qualche istante.");
+      setError("Il server ha rifiutato l'accesso.");
+      setErrorDetail(res?.error ? `NextAuth: ${res.error}` : "Nessun dettaglio dal server.");
       setLoading(false);
       return;
     }
@@ -123,6 +134,11 @@ export default function LoginPage() {
             {error && (
               <p className="text-center text-[12px] mt-4" style={{ color: "#fca5a5" }}>
                 {error}
+              </p>
+            )}
+            {errorDetail && (
+              <p className="text-center text-[10px] mt-2 break-words select-all" style={{ color: "#9d8ac7" }}>
+                {errorDetail}
               </p>
             )}
 
