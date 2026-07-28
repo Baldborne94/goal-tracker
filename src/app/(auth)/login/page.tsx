@@ -8,6 +8,26 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function handlePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setErrorDetail(null);
+
+    const res = await signIn("password", { email, password, redirect: false });
+    if (res?.ok) {
+      window.location.href = "/dashboard";
+      return;
+    }
+    // Volutamente generico: distinguere "email sconosciuta" da "password
+    // sbagliata" direbbe a chiunque quali indirizzi sono registrati.
+    setError("Email o password non corretti.");
+    setLoading(false);
+  }
 
   async function handleGoogle() {
     setLoading(true);
@@ -145,6 +165,55 @@ export default function LoginPage() {
               <p className="text-center text-[10px] mt-2 break-words select-all" style={{ color: "#9d8ac7" }}>
                 {errorDetail}
               </p>
+            )}
+
+            {/* Accesso con password: nell'APK è la via che non dipende dal
+                Credential Manager di Google. */}
+            {!showPassword ? (
+              <button
+                type="button"
+                onClick={() => setShowPassword(true)}
+                className="w-full text-center text-[12px] mt-4 underline"
+                style={{ color: "#9d8ac7" }}
+              >
+                Entra con email e password
+              </button>
+            ) : (
+              <form onSubmit={handlePassword} className="mt-5 space-y-3">
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className="w-full px-4 py-3 rounded-2xl border text-white text-[14px] focus:outline-none"
+                  style={{ background: "#0f0b24", borderColor: "#3b2d6e" }}
+                />
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full px-4 py-3 rounded-2xl border text-white text-[14px] focus:outline-none"
+                  style={{ background: "#0f0b24", borderColor: "#3b2d6e" }}
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-2xl font-bold text-[14px] active:scale-[0.97] transition-transform disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg, #f59e0b, #a855f7)", color: "#0b0b13" }}
+                >
+                  {loading ? "Entering the realm..." : "Entra"}
+                </button>
+                <p className="text-center text-[10px] leading-relaxed" style={{ color: "#6d5fa6" }}>
+                  Registrato con Google? Entra dal browser e imposta una password
+                  dal profilo Eroe, poi usala qui.
+                </p>
+              </form>
             )}
 
             <p className="text-center text-[11px] mt-4" style={{ color: "#3b2d6e" }}>
