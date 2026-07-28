@@ -14,8 +14,10 @@ export type HealthAvailability =
 
 export type ReadResult = {
   samples: RawSample[];
-  /** Metriche per cui il permesso è stato negato o il provider non ha dati. */
-  missing: string[];
+  /** Permesso di lettura non concesso: senza, il dato non arriverà mai. */
+  denied: string[];
+  /** Permesso concesso ma nessun campione nel periodo: il dato semplicemente non c'è. */
+  empty: string[];
   /** Metriche che hanno sollevato un errore: mostrate come "dato assente". */
   failed: { metric: string; error: string }[];
 };
@@ -103,11 +105,12 @@ export async function openHealthConnectSettings(): Promise<void> {
  */
 export async function readAllMetrics(days = 30): Promise<ReadResult> {
   const { health } = await loadPlugin();
-  if (!health) return { samples: [], missing: READ_TYPES, failed: [] };
+  if (!health) return { samples: [], denied: READ_TYPES, empty: [], failed: [] };
 
   const endDate = new Date();
   const samples: RawSample[] = [];
-  const missing: string[] = [];
+  const denied: string[] = [];
+  const empty: string[] = [];
   const failed: { metric: string; error: string }[] = [];
 
   let authorized: Set<string>;
@@ -120,7 +123,7 @@ export async function readAllMetrics(days = 30): Promise<ReadResult> {
 
   for (const metric of METRICS) {
     if (!authorized.has(metric.key)) {
-      missing.push(metric.key);
+      denied.push(metric.key);
       continue;
     }
 
@@ -162,12 +165,12 @@ export async function readAllMetrics(days = 30): Promise<ReadResult> {
         limit: 2000,
         ascending: true,
       });
-      if (!res.samples?.length) missing.push(metric.key);
+      if (!res.samples?.length) empty.push(metric.key);
       else samples.push(...res.samples);
     } catch (e) {
       failed.push({ metric: metric.key, error: (e as Error).message ?? "errore sconosciuto" });
     }
   }
 
-  return { samples, missing, failed };
+  return { samples, denied, empty, failed };
 }
