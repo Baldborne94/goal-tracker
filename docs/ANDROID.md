@@ -27,7 +27,27 @@ i permessi o il plugin.
 3. Il Fit3 deve aver già sincronizzato con Samsung Health (apri l'app almeno una
    volta dopo aver indossato il braccialetto).
 
-## Prerequisiti sul PC
+## Scaricare l'APK senza installare niente (consigliato)
+
+L'APK **non è nel repository**: va compilato. Il modo più semplice è farlo fare
+a GitHub, che ha già l'SDK Android pronto.
+
+1. Vai su **Actions → Build APK Android** nel repo su GitHub.
+2. Premi **Run workflow**, scegli il branch e conferma. Lascia vuoto il campo
+   dell'URL per usare la produzione su Vercel.
+3. Aspetta ~3 minuti che il job diventi verde.
+4. Apri il run e scarica l'artifact **`goal-tracker-debug-apk`** in fondo alla
+   pagina: è uno zip che contiene `app-debug.apk`.
+5. Scompatta e installa l'APK sul telefono.
+
+Funziona anche dal browser del telefono, basta essere loggati su GitHub: così
+scarichi e installi senza passare dal PC. Gli artifact restano disponibili 90
+giorni.
+
+Il workflow riparte da solo a ogni push su `main` che tocchi `android/`,
+`capacitor.config.ts` o `public/`.
+
+## Prerequisiti sul PC (solo per la build locale)
 
 - **Node 20+** e le dipendenze del progetto (`npm install`)
 - **Android Studio** (include SDK e `adb`), oppure il solo Android SDK con

@@ -1,0 +1,64 @@
+name: Build APK Android
+
+# Compila l'APK di debug su un runner GitHub, che ha già l'SDK Android
+# installato. Serve per non dover installare Android Studio sul PC:
+# l'APK si scarica dalla pagina del workflow, anche dal browser del telefono.
+#
+# L'APK è firmato con la chiave di debug: va bene per installarlo a mano,
+# non per il Play Store.
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: "URL che il guscio deve caricare (vuoto = quello in capacitor.config.ts)"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    # Solo quando cambia qualcosa che finisce davvero dentro l'APK: il
+    # contenuto web arriva da server.url, quindi un ridenominare un componente
+    # React non richiede una nuova build.
+    paths:
+      - "android/**"
+      - "capacitor.config.ts"
+      - "public/**"
+      - "package.json"
+      - ".github/workflows/android-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Installa le dipendenze
+        # Il plugin nativo viene risolto da node_modules durante cap sync.
+        run: npm ci
+
+      - name: Allinea il progetto nativo
+        env:
+          CAPACITOR_SERVER_URL: ${{ inputs.server_url }}
+        run: npx cap sync android
+
+      - name: Compila l'APK di debug
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: android
+
+      - name: Pubblica l'APK come artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: goal-tracker-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 90

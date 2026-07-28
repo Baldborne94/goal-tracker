@@ -8,7 +8,10 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // Override dell'URL per puntare a un preview o al dev server locale:
 //   CAPACITOR_SERVER_URL=http://192.168.1.10:3000 npx cap sync android
 
-const serverUrl = process.env.CAPACITOR_SERVER_URL ?? "https://goal-tracker-five-wheat.vercel.app";
+// `||` e non `??`: su CI la variabile arriva come stringa vuota quando
+// l'input del workflow non è compilato, e una stringa vuota deve valere
+// "non impostata".
+const serverUrl = process.env.CAPACITOR_SERVER_URL || "https://goal-tracker-five-wheat.vercel.app";
 
 const config: CapacitorConfig = {
   appId: "app.vercel.goaltracker",
