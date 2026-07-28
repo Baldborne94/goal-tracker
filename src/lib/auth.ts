@@ -1,6 +1,18 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/db";
+
+// Payload di https://oauth2.googleapis.com/tokeninfo — l'endpoint valida
+// firma e scadenza del token; a noi restano da controllare audience e issuer.
+type GoogleTokenInfo = {
+  aud?: string;
+  iss?: string;
+  email?: string;
+  email_verified?: string;
+  name?: string;
+  picture?: string;
+};
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -15,6 +27,39 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       checks: ["state"], // PKCE disabled: on Android PWA the code_verifier cookie is not shared between the PWA web view and the Chrome Custom Tab that handles the OAuth redirect, causing the first login attempt to always fail
+    }),
+    // Login dal guscio Android (Capacitor). Google blocca l'OAuth web dentro
+    // le WebView incorporate (disallowed_useragent), quindi l'APK usa il
+    // Sign-In nativo e manda qui l'ID token risultante. tokeninfo ne valida
+    // firma e scadenza; audience e issuer li controlliamo noi.
+    Credentials({
+      id: "google-native",
+      name: "Google (app Android)",
+      credentials: { idToken: {} },
+      async authorize(credentials) {
+        const idToken = credentials?.idToken;
+        if (typeof idToken !== "string" || !idToken) return null;
+
+        const res = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+        );
+        if (!res.ok) return null;
+        const info = (await res.json()) as GoogleTokenInfo;
+
+        if (info.aud !== process.env.GOOGLE_CLIENT_ID) return null;
+        if (info.iss !== "https://accounts.google.com" && info.iss !== "accounts.google.com") return null;
+        if (info.email_verified !== "true" || !info.email) return null;
+
+        // Stessa find-or-create del callback signIn del flusso web, così un
+        // utente ottiene lo stesso account da APK e da browser.
+        let user = await prisma.user.findUnique({ where: { email: info.email } });
+        if (!user) {
+          user = await prisma.user.create({
+            data: { email: info.email, name: info.name ?? null, image: info.picture ?? null },
+          });
+        }
+        return { id: user.id, email: user.email, name: user.name, image: user.image };
+      },
     }),
   ],
   callbacks: {

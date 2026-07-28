@@ -164,6 +164,43 @@ Alternative scartate:
 Il sonno si legge sempre con `readSamples()`: le query aggregate di Health
 Connect non restituiscono le fasi.
 
+## Login Google nell'APK
+
+Google **rifiuta l'OAuth web dentro le WebView incorporate**
+(`disallowed_useragent`), quindi dentro l'APK non si usa il redirect di
+NextAuth: la pagina di login rileva il nativo e apre il **Sign-In nativo di
+Google** (`@capgo/capacitor-social-login`). L'ID token risultante viene
+verificato server-side dal provider `google-native` in `src/lib/auth.ts`
+(audience, issuer, email verificata) e la sessione nasce da una fetch
+same-origin, quindi il cookie finisce nella WebView senza problemi di
+isolamento delle Custom Tab.
+
+### Setup necessario (una volta sola)
+
+1. **Vercel** → env var `NEXT_PUBLIC_GOOGLE_CLIENT_ID` con lo stesso valore di
+   `GOOGLE_CLIENT_ID`. Non è un segreto: è l'audience dell'ID token, il client
+   nativo deve conoscerla.
+2. **Google Cloud Console** → APIs & Services → Credentials → **Create
+   credentials → OAuth client ID → Android**, nello stesso progetto del client
+   web esistente:
+   - Package name: `app.vercel.goaltracker`
+   - SHA-1: quella della keystore di firma condivisa (vedi sotto)
+   Non serve copiare questo client ID da nessuna parte: deve solo esistere.
+3. **GitHub** → repo Settings → Secrets and variables → Actions → secret
+   `ANDROID_DEBUG_KEYSTORE_B64` con la keystore condivisa in base64.
+
+### Perché serve una keystore condivisa
+
+I runner CI sono usa-e-getta: senza keystore fissa ogni APK esce firmato con
+una chiave diversa. Conseguenze: per aggiornare l'app bisogna prima
+disinstallarla, e il Sign-In di Google non funziona mai, perché la SHA-1
+registrata su Google Cloud non corrisponde più alla firma dell'APK. Il
+workflow ripristina la keystore dal secret prima di compilare; se il secret
+manca, avvisa e firma con una chiave usa-e-getta.
+
+È una chiave di **debug** per distribuzione personale, non la chiave di
+release per il Play Store.
+
 ## Permessi
 
 I permessi per i singoli tipi di dato arrivano dal manifest del plugin e

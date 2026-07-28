@@ -1,18 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+// Niente `manifest` né `appleWebApp`: l'app si distribuisce solo come APK
+// (Capacitor), il browser non deve più proporre "Installa app". Il sito resta
+// online perché è il backend che il guscio Android carica.
 export const metadata: Metadata = {
   title: "Goal Tracker",
   description: "Traccia i tuoi obiettivi e ottieni ricompense",
-  manifest: "/manifest.json",
   icons: {
     icon: "/icon-192.svg",
-    apple: "/icon-192.svg",
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Goal Tracker",
   },
 };
 
