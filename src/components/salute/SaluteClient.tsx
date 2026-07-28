@@ -34,6 +34,8 @@ type ApiMetric = StoredMetric & {
 type SyncOutcome = {
   saved: number;
   autoCheckIns: { goalTitle: string; xp: number; date: string }[];
+  denied: string[];
+  empty: string[];
   failed: { metric: string; error: string }[];
 };
 
@@ -164,7 +166,7 @@ export default function SaluteClient() {
       }
 
       await requestPermissions();
-      const { samples, failed } = await readAllMetrics(30);
+      const { samples, denied, empty, failed } = await readAllMetrics(30);
       const normalized = normalizeSamples(samples);
 
       const res = await fetch("/api/health/sync", {
@@ -178,7 +180,7 @@ export default function SaluteClient() {
       }
 
       const data = await res.json();
-      setOutcome({ saved: data.saved ?? 0, autoCheckIns: data.autoCheckIns ?? [], failed });
+      setOutcome({ saved: data.saved ?? 0, autoCheckIns: data.autoCheckIns ?? [], denied, empty, failed });
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -241,8 +243,43 @@ export default function SaluteClient() {
       )}
 
       {outcome && (
-        <div className="rounded-2xl border px-4 py-3 text-xs space-y-2" style={{ background: "rgba(34,197,94,0.1)", borderColor: "rgba(34,197,94,0.4)", color: "#86efac" }}>
-          <p>✅ {outcome.saved} misurazioni sincronizzate.</p>
+        // Zero misurazioni non è un successo: quasi sempre significa permessi
+        // non concessi, e presentarlo con la spunta verde nasconde il problema.
+        <div
+          className="rounded-2xl border px-4 py-3 text-xs space-y-2"
+          style={
+            outcome.saved > 0
+              ? { background: "rgba(34,197,94,0.1)", borderColor: "rgba(34,197,94,0.4)", color: "#86efac" }
+              : { background: "rgba(245,158,11,0.1)", borderColor: "rgba(245,158,11,0.4)", color: "#fcd34d" }
+          }
+        >
+          <p>
+            {outcome.saved > 0
+              ? `✅ ${outcome.saved} misurazioni sincronizzate.`
+              : "⚠️ Nessuna misurazione letta."}
+          </p>
+
+          {outcome.denied.length > 0 && (
+            <div className="space-y-1">
+              <p>
+                Permesso di lettura non concesso per{" "}
+                {outcome.denied.length === METRICS.length
+                  ? "nessuna metrica"
+                  : outcome.denied.map((k) => getMetric(k)?.label ?? k).join(", ")}
+                {outcome.denied.length === METRICS.length ? "" : "."}
+              </p>
+              <button onClick={openHealthConnectSettings} className="underline font-semibold">
+                Apri i permessi di Health Connect
+              </button>
+            </div>
+          )}
+
+          {outcome.denied.length === 0 && outcome.saved === 0 && outcome.empty.length > 0 && (
+            <p style={{ color: "var(--theme-text-muted)" }}>
+              Permessi concessi, ma Health Connect non ha dati per il periodo. Controlla che Samsung
+              Health stia condividendo i dati e che il braccialetto abbia sincronizzato di recente.
+            </p>
+          )}
           {outcome.autoCheckIns.map((c) => (
             <p key={`${c.goalTitle}-${c.date}`}>🎉 «{c.goalTitle}» completata dai dati del braccialetto · +{c.xp} XP</p>
           ))}
