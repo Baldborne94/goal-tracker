@@ -17,6 +17,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.102.0",
     "@auth/prisma-adapter": "^2.11.2",
+    "@capacitor/core": "^8.4.2",
+    "@capgo/capacitor-health": "^8.10.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/bcryptjs": "^2.4.6",
@@ -36,6 +38,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

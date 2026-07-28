@@ -180,6 +180,34 @@ const MIGRATIONS = [
     CONSTRAINT "SentReminder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
   `ALTER TABLE "SentReminder" ENABLE ROW LEVEL SECURITY`,
+  // Salute — wearable metrics read from Health Connect (Galaxy Fit3 → Samsung
+  // Health → Health Connect). Generic on purpose: a new metric type is a new
+  // row, not a new column. "dedupKey" is what makes re-reading the same day
+  // idempotent.
+  `CREATE TABLE IF NOT EXISTS "HealthMetric" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "metricType" TEXT NOT NULL,
+    "value" DOUBLE PRECISION NOT NULL,
+    "unit" TEXT NOT NULL,
+    "recordedAt" TIMESTAMP(3) NOT NULL,
+    "date" TEXT NOT NULL,
+    "source" TEXT NOT NULL DEFAULT 'health_connect',
+    "sourceName" TEXT,
+    "dedupKey" TEXT NOT NULL,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "HealthMetric_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "HealthMetric_userId_dedupKey_key" UNIQUE ("userId","dedupKey"),
+    CONSTRAINT "HealthMetric_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `CREATE INDEX IF NOT EXISTS "HealthMetric_userId_metricType_date_idx" ON "HealthMetric" ("userId","metricType","date")`,
+  `CREATE INDEX IF NOT EXISTS "HealthMetric_userId_metricType_recordedAt_idx" ON "HealthMetric" ("userId","metricType","recordedAt")`,
+  `ALTER TABLE "HealthMetric" ENABLE ROW LEVEL SECURITY`,
+  // Lets a quest auto-complete its daily check-in from wearable data
+  // (e.g. "10.000 passi" ticks itself once the Fit3 reports 10000 steps).
+  `ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthMetric" TEXT`,
+  `ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthTarget" DOUBLE PRECISION`,
 ];
 
 async function main() {

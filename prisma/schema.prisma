@@ -50,6 +50,7 @@ model User {
   bodyMeasurements  BodyMeasurement[]
   svuotaFrigoRecipes SvuotaFrigoRecipe[]
   aiUsage           AiUsage[]
+  healthMetrics     HealthMetric[]
 }
 
 model Account {
@@ -126,6 +127,8 @@ model Goal {
   dailyCheckIn      Boolean   @default(false)
   checkInXP         Int       @default(5)
   checkInDays       String?   // comma-separated weekdays e.g. "1,3,5" (null = every day)
+  healthMetric      String?   // e.g. "steps" — auto check-in when the day's total reaches healthTarget
+  healthTarget      Float?    // e.g. 10000
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -554,4 +557,36 @@ model AiUsage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, endpoint, createdAt])
+}
+
+// ── Salute (Health Connect / Galaxy Fit3) ───────────────────────────────
+
+// Deliberately generic so new wearable metrics need no migration: the metric
+// name lives in `metricType` and anything structured (sleep stages, workout
+// type, blood pressure pair) goes in `metadata`.
+//
+// Dedup: re-reading the same day from Health Connect must not duplicate rows.
+// `externalId` is the Health Connect record id when the provider exposes one;
+// when it doesn't, we fall back to a deterministic hash of
+// (metricType, recordedAt, value, source). Either way the value lands in
+// `dedupKey`, which is unique per user.
+model HealthMetric {
+  id         String   @id @default(cuid())
+  userId     String
+  metricType String // "steps" | "sleep" | "heartRate" | … see src/lib/health.ts
+  value      Float
+  unit       String // "count" | "minute" | "bpm" | "meter" | "kilocalorie" | …
+  recordedAt DateTime
+  date       String // "YYYY-MM-DD" in the user's local time, for cheap daily grouping
+  source     String   @default("health_connect") // "health_connect" | "manual"
+  sourceName String? // originating app, e.g. "Samsung Health"
+  dedupKey   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupKey])
+  @@index([userId, metricType, date])
+  @@index([userId, metricType, recordedAt])
 }

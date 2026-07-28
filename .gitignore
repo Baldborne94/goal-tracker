@@ -46,6 +46,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Capacitor — copie di public/ rigenerate da `npx cap sync android`.
+# Il guscio carica la PWA da server.url, quindi a runtime non vengono nemmeno usate.
+/android/app/src/main/assets/public
+/android/app/src/main/assets/capacitor.config.json
+/android/app/src/main/assets/capacitor.plugins.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

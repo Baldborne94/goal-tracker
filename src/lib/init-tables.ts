@@ -8,6 +8,7 @@ let svuotaFrigoInitialized = false;
 let aiUsageInitialized = false;
 let gymInitialized = false;
 let sentReminderInitialized = false;
+let healthMetricInitialized = false;
 
 // Tracks which scheduled reminders have already been delivered today, so an
 // external cron running every few minutes never sends a duplicate push.
@@ -132,6 +133,39 @@ export async function initSvuotaFrigoTable() {
     CONSTRAINT "SvuotaFrigoRecipe_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
   svuotaFrigoInitialized = true;
+}
+
+// Wearable metrics synced from Health Connect. Also adds the two Goal columns
+// that let a quest tick itself from those metrics, so the first sync works even
+// on a database where the build-time seed never ran.
+export async function initHealthMetricTable() {
+  if (healthMetricInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "HealthMetric" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "metricType" TEXT NOT NULL,
+    "value" DOUBLE PRECISION NOT NULL,
+    "unit" TEXT NOT NULL,
+    "recordedAt" TIMESTAMP(3) NOT NULL,
+    "date" TEXT NOT NULL,
+    "source" TEXT NOT NULL DEFAULT 'health_connect',
+    "sourceName" TEXT,
+    "dedupKey" TEXT NOT NULL,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "HealthMetric_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "HealthMetric_userId_dedupKey_key" UNIQUE ("userId","dedupKey"),
+    CONSTRAINT "HealthMetric_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "HealthMetric_userId_metricType_date_idx" ON "HealthMetric" ("userId","metricType","date")`
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "HealthMetric_userId_metricType_recordedAt_idx" ON "HealthMetric" ("userId","metricType","recordedAt")`
+  );
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthMetric" TEXT`);
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthTarget" DOUBLE PRECISION`);
+  healthMetricInitialized = true;
 }
 
 export async function initAiUsageTable() {

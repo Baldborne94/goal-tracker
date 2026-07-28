@@ -18,6 +18,7 @@ A gamified goal/habit tracker PWA built with Next.js 16 App Router, Prisma 7, Su
 - **Daily reminder** — browser Notification API with permission flow; time + enabled state saved to **DB** + localStorage
 - **Push notifications** — Web Push (VAPID) via service worker; cron endpoint sends reminders per goal schedule
 - **Alchemy (Vita)** — meal log, weight tracking, habit tracker, routine management
+- **Salute (Health Connect)** — wearable metrics from a Samsung Galaxy Fit3, read through a Capacitor WebView shell; charts, sleep-stage breakdown, and quests that auto-check from a metric threshold
 
 ## Tech stack & patterns
 - **Next.js 16 App Router** — `searchParams` is a `Promise`; server + client components
@@ -26,6 +27,22 @@ A gamified goal/habit tracker PWA built with Next.js 16 App Router, Prisma 7, Su
 - **ThemeProvider** — `src/components/ThemeProvider.tsx`; reads localStorage synchronously in `useState` initializer (FOUC prevention); accepts `initialTheme` prop from AppLayout (loaded from DB); `suppressHydrationWarning` on wrapper div
 - **Server Actions** — `src/app/(app)/profile/actions.ts` exports `updateProfileName`, `updateTheme`, `updateReminder`
 - **ISYbank import** — `parseExcelFile()` in FinanceClient.tsx; dynamically imports SheetJS (`import("xlsx")`); finds header row by "Tipologia" column; only imports "Uscite" rows with negative Importo; converts dd/MM/yyyy → YYYY-MM-DD; maps Italian categories via `ISYBANK_CAT_MAP`
+- **Android shell** — Capacitor 8 WebView loading the deployed PWA from `server.url` (one deploy, no second codebase); exists only to bridge Health Connect, which a browser PWA cannot reach. See `docs/ANDROID.md`
+
+## Salute / Health Connect (Fase 2)
+- **Data chain** — Galaxy Fit3 → Samsung Health → Health Connect → Capacitor shell → `POST /api/health/sync` → Supabase
+- **Plugin: `@capgo/capacitor-health`** — chosen after checking the source, not the README: `HealthManager.kt` really maps `SleepSessionRecord` (with stages), `DistanceRecord`, `FloorsClimbedRecord`, `OxygenSaturationRecord`; most recently published of the candidates. Rejected: `ubie-oss/capacitor-health-connect` (14 types, no sleep/distance/workout/floors), `@flomentumsolutions/capacitor-health-extended` and `mley/capacitor-health` (both fine but staler)
+- **Sleep needs `readSamples()`** — Health Connect's aggregate queries don't return sleep stages
+- **Verified limits** (don't re-litigate these):
+  - **Stress is not obtainable** — Health Connect has no stress record type; it's a proprietary Samsung metric. Manual entry only
+  - **Resting HR and HRV are unreliable** — Samsung Health often doesn't write them to Health Connect. Flagged `unreliable: true` in the registry and rendered as `—`, never as an error
+  - **PWAs cannot reach Health Connect** — that's the whole reason for Capacitor
+  - **Health Connect misbehaves on emulators** — final testing happens on a real phone
+  - **Sync is not realtime** — on screen open and on the refresh button, never streaming
+- **Metric registry** — `src/lib/health.ts` is the single place a metric is declared (label, unit, icon, aggregation, history window). Adding one needs **no migration**: `HealthMetric` is generic (`metricType`/`value`/`unit`/`metadata` jsonb)
+- **Dedup** — re-reading the same day must not duplicate rows. `dedupKey` = Health Connect record id when available, else `type:start:end:source`. It deliberately excludes the value, so a corrected sample updates in place. Enforced by `UNIQUE(userId, dedupKey)` + `ON CONFLICT DO UPDATE`
+- **Local dates** — the client normalises samples before POSTing because the day boundary must use the *phone's* timezone, not the server's
+- **Quest auto-check** — `Goal.healthMetric` + `Goal.healthTarget`; on sync `applyHealthGoals()` inserts a `QuestCheckIn` and awards XP when the day's aggregate reaches the target. Idempotent via the existing `UNIQUE(goalId, userId, date)`
 
 ## Key files
 | File | Purpose |
@@ -48,6 +65,14 @@ A gamified goal/habit tracker PWA built with Next.js 16 App Router, Prisma 7, Su
 | `src/components/ThemeProvider.tsx` | CSS vars on wrapper div; 4 themes; `initialTheme` prop |
 | `src/components/finance/FinanceClient.tsx` | Budget card, donut chart, 12-month trend, ISYbank Excel import, category filter chips, clear-month modal, close-month reward |
 | `src/components/goals/GoalDetailClient.tsx` | Milestone toggle, share-as-template button, delete |
+| `src/lib/health.ts` | Salute metric registry + pure helpers (normalise, dedup key, daily aggregation, it-IT formatting) |
+| `src/lib/capacitor-health.ts` | Health Connect bridge; dynamic plugin import, no-op off native |
+| `src/lib/health-goals.ts` | `applyHealthGoals()` — auto check-in when a quest's metric hits its target |
+| `src/app/api/health/sync/route.ts` | POST — chunked `ON CONFLICT` upsert of wearable samples, then auto check-ins |
+| `src/app/api/health/route.ts` | GET series by type/range; DELETE one metric's history |
+| `src/components/salute/SaluteClient.tsx` | Salute screen: metric tiles, bar chart, sleep stages, sync button |
+| `capacitor.config.ts` | WebView shell config; `CAPACITOR_SERVER_URL` overrides the Vercel URL |
+| `docs/ANDROID.md` | APK build/install, phone prerequisites, plugin research, troubleshooting |
 | `src/components/layout/BottomNav.tsx` | `heroIcon(points)` → 🗡️/⚔️/🛡️/🏰/👑; nav: Realm/Quests/Treasury 💎/Alchemy ⚗️/Hero |
 | `public/icon-192.svg` + `public/icon-512.svg` | PWA icons (dark bg + amber sword) |
 
@@ -70,3 +95,9 @@ A gamified goal/habit tracker PWA built with Next.js 16 App Router, Prisma 7, Su
 - Don't push to `main` directly — use `fix/*` or `feat/*` branches, create PR, wait for Vercel CI green, then merge
 - Don't add `prisma db push` to the build script — it hangs on Supabase pgBouncer (port 6543) advisory locks
 - Don't re-enable PKCE for Google OAuth — `checks: ["state"]` is intentional; disabling PKCE fixes Android PWA double-login (CCT vs PWA webview cookie isolation)
+- Don't add a column per health metric — declare it in the `METRICS` registry in `src/lib/health.ts`; the table is generic on purpose
+- Don't compute a health sample's `date` on the server — the day boundary belongs to the phone's timezone, so the client normalises before POSTing
+- Don't put the sample's value in `dedupKey` — a corrected reading must update its row, not add one
+- Don't use Health Connect's aggregate queries for sleep — they drop the stages; always `readSamples()`
+- Don't try to read stress from Health Connect — there is no such record type (proprietary Samsung metric)
+- Don't commit `android/app/src/main/assets/public/` — it's a copy of `public/` regenerated by `npx cap sync android`
