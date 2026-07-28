@@ -1,5 +1,9 @@
 ext {
-    minSdkVersion = 24
+    // Health Connect esiste solo da Android 8.0 (API 26): il plugin dichiara
+    // minSdk 26 e il merge del manifest fallisce con il 24 di default di
+    // Capacitor. Alzarlo è l'unica strada sensata — forzare l'override
+    // porterebbe solo a crash a runtime sui dispositivi più vecchi.
+    minSdkVersion = 26
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.11.0'

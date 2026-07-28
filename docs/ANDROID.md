@@ -19,6 +19,9 @@ i permessi o il plugin.
 
 ## Prerequisiti sul telefono
 
+0. **Android 8.0 (API 26) o superiore.** Health Connect non esiste sotto quella
+   versione, quindi `minSdkVersion` in `android/variables.gradle` è 26 e non
+   può scendere.
 1. **Health Connect** installato. Su Android 14+ è già di sistema; su versioni
    precedenti va installato dal Play Store («Health Connect by Android»).
 2. **Samsung Health** configurato per condividere i dati con Health Connect:
