@@ -59,6 +59,25 @@ jobs:
         # Il plugin nativo viene risolto da node_modules durante cap sync.
         run: npm ci
 
+      # Senza questo, ogni runner genera una debug keystore nuova: ogni APK
+      # avrebbe una firma diversa (aggiornare = disinstallare prima) e il
+      # Sign-In nativo di Google non funzionerebbe mai, perché la SHA-1
+      # registrata su Google Cloud non corrisponderebbe più. Il secret
+      # ANDROID_DEBUG_KEYSTORE_B64 è la keystore condivisa in base64; se
+      # manca, la build procede con una firma usa-e-getta (e il login Google
+      # nell'APK resterà fuori uso).
+      - name: Ripristina la keystore di firma condivisa
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            mkdir -p ~/.android
+            echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+            echo "Keystore condivisa ripristinata."
+          else
+            echo "::warning::ANDROID_DEBUG_KEYSTORE_B64 non impostato: l'APK avrà una firma diversa a ogni build e il login Google nativo non potrà funzionare."
+          fi
+
       - name: Allinea il progetto nativo
         env:
           CAPACITOR_SERVER_URL: ${{ inputs.server_url }}

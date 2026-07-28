@@ -2,12 +2,36 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { isNativePlatform, nativeGoogleIdToken } from "@/lib/capacitor-auth";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleGoogle() {
     setLoading(true);
+    setError(null);
+
+    // Dentro l'APK il flusso OAuth web è vietato da Google
+    // (disallowed_useragent): si passa dal Sign-In nativo. Niente fallback
+    // web sul nativo — fallirebbe comunque, meglio un errore chiaro.
+    if (await isNativePlatform()) {
+      const idToken = await nativeGoogleIdToken();
+      if (!idToken) {
+        setError("Accesso annullato o non riuscito. Riprova.");
+        setLoading(false);
+        return;
+      }
+      const res = await signIn("google-native", { idToken, redirect: false });
+      if (res?.ok) {
+        window.location.href = "/dashboard";
+        return;
+      }
+      setError("Il server ha rifiutato l'accesso. Riprova tra qualche istante.");
+      setLoading(false);
+      return;
+    }
+
     await signIn("google", { callbackUrl: "/dashboard" });
   }
 
@@ -95,6 +119,12 @@ export default function LoginPage() {
                 </span>
               </div>
             </button>
+
+            {error && (
+              <p className="text-center text-[12px] mt-4" style={{ color: "#fca5a5" }}>
+                {error}
+              </p>
+            )}
 
             <p className="text-center text-[11px] mt-4" style={{ color: "#3b2d6e" }}>
               Your quest awaits, hero.
