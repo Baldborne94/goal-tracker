@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
-import { updateProfileName, updateTheme, updateHeroClass } from "@/app/(app)/profile/actions";
+import { updateProfileName, updateTheme, updateHeroClass, setPassword } from "@/app/(app)/profile/actions";
 import NotificationButton from "@/components/NotificationButton";
 import { getLevel, getLevelProgress, LEVEL_THRESHOLDS } from "@/lib/levels";
 import { CLASSES, CLASS_GROUPS, getClassDef } from "@/lib/classes";
@@ -29,6 +29,11 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
   const [heroClass, setHeroClass] = useState<string | null>(initialHeroClass);
   const [classExpanded, setClassExpanded] = useState(false);
   const [savingClass, setSavingClass] = useState(false);
+
+  const [pwd, setPwd] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [pwdStatus, setPwdStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [pwdError, setPwdError] = useState<string | null>(null);
 
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -358,6 +363,75 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
         <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">📱 Notifiche Push</h2>
         <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>Ricevi promemoria missioni anche quando l&apos;app è chiusa.</p>
         <NotificationButton />
+      </div>
+
+      {/* Accesso con password — serve per entrare dall'APK, dove il Sign-In
+          nativo di Google dipende dal Credential Manager del dispositivo e su
+          alcuni telefoni rifiuta l'accesso anche con OAuth configurato bene. */}
+      <div className="rounded-2xl border p-5 mb-6" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
+        <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider mb-3">🔑 Password</h2>
+        <p className="text-xs mb-3" style={{ color: "var(--theme-text-muted)" }}>
+          Imposta una password per entrare nell&apos;app Android con email e password, senza passare da Google.
+        </p>
+
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setPwdError(null);
+            if (pwd !== pwdConfirm) {
+              setPwdError("Le due password non coincidono.");
+              return;
+            }
+            setPwdStatus("saving");
+            const res = await setPassword(pwd);
+            if (res.ok) {
+              setPwdStatus("saved");
+              setPwd("");
+              setPwdConfirm("");
+            } else {
+              setPwdStatus("idle");
+              setPwdError(res.error ?? "Non riuscito.");
+            }
+          }}
+          className="space-y-2"
+        >
+          <input
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={pwd}
+            onChange={(e) => { setPwd(e.target.value); setPwdStatus("idle"); }}
+            placeholder="Nuova password (almeno 8 caratteri)"
+            className="w-full px-3 py-2 rounded-xl border text-white text-sm focus:outline-none"
+            style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+          />
+          <input
+            type="password"
+            autoComplete="new-password"
+            required
+            value={pwdConfirm}
+            onChange={(e) => { setPwdConfirm(e.target.value); setPwdStatus("idle"); }}
+            placeholder="Ripeti la password"
+            className="w-full px-3 py-2 rounded-xl border text-white text-sm focus:outline-none"
+            style={{ background: "var(--theme-bg)", borderColor: "var(--theme-surface-border)" }}
+          />
+          <button
+            type="submit"
+            disabled={pwdStatus === "saving"}
+            className="w-full py-2.5 rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-60"
+            style={{ background: "var(--theme-accent)", color: "#0b0b13" }}
+          >
+            {pwdStatus === "saving" ? "Salvo…" : pwdStatus === "saved" ? "✓ Password impostata" : "Imposta password"}
+          </button>
+        </form>
+
+        {pwdError && <p className="text-xs mt-2 text-red-400">{pwdError}</p>}
+        {pwdStatus === "saved" && (
+          <p className="text-xs mt-2" style={{ color: "#86efac" }}>
+            Fatto. Ora puoi entrare nell&apos;app con <span className="font-semibold">{user?.email}</span> e questa password.
+          </p>
+        )}
       </div>
 
       {/* Danger zone */}

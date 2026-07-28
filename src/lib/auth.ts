@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 
 // Payload di https://oauth2.googleapis.com/tokeninfo — l'endpoint valida
@@ -100,6 +101,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             data: { email: info.email, name: info.name ?? null, image: info.picture ?? null },
           });
         }
+        return { id: user.id, email: user.email, name: user.name, image: user.image };
+      },
+    }),
+    // Accesso con email e password. Nell'APK è l'unica via che non dipende dal
+    // Credential Manager di Google, che su alcuni dispositivi rifiuta l'accesso
+    // ("[16] Account reauth failed") a configurazione OAuth perfettamente
+    // corretta, senza che l'app possa farci nulla.
+    Credentials({
+      id: "password",
+      name: "Email e password",
+      credentials: { email: {}, password: {} },
+      async authorize(credentials) {
+        const email = typeof credentials?.email === "string" ? credentials.email.trim().toLowerCase() : "";
+        const password = typeof credentials?.password === "string" ? credentials.password : "";
+        if (!email || !password) return null;
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        // Un account creato via Google non ha password finché non se ne
+        // imposta una dal profilo: qui non si distingue "utente inesistente"
+        // da "senza password", per non rivelare quali email sono registrate.
+        if (!user?.password) return null;
+
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) return null;
+
         return { id: user.id, email: user.email, name: user.name, image: user.image };
       },
     }),
