@@ -56,6 +56,12 @@ export async function nativeGoogleIdToken(): Promise<NativeGoogleResult> {
     };
   }
 
+  // Il client ID è pubblico per costruzione (viaggia nel bundle e dentro l'ID
+  // token come `aud`): mostrarne il prefisso negli errori distingue subito il
+  // caso "in NEXT_PUBLIC_GOOGLE_CLIENT_ID è finito il client Android invece di
+  // quello web", che altrimenti è indistinguibile da un guasto del dispositivo.
+  const idHint = `client: ${webClientId.slice(0, 24)}…`;
+
   try {
     const { SocialLogin } = await import("@capgo/capacitor-social-login");
     await SocialLogin.initialize({ google: { webClientId } });
@@ -64,14 +70,14 @@ export async function nativeGoogleIdToken(): Promise<NativeGoogleResult> {
     return {
       ok: false,
       reason: "error",
-      detail: `Il plugin non ha restituito un ID token (responseType: ${"responseType" in result ? result.responseType : "sconosciuto"}).`,
+      detail: `Il plugin non ha restituito un ID token (responseType: ${"responseType" in result ? result.responseType : "sconosciuto"}). ${idHint}`,
     };
   } catch (e) {
-    const detail = e instanceof Error ? e.message : String(e);
+    const raw = e instanceof Error ? e.message : String(e);
     return {
       ok: false,
-      reason: isUserCancellation(detail) ? "cancelled" : "error",
-      detail,
+      reason: isUserCancellation(raw) ? "cancelled" : "error",
+      detail: `${raw} — ${idHint}`,
     };
   }
 }
