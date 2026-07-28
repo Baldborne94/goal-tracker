@@ -24,25 +24,54 @@ export async function isNativePlatform(): Promise<boolean> {
   }
 }
 
+export type NativeGoogleResult =
+  | { ok: true; idToken: string }
+  | { ok: false; reason: "cancelled" | "config" | "error"; detail: string };
+
+/** L'annullamento dell'utente non è un guasto: va riconosciuto per non mostrare diagnostica inutile. */
+function isUserCancellation(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes("cancel") || m.includes("annull") || m.includes("13:") || m.includes("user closed");
+}
+
 /**
  * Apre il foglio di Sign-In nativo di Google e restituisce l'ID token.
- * Restituisce null se l'utente annulla o se qualcosa fallisce: è il chiamante
- * a decidere il messaggio. Non va mai chiamata fuori dal nativo.
+ * Non va mai chiamata fuori dal nativo.
  *
- * Richiede NEXT_PUBLIC_GOOGLE_CLIENT_ID (lo stesso client ID web usato dal
- * server: è l'audience dell'ID token, non un segreto).
+ * Il motivo del fallimento viene sempre riportato al chiamante: questo flusso
+ * dipende da tre configurazioni esterne (variabile d'ambiente, client OAuth
+ * Android con la SHA-1 giusta, firma dell'APK) e un errore generico non
+ * permette di capire quale delle tre è rotta.
+ *
+ * Richiede NEXT_PUBLIC_GOOGLE_CLIENT_ID: dev'essere il client ID **web** (fa
+ * da audience dell'ID token), non quello Android.
  */
-export async function nativeGoogleIdToken(): Promise<string | null> {
+export async function nativeGoogleIdToken(): Promise<NativeGoogleResult> {
   const webClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  if (!webClientId) return null;
+  if (!webClientId) {
+    return {
+      ok: false,
+      reason: "config",
+      detail: "NEXT_PUBLIC_GOOGLE_CLIENT_ID assente nel deploy: aggiungila su Vercel e ridistribuisci.",
+    };
+  }
 
   try {
     const { SocialLogin } = await import("@capgo/capacitor-social-login");
     await SocialLogin.initialize({ google: { webClientId } });
     const { result } = await SocialLogin.login({ provider: "google", options: {} });
-    if ("idToken" in result && result.idToken) return result.idToken;
-    return null;
-  } catch {
-    return null;
+    if ("idToken" in result && result.idToken) return { ok: true, idToken: result.idToken };
+    return {
+      ok: false,
+      reason: "error",
+      detail: `Il plugin non ha restituito un ID token (responseType: ${"responseType" in result ? result.responseType : "sconosciuto"}).`,
+    };
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    return {
+      ok: false,
+      reason: isUserCancellation(detail) ? "cancelled" : "error",
+      detail,
+    };
   }
 }
