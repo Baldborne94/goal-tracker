@@ -10,6 +10,7 @@ let gymInitialized = false;
 let sentReminderInitialized = false;
 let healthMetricInitialized = false;
 let loginTicketInitialized = false;
+let mealLogInitialized = false;
 
 // Tracks which scheduled reminders have already been delivered today, so an
 // external cron running every few minutes never sends a duplicate push.
@@ -102,6 +103,28 @@ export async function initSpesaTables() {
     CONSTRAINT "ShoppingItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
   initialized = true;
+}
+
+// Note testuali per pasto nella Dieta. La tabella era dichiarata in
+// schema.prisma ma non è mai stata creata nel DB (il vecchio ciclo di seed
+// abortiva prima di arrivarci): ogni salvataggio delle note falliva in
+// silenzio. Da qui in poi nasce al primo uso, come le altre.
+export async function initMealLogTable() {
+  if (mealLogInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "MealLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "mealType" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "MealLog_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "MealLog_userId_date_mealType_key" UNIQUE ("userId","date","mealType"),
+    CONSTRAINT "MealLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  mealLogInitialized = true;
 }
 
 export async function initSvuotaFrigoTable() {

@@ -71,6 +71,19 @@ export default async function VitaPage() {
       </Link>
 
       <Link
+        href="/routine"
+        className="flex items-center gap-4 border rounded-2xl p-5 active:scale-95 transition-transform"
+        style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+      >
+        <span className="text-4xl">🔁</span>
+        <div>
+          <p className="text-white font-semibold">Abitudini e Routine</p>
+          <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>Le spunte quotidiane che tengono vivo lo streak</p>
+        </div>
+        <span className="ml-auto text-lg" style={{ color: "var(--theme-text-muted)" }}>›</span>
+      </Link>
+
+      <Link
         href="/spesa"
         className="flex items-center gap-4 border rounded-2xl p-5 active:scale-95 transition-transform"
         style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}

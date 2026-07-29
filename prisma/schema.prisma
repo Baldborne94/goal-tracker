@@ -42,8 +42,6 @@ model User {
   gymExercises      GymExercise[]
   gymLogs           GymLog[]
   foodEntries       FoodEntry[]
-  workoutSessions   WorkoutSession[]
-  sleepLogs         SleepLog[]
   waterLogs         WaterLog[]
   bodyMeasurements  BodyMeasurement[]
   svuotaFrigoRecipes SvuotaFrigoRecipe[]
@@ -448,51 +446,7 @@ model WaterLog {
 
 // ── Workout / cardio (kcal burned) ──────────────────────────────────────
 
-model WorkoutSession {
-  id         String   @id @default(cuid())
-  userId     String
-  date       String   // "YYYY-MM-DD"
-  kcalBurned Int      @default(0)
-  createdAt  DateTime @default(now())
-
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercises WorkoutExercise[]
-
-  @@unique([userId, date])
-}
-
-model WorkoutExercise {
-  id           String   @id @default(cuid())
-  sessionId    String
-  userId       String
-  name         String
-  category     String   @default("Strength")
-  exerciseType String   @default("strength")
-  sets         Int?
-  reps         Int?
-  weightKg     Float?
-  durationMin  Int?
-  met          Float?
-  kcalBurned   Int      @default(0)
-  createdAt    DateTime @default(now())
-
-  session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-}
-
 // ── Sonno e misure corporee ─────────────────────────────────────────────
-
-model SleepLog {
-  id        String   @id @default(cuid())
-  userId    String
-  date      String   // "YYYY-MM-DD"
-  hours     Float
-  quality   Int      @default(3)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-}
 
 model BodyMeasurement {
   id        String   @id @default(cuid())

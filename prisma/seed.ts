@@ -185,6 +185,23 @@ const MIGRATIONS = [
   // (e.g. "10.000 passi" ticks itself once the Fit3 reports 10000 steps).
   `ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthMetric" TEXT`,
   `ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthTarget" DOUBLE PRECISION`,
+  // Free-text notes per meal in the Diet screen. Declared in schema.prisma
+  // since the beginning but never created: the old seed loop aborted before
+  // reaching it, so every save failed silently.
+  `CREATE TABLE IF NOT EXISTS "MealLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "mealType" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "MealLog_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "MealLog_userId_date_mealType_key" UNIQUE ("userId","date","mealType"),
+    CONSTRAINT "MealLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "MealLog" ENABLE ROW LEVEL SECURITY`,
   // One-shot tickets that ferry a session from the system browser into the
   // WebView during Google login from the APK (see src/lib/login-ticket.ts).
   // Only the ticket's hash is stored, never the spendable value.

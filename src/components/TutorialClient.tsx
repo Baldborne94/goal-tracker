@@ -129,6 +129,19 @@ const SLIDES: Slide[] = [
     tip: "💡 Tutta la sezione Vita è pensata per il benessere oltre alle missioni.",
   },
   {
+    icon: "❤️",
+    accent: "#f87171",
+    tag: "Braccialetto",
+    title: "Salute (Galaxy Fit3)",
+    bullets: [
+      "Passi, sonno con le fasi, battito, calorie e distanza arrivano da soli via Health Connect",
+      "La schermata si sincronizza all'apertura e ogni 5 minuti mentre è aperta",
+      "Imposta metrica e soglia su una missione e si spunterà da sola dai dati del braccialetto",
+      "Il sonno inserito a mano non serve più: lo misura il Fit3, fase per fase",
+    ],
+    tip: "💡 Se un dato non arriva, controlla che Health Sync stia scrivendo su Health Connect.",
+  },
+  {
     icon: "🧑‍🍳",
     accent: "#f472b6",
     tag: "Intelligenza Artificiale",

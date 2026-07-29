@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { initMealLogTable } from "@/lib/init-tables";
 
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await initMealLogTable();
 
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
@@ -22,6 +24,7 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await initMealLogTable();
 
   const { date, mealType, text, notes } = await req.json();
   if (!date || !mealType || !text?.trim())

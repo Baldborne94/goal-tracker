@@ -320,7 +320,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Weekly life summary */}
-      <WeeklyLifeSummary />
+      <WeeklyLifeSummary userId={userId} />
 
       {/* Today's check-ins */}
       {checkInToday.length > 0 && (
