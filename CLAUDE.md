@@ -19,7 +19,7 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - **Hero themes** — warrior (amber/purple), ocean (cyan/navy), forest (emerald/green), crimson (rose/dark); saved to **DB** + localStorage
 - **Finance (Kakeebo)** — monthly budget, expense tracking by category, donut chart, **12-month** spending trend, **ISYbank Excel import** (parses "Lista Operazioni" sheet, maps Italian categories), category filter chips in daily log, clear-month button, close-month reward (25 XP + trophy)
 - **Daily reminder** — browser Notification API with permission flow; time + enabled state saved to **DB** + localStorage
-- **Push notifications** — Web Push (VAPID) via service worker; cron endpoint sends reminders per goal schedule
+- **Push notifications** — two couriers, one entry point (`src/lib/push.ts`): Web Push (VAPID + service worker) for the browser, **FCM** for the APK, because Android's WebView has no Push API. `PushSubscription.kind` tells them apart (`web` keeps its encryption keys, `fcm` stores the device token in `endpoint` and has none). Sending needs `FIREBASE_SERVICE_ACCOUNT` on Vercel; without it FCM sends fail quietly and the browser path is untouched
 - **Alchemy (Vita)** — meal log, weight tracking, habit tracker, routine management
 - **Salute (Health Connect)** — wearable metrics from a Samsung Galaxy Fit3, read through a Capacitor WebView shell; charts, sleep-stage breakdown, and quests that auto-check from a metric threshold
 
@@ -84,6 +84,8 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 | `src/components/finance/FinanceClient.tsx` | Budget card, donut chart, 12-month trend, ISYbank Excel import, category filter chips, clear-month modal, close-month reward |
 | `src/components/goals/GoalDetailClient.tsx` | Milestone toggle, share-as-template button, delete |
 | `src/lib/health.ts` | Salute metric registry + pure helpers (normalise, dedup key, daily aggregation, delta vs yesterday, sleep-stage series, it-IT formatting) |
+| `src/lib/push.ts` | The one send path: routes each subscription to Web Push or FCM, drops dead ones |
+| `src/lib/capacitor-push.ts` | APK side: permission, FCM token (event + timeout), hand-off to `/api/push/subscribe` |
 | `src/lib/capacitor-health.ts` | Health Connect bridge; dynamic plugin import, no-op off native |
 | `src/lib/health-goals.ts` | `applyHealthGoals()` — auto check-in when a quest's metric hits its target |
 | `src/app/api/health/sync/route.ts` | POST — chunked `ON CONFLICT` upsert of wearable samples, then auto check-ins |

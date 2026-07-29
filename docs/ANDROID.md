@@ -317,7 +317,44 @@ La via nativa è **Firebase Cloud Messaging**, che è anche il trasporto che
 Chrome usa sotto per il Web Push su Android — cambia solo chi tiene la
 connessione: il sistema operativo invece della pagina.
 
-### Cosa serve, prima di scrivere una riga di codice
+### Configurato — cosa resta da fare a mano
+
+Il progetto Firebase esiste (`goal-tracker-16222`), `google-services.json` è
+in `android/app/` ed è committato: **non è un segreto**, viaggia dentro ogni
+APK e chiunque scarichi l'app ce l'ha.
+
+Il segreto è l'altro: **la chiave dell'account di servizio**, che serve al
+server per inviare. Va su Vercel come variabile d'ambiente, non nel repo:
+
+1. Firebase → **Impostazioni progetto → Account di servizio → Genera nuova
+   chiave privata** (scarica un JSON).
+2. Vercel → Settings → Environment Variables → nuova variabile
+   **`FIREBASE_SERVICE_ACCOUNT`**, e come valore **l'intero contenuto del
+   JSON** incollato così com'è, su una riga sola.
+3. Redeploy.
+
+Senza quella variabile il codice non si rompe: `getMessaging()` restituisce
+null, gli invii verso l'APK falliscono in silenzio e il Web Push del browser
+continua a funzionare come prima.
+
+### Come si prova
+
+Profilo Eroe → Notifiche → **Attiva notifiche push** (dentro l'APK parte il
+percorso nativo, non quello del browser), poi **Invia test**. La risposta
+dice `sent`, `total`, `fcm` e `fcmReady`: se `fcm: 1` e `fcmReady: false`, la
+variabile su Vercel manca o è malformata.
+
+### La SHA-1: per FCM non serve
+
+Nel modulo di Firebase c'è il campo impronta SHA-1 ed è rimasto vuoto — si
+vede da `oauth_client: []` dentro `google-services.json`. **Per le notifiche
+non cambia nulla**: l'impronta serve a Firebase Authentication, ai Dynamic
+Links e ad App Check, non a Cloud Messaging, che identifica l'app col nome
+pacchetto e la chiave API. Il Sign-In di Google dell'app non passa da
+Firebase, quindi resta com'è. Se un giorno lo si sposterà lì, allora l'SHA-1
+andrà aggiunta e il file rigenerato.
+
+### Cosa serviva, prima di scrivere una riga di codice
 
 FCM richiede un file di configurazione legato al progetto Firebase e al
 nome del pacchetto. Senza, il plugin Gradle di Google fa fallire la build

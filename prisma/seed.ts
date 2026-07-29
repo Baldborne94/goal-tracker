@@ -205,6 +205,11 @@ const MIGRATIONS = [
   // When a shopping item was ticked. Without it the "check 3 items" daily
   // challenge counted all-time ticks and handed itself out every morning.
   `ALTER TABLE "ShoppingItem" ADD COLUMN IF NOT EXISTS "checkedAt" TIMESTAMP(3)`,
+  // Push subscriptions can now be FCM device tokens, which have no
+  // encryption keys of their own: the OS handles that side.
+  `ALTER TABLE "PushSubscription" ADD COLUMN IF NOT EXISTS "kind" TEXT NOT NULL DEFAULT 'web'`,
+  `ALTER TABLE "PushSubscription" ALTER COLUMN "p256dh" DROP NOT NULL`,
+  `ALTER TABLE "PushSubscription" ALTER COLUMN "auth" DROP NOT NULL`,
   // Hero-sheet ledger: every stat-point gain with its provenance. Totals
   // per stat are a SUM over this table — no counters to keep in sync.
   `CREATE TABLE IF NOT EXISTS "StatEvent" (
