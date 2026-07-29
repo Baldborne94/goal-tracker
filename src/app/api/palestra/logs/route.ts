@@ -108,9 +108,21 @@ export async function POST(req: Request) {
     notes ? String(notes) : null
   );
 
-  // Il ferro nutre la Forza. È l'unico punto senza XP gemelli: la sessione
-  // in palestra ha già la sua sfida giornaliera per quelli.
-  await awardStat(userId, "for", 5, "gym_log", "Allenamento in palestra");
+  // Il ferro nutre la Forza e vale XP quanto una pesata: prima ne dava zero,
+  // e sollevare pesi rendeva meno che salire su una bilancia. Una sessione al
+  // giorno paga, come per il peso: registrarne dieci non è allenarsi dieci volte.
+  const paidToday = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+    `SELECT COUNT(*) as count FROM "GymLog" WHERE "userId" = $1 AND date = $2 AND id <> $3`,
+    userId, date, logId
+  ).catch(() => [{ count: BigInt(0) }]);
+
+  if (Number(paidToday[0]?.count ?? 0) === 0) {
+    await awardStat(userId, "for", 5, "gym_log", "Allenamento in palestra");
+    await prisma.user.update({
+      where: { id: userId },
+      data: { points: { increment: 10 } },
+    }).catch(() => {});
+  }
 
   if (entries && entries.length > 0) {
     for (const entry of entries) {

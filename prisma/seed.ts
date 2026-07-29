@@ -202,6 +202,9 @@ const MIGRATIONS = [
     CONSTRAINT "MealLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
   `ALTER TABLE "MealLog" ENABLE ROW LEVEL SECURITY`,
+  // When a shopping item was ticked. Without it the "check 3 items" daily
+  // challenge counted all-time ticks and handed itself out every morning.
+  `ALTER TABLE "ShoppingItem" ADD COLUMN IF NOT EXISTS "checkedAt" TIMESTAMP(3)`,
   // Hero-sheet ledger: every stat-point gain with its provenance. Totals
   // per stat are a SUM over this table — no counters to keep in sync.
   `CREATE TABLE IF NOT EXISTS "StatEvent" (

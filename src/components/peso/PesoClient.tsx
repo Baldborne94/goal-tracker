@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { dayKey } from "@/lib/utils";
 
 type BodyMeasurement = {
   id: string; date: string;
@@ -22,7 +23,7 @@ function fmt(dateStr: string) {
 }
 
 function fmtInput(dateStr: string) {
-  return new Date(dateStr).toISOString().slice(0, 10);
+  return dayKey(new Date(dateStr));
 }
 
 function WeightChart({ entries }: { entries: WeightEntry[] }) {
@@ -104,14 +105,14 @@ export default function PesoClient() {
   const [showForm, setShowForm] = useState(false);
   const [weight, setWeight] = useState("");
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(dayKey());
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
   // Body measurements
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [showMeasForm, setShowMeasForm] = useState(false);
-  const [measDate, setMeasDate] = useState(new Date().toISOString().slice(0, 10));
+  const [measDate, setMeasDate] = useState(dayKey());
   const [mHeight, setMHeight] = useState("");
   const [mWaist, setMWaist] = useState("");
   const [mHips, setMHips] = useState("");
@@ -198,7 +199,7 @@ export default function PesoClient() {
       if (res.ok) {
         setWeight("");
         setNote("");
-        setDate(new Date().toISOString().slice(0, 10));
+        setDate(dayKey());
         setShowForm(false);
         await fetchData();
         setMsg("+10 XP guadagnati!");

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatDate, getPriorityColor, getPriorityLabel } from "@/lib/utils";
+import { formatDate, getPriorityColor, getPriorityLabel, dayKey } from "@/lib/utils";
 import { getClassDef } from "@/lib/classes";
 
 type Category = { id: string; name: string; color: string };
@@ -311,7 +311,7 @@ export default function GoalsList({ goals, categories, heroClass }: Props) {
 function GoalCard({ goal }: { goal: Goal }) {
   const milestonesDone = goal.milestones.filter((m) => m.completed).length;
   const milestonesTotal = goal.milestones.length;
-  const isOverdue = goal.status === "active" && !!goal.targetDate && goal.targetDate < new Date().toISOString().slice(0, 10);
+  const isOverdue = goal.status === "active" && !!goal.targetDate && goal.targetDate < dayKey();
 
   return (
     <Link

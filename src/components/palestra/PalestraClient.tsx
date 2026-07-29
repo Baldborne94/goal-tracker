@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { dayKey } from "@/lib/utils";
 
 type Exercise = {
   id: string; name: string; muscleGroup: string;
@@ -637,7 +638,7 @@ export default function PalestraClient() {
     if (!day) return;
     setSaving(true);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = dayKey();
     const entries: { exerciseId: string; setNumber: number; weight?: number; reps?: number }[] = [];
 
     for (const [exId, sets] of Object.entries(sessionEntries)) {

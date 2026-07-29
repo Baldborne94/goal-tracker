@@ -103,6 +103,9 @@ export async function initSpesaTables() {
     CONSTRAINT "ShoppingItem_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "ShoppingItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "ShoppingItem" ADD COLUMN IF NOT EXISTS "checkedAt" TIMESTAMP(3)`
+  );
   initialized = true;
 }
 

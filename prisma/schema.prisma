@@ -347,6 +347,7 @@ model ShoppingItem {
   name      String
   quantity  String?
   checked   Boolean  @default(false)
+  checkedAt DateTime?
   category  String   @default("altro")
   createdAt DateTime @default(now())
 

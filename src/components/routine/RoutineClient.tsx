@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { dayKey } from "@/lib/utils";
 
 type HabitLog = { id: string; date: string };
 type Habit = {
@@ -27,7 +28,7 @@ function HabitHeatmap({ habits }: { habits: { name: string; icon: string; logs: 
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = dayKey(d);
       const count = habits.filter((h) => h.logs.some((l) => l.date === dateStr)).length;
       cells.push({ date: dateStr, count, total: totalHabits });
     }
@@ -102,13 +103,13 @@ function HabitHeatmap({ habits }: { habits: { name: string; icon: string; logs: 
 function calcStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const set = new Set(dates);
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const today = dayKey();
+  const yesterday = dayKey(new Date(Date.now() - 86400000));
   const start = set.has(today) ? today : set.has(yesterday) ? yesterday : null;
   if (!start) return 0;
   let streak = 0;
   const d = new Date(start);
-  while (set.has(d.toISOString().slice(0, 10))) {
+  while (set.has(dayKey(d))) {
     streak++;
     d.setDate(d.getDate() - 1);
   }
@@ -116,7 +117,7 @@ function calcStreak(dates: string[]): number {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return dayKey();
 }
 
 function formatDate(d: Date) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { dayRange, serverDayKey } from "@/lib/utils";
 import { statForChallengeType, statPointsFromXp } from "@/lib/hero-stats";
 import { awardStat } from "@/lib/hero-stats-server";
 
@@ -11,7 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = session.user.id;
   const { id: challengeId } = await params;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = serverDayKey();
 
   const challenges = await prisma.$queryRawUnsafe<{ id: string; xp: number; type: string; title: string | null }[]>(
     `SELECT id, xp, type, title FROM "DailyChallenge" WHERE id = $1 LIMIT 1`,
@@ -27,8 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (existing[0]?.completed) return NextResponse.json({ error: "Already claimed" }, { status: 400 });
 
   const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayEnd = new Date(dayStart.getTime() + 86400000);
+  const { start: dayStart, end: dayEnd } = dayRange(now);
 
   let conditionMet = false;
 
@@ -69,8 +69,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     conditionMet = Number(rows[0]?.count ?? 0) >= 1;
   } else if (challenge.type === "check_shopping") {
     const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM "ShoppingItem" WHERE "userId" = $1 AND "checked" = true`,
-      userId
+      `SELECT COUNT(*) as count FROM "ShoppingItem"
+       WHERE "userId" = $1 AND "checked" = true AND "checkedAt" >= $2 AND "checkedAt" < $3`,
+      userId, dayStart, dayEnd
     ).catch(() => [{ count: BigInt(0) }]);
     conditionMet = Number(rows[0]?.count ?? 0) >= 3;
   }
