@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { statForCategory, statPointsFromXp } from "@/lib/hero-stats";
+import { awardStat } from "@/lib/hero-stats-server";
 
 export async function PATCH(
   req: Request,
@@ -16,7 +18,7 @@ export async function PATCH(
 
   const goal = await prisma.goal.findFirst({
     where: { id: goalId, userId: session.user.id },
-    include: { milestones: { orderBy: { order: "asc" } } },
+    include: { milestones: { orderBy: { order: "asc" } }, category: true },
   });
   if (!goal)
     return NextResponse.json({ error: "Goal not found" }, { status: 404 });
@@ -49,6 +51,17 @@ export async function PATCH(
       where: { id: session.user.id },
       data: { points: { increment: delta } },
     });
+    // La scheda cresce solo in avanti: una milestone despuntata riprende
+    // gli XP ma non cancella l'esperienza vissuta.
+    if (delta > 0) {
+      await awardStat(
+        session.user.id,
+        statForCategory(goal.category?.name),
+        statPointsFromXp(delta),
+        "milestone",
+        `Milestone di «${goal.title}»`
+      );
+    }
   }
 
   // Auto-clone recurring quests when completed

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { initGymTables } from "@/lib/init-tables";
+import { awardStat } from "@/lib/hero-stats-server";
 
 export const runtime = "nodejs";
 
@@ -106,6 +107,10 @@ export async function POST(req: Request) {
     durationMin !== undefined ? Number(durationMin) : null,
     notes ? String(notes) : null
   );
+
+  // Il ferro nutre la Forza. È l'unico punto senza XP gemelli: la sessione
+  // in palestra ha già la sua sfida giornaliera per quelli.
+  await awardStat(userId, "for", 5, "gym_log", "Allenamento in palestra");
 
   if (entries && entries.length > 0) {
     for (const entry of entries) {

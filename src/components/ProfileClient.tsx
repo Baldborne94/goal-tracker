@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import HeroSheet, { type HeroSheetEvent } from "@/components/HeroSheet";
+import { EMPTY_TOTALS, type StatTotals } from "@/lib/hero-stats";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
 import { updateProfileName, updateTheme, updateHeroClass, setPassword } from "@/app/(app)/profile/actions";
@@ -23,7 +25,7 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 type CategoryStat = { name: string; color: string; total: number; completed: number };
 
-export default function ProfileClient({ user, stats, streak = 0, categoryStats = [], weeklyMilestones = [0, 0, 0, 0], heroClass: initialHeroClass = null }: { user: User | null; stats: Stats; streak?: number; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; heroClass?: string | null }) {
+export default function ProfileClient({ user, stats, streak = 0, categoryStats = [], weeklyMilestones = [0, 0, 0, 0], heroClass: initialHeroClass = null, statTotals = EMPTY_TOTALS, statEvents = [] }: { user: User | null; stats: Stats; streak?: number; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; heroClass?: string | null; statTotals?: StatTotals; statEvents?: HeroSheetEvent[] }) {
   const router = useRouter();
   const { theme, colors, setTheme } = useTheme();
   const [heroClass, setHeroClass] = useState<string | null>(initialHeroClass);
@@ -187,6 +189,9 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
           </div>
         ))}
       </div>
+
+      {/* La Scheda dell'Eroe: stat permanenti, classe emergente, registro */}
+      <HeroSheet totals={statTotals} events={statEvents} />
 
       {/* Weekly activity */}
       {weeklyMilestones.some((v) => v > 0) && (

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { checkAndAwardRoutineRewards } from "@/lib/rewards";
+import { awardStat } from "@/lib/hero-stats-server";
 
 export async function POST(
   _req: Request,
@@ -30,6 +31,7 @@ export async function POST(
 
   await prisma.habitLog.create({ data: { habitId, date: today } });
 
+  await awardStat(session.user.id, "sag", 3, "habit", `Abitudine «${habit.name}» spuntata`);
   await prisma.user.update({
     where: { id: session.user.id },
     data: { points: { increment: 5 } },
