@@ -37,6 +37,30 @@ function formatDateLabel(dateStr: string) {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
 }
 
+// Calorie bruciate del giorno, dai dati del braccialetto. Le calorie attive
+// sono quelle del movimento; se la sorgente scrive anche le totali, quelle
+// comprendono il metabolismo basale e sono il numero giusto per un bilancio.
+async function fetchBurned(day: string): Promise<number | null> {
+  try {
+    const res = await fetch(`/api/health?days=30`);
+    if (!res.ok) return null;
+    const { metrics } = (await res.json()) as {
+      metrics: { metricType: string; value: number; date: string }[];
+    };
+    const sum = (type: string) =>
+      metrics
+        .filter((m) => m.metricType === type && m.date === day)
+        .reduce((acc, m) => acc + (Number(m.value) || 0), 0);
+
+    const total = sum("totalCalories");
+    const active = sum("calories");
+    const burned = total > 0 ? total : active;
+    return burned > 0 ? Math.round(burned) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function DietClient({ initialDate }: Props) {
   const [date, setDate] = useState(initialDate);
   const [logs, setLogs] = useState<MealLog[]>([]);
@@ -44,6 +68,9 @@ export default function DietClient({ initialDate }: Props) {
   const [waterGlasses, setWaterGlasses] = useState(0);
   const [loadingDate, setLoadingDate] = useState(false);
   const [kcalGoal, setKcalGoal] = useState(2000);
+  // Calorie bruciate lette dal braccialetto per il giorno mostrato: null
+  // finché non si sa, cioè finché la risposta non arriva o non c'è dato.
+  const [burnedKcal, setBurnedKcal] = useState<number | null>(null);
   const [showGoalEdit, setShowGoalEdit] = useState(false);
   const [goalInput, setGoalInput] = useState("");
   const [savingGoal, setSavingGoal] = useState(false);
@@ -62,6 +89,7 @@ export default function DietClient({ initialDate }: Props) {
       .then(r => r.ok ? r.json() : { glasses: 0 })
       .then((d: { glasses: number }) => setWaterGlasses(d.glasses))
       .catch(() => {});
+    void fetchBurned(initialDate).then(setBurnedKcal);
     fetch(`/api/diet/goal`)
       .then(r => r.ok ? r.json() : { kcalGoal: 2000 })
       .then((d: { kcalGoal: number }) => setKcalGoal(d.kcalGoal))
@@ -105,6 +133,7 @@ export default function DietClient({ initialDate }: Props) {
     if (logsRes.ok) setLogs(await logsRes.json());
     if (foodRes.ok) setFoodEntries(await foodRes.json());
     if (waterRes.ok) { const w = await waterRes.json(); setWaterGlasses(w.glasses ?? 0); }
+    setBurnedKcal(await fetchBurned(newDate));
     setDate(newDate);
     setLoadingDate(false);
   }
@@ -372,6 +401,32 @@ export default function DietClient({ initialDate }: Props) {
         </div>
         {dailyKcal === 0 && (
           <p className="text-xs mt-1.5" style={{ color: "var(--theme-text-muted)" }}>Aggiungi alimenti ai pasti per tracciare le calorie</p>
+        )}
+
+        {/* Il bilancio: mangiate meno bruciate. Compare solo quando entrambi i
+            numeri esistono — un bilancio con metà dei dati non è un bilancio. */}
+        {burnedKcal !== null && dailyKcal > 0 && (
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t" style={{ borderColor: "var(--theme-surface-border)" }}>
+            <div className="flex-1 text-center">
+              <p className="text-sm font-bold text-amber-400 tabular-nums">{dailyKcal}</p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>mangiate</p>
+            </div>
+            <span style={{ color: "var(--theme-text-muted)" }}>−</span>
+            <div className="flex-1 text-center">
+              <p className="text-sm font-bold tabular-nums" style={{ color: "#4ade80" }}>{burnedKcal}</p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>bruciate · Fit3</p>
+            </div>
+            <span style={{ color: "var(--theme-text-muted)" }}>=</span>
+            <div className="flex-1 text-center">
+              <p
+                className="text-base font-extrabold tabular-nums"
+                style={{ color: dailyKcal - burnedKcal > 0 ? "#fca5a5" : "#4ade80" }}
+              >
+                {dailyKcal - burnedKcal > 0 ? "+" : ""}{dailyKcal - burnedKcal}
+              </p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>bilancio</p>
+            </div>
+          </div>
         )}
         {dailyKcal > 0 && (
           <div className="flex gap-3 mt-2 flex-wrap">

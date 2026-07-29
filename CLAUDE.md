@@ -15,6 +15,7 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - **Quest suggestions** — AI-style panel suggests quests with pre-filled milestones based on user lifestyle
 - **Share quest as template** — `btoa(JSON.stringify(data))` encoded in URL `?template=` param; decoded server-side
 - **Hero Profile** — editable name (Server Action), hero theme (4 presets), daily browser reminder, stats grid, trophies, wipe-everything reset
+- **Titolo vs Classe** — the picker in the profile is the **titolo**: cosmetic, it only names the XP tiers (`getTiers(heroClass)`). The **classe** is not chosen, it emerges from the Hero Sheet. No forced `/class-select` at first launch any more; `getClassDef(null)` falls back to the first entry so tier names always work
 - **Hero themes** — warrior (amber/purple), ocean (cyan/navy), forest (emerald/green), crimson (rose/dark); saved to **DB** + localStorage
 - **Finance (Kakeebo)** — monthly budget, expense tracking by category, donut chart, **12-month** spending trend, **ISYbank Excel import** (parses "Lista Operazioni" sheet, maps Italian categories), category filter chips in daily log, clear-month button, close-month reward (25 XP + trophy)
 - **Daily reminder** — browser Notification API with permission flow; time + enabled state saved to **DB** + localStorage

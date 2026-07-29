@@ -269,7 +269,7 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
       {/* Hero Class */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">🧬 Classe Eroe</h2>
+          <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">🎖️ Titolo</h2>
           <button
             onClick={() => setClassExpanded(!classExpanded)}
             className="text-xs font-semibold px-3 py-1 rounded-lg border transition-colors"
@@ -278,6 +278,13 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
             {classExpanded ? "Annulla" : "Cambia"}
           </button>
         </div>
+
+        {!classExpanded && (
+          <p className="text-[11px] leading-relaxed mb-2" style={{ color: "var(--theme-text-muted)" }}>
+            Il titolo lo scegli tu e dà il nome ai livelli. La <span className="font-semibold">classe</span> non
+            si sceglie: la guadagni con le azioni, e la trovi nella Scheda dell&apos;Eroe qui sopra.
+          </p>
+        )}
 
         {/* Current class display */}
         {heroClass && !classExpanded && (() => {
@@ -300,6 +307,18 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
             </div>
           );
         })()}
+
+        {!heroClass && !classExpanded && (
+          <div
+            className="rounded-2xl border p-4 text-center"
+            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+          >
+            <p className="text-sm text-[#ede9ff]">Nessun titolo scelto</p>
+            <p className="text-xs mt-1" style={{ color: "var(--theme-text-muted)" }}>
+              Tocca «Cambia» per dartene uno. Non cambia il gioco: cambia come si chiamano i tuoi livelli.
+            </p>
+          </div>
+        )}
 
         {/* Class picker grid */}
         {classExpanded && (

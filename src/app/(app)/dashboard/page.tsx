@@ -27,7 +27,10 @@ export default async function DashboardPage() {
     onboardingComplete = flags[0]?.onboardingComplete ?? false;
   } catch { heroClass = "fighter"; onboardingComplete = true; }
 
-  if (!heroClass) redirect("/class-select");
+  // Nessun bivio prima di aver fatto qualcosa: la classe vera si guadagna
+  // con le azioni (Scheda dell'Eroe), e il titolo si sceglie dal profilo
+  // quando se ne ha voglia. Senza titolo scelto vale il primo, che serve
+  // solo a dare un nome ai livelli.
 
   const [earlyActive, earlyCompleted] = await Promise.all([
     prisma.goal.count({ where: { userId, status: "active" } }),
