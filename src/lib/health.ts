@@ -27,29 +27,42 @@ export type MetricDef = {
    * Vanno gestite come "dato assente", non come errore.
    */
   unreliable?: boolean;
+  /**
+   * Metriche che la schermata mostra anche quando sono vuote, perché il
+   * braccialetto le misura di sicuro: lì il trattino è un'informazione (manca
+   * la sincronizzazione). Tutte le altre compaiono solo se hanno dati, così
+   * chi non ha il sensore non si ritrova mezzo schermo di caselle vuote.
+   */
+  core?: boolean;
+  /**
+   * Solo dove "di più" è davvero un miglioramento (passi, sonno, distanza) la
+   * variazione può essere colorata. Su battito e ossigenazione un +8% verde
+   * sarebbe un giudizio clinico che non siamo in grado di dare.
+   */
+  moreIsBetter?: boolean;
   note?: string;
 };
 
 export const METRICS: MetricDef[] = [
-  { key: "steps",                label: "Passi",              icon: "👟", unit: "count",       aggregation: "sum",  priority: "alta",  historyDays: 30 },
-  { key: "calories",             label: "Calorie attive",     icon: "🔥", unit: "kilocalorie", aggregation: "sum",  priority: "alta",  historyDays: 30 },
-  { key: "totalCalories",        label: "Calorie totali",     icon: "⚡", unit: "kilocalorie", aggregation: "sum",  priority: "alta",  historyDays: 30 },
-  { key: "sleep",                label: "Sonno",              icon: "😴", unit: "minute",      aggregation: "sum",  priority: "alta",  historyDays: 30 },
-  { key: "heartRate",            label: "Battito cardiaco",   icon: "❤️", unit: "bpm",         aggregation: "avg",  priority: "alta",  historyDays: 7 },
+  { key: "steps",                label: "Passi",              icon: "👟", unit: "count",       aggregation: "sum",  priority: "alta",  historyDays: 30, core: true, moreIsBetter: true },
+  { key: "calories",             label: "Calorie attive",     icon: "🔥", unit: "kilocalorie", aggregation: "sum",  priority: "alta",  historyDays: 30, core: true, moreIsBetter: true },
+  { key: "totalCalories",        label: "Calorie totali",     icon: "⚡", unit: "kilocalorie", aggregation: "sum",  priority: "alta",  historyDays: 30, moreIsBetter: true },
+  { key: "sleep",                label: "Sonno",              icon: "😴", unit: "minute",      aggregation: "sum",  priority: "alta",  historyDays: 30, core: true, moreIsBetter: true },
+  { key: "heartRate",            label: "Battito cardiaco",   icon: "❤️", unit: "bpm",         aggregation: "avg",  priority: "alta",  historyDays: 7,  core: true },
   {
     key: "restingHeartRate", label: "Battito a riposo", icon: "💤", unit: "bpm", aggregation: "avg", priority: "media", historyDays: 30,
     unreliable: true,
     note: "Samsung Health spesso non scrive questo dato su Health Connect.",
   },
-  { key: "distance",             label: "Distanza",           icon: "📍", unit: "meter",       aggregation: "sum",  priority: "media", historyDays: 30 },
+  { key: "distance",             label: "Distanza",           icon: "📍", unit: "meter",       aggregation: "sum",  priority: "media", historyDays: 30, core: true, moreIsBetter: true },
   { key: "oxygenSaturation",     label: "Ossigenazione",      icon: "🫁", unit: "percent",     aggregation: "avg",  priority: "media", historyDays: 30 },
-  { key: "workouts",             label: "Allenamenti",        icon: "🏃", unit: "minute",      aggregation: "sum",  priority: "media", historyDays: 30 },
+  { key: "workouts",             label: "Allenamenti",        icon: "🏃", unit: "minute",      aggregation: "sum",  priority: "media", historyDays: 30, moreIsBetter: true },
   {
     key: "heartRateVariability", label: "HRV", icon: "📈", unit: "millisecond", aggregation: "avg", priority: "media", historyDays: 30,
     unreliable: true,
     note: "Samsung Health spesso non scrive questo dato su Health Connect.",
   },
-  { key: "flightsClimbed",       label: "Piani saliti",       icon: "🪜", unit: "count",       aggregation: "sum",  priority: "bassa", historyDays: 30 },
+  { key: "flightsClimbed",       label: "Piani saliti",       icon: "🪜", unit: "count",       aggregation: "sum",  priority: "bassa", historyDays: 30, moreIsBetter: true },
   { key: "weight",               label: "Peso",               icon: "⚖️", unit: "kilogram",    aggregation: "last", priority: "bassa", historyDays: 90 },
   { key: "bodyFat",              label: "Massa grassa",       icon: "🧬", unit: "percent",     aggregation: "last", priority: "bassa", historyDays: 90 },
 ];
@@ -64,13 +77,10 @@ export function isKnownMetric(key: string): boolean {
   return METRIC_BY_KEY.has(key);
 }
 
-/**
- * Lo stress NON è ottenibile: Health Connect non ha un tipo di record per lo
- * stress, è una metrica proprietaria Samsung. Se serve, va inserito a mano.
- */
-export const UNAVAILABLE_METRICS = [
-  { label: "Stress", reason: "Health Connect non espone un tipo di record per lo stress: è una metrica proprietaria Samsung. Va inserita manualmente." },
-];
+// Lo stress NON è ottenibile e non compare da nessuna parte nella schermata:
+// Health Connect non ha un tipo di record per lo stress, è una metrica
+// proprietaria Samsung. Elencare ciò che non arriverà mai è rumore, non
+// informazione — se servirà, andrà inserito a mano.
 
 // ── Campioni grezzi dal plugin ──────────────────────────────────────────
 
@@ -309,11 +319,157 @@ export const SLEEP_STAGE_LABELS: Record<string, string> = {
   inBed: "A letto",
 };
 
+/**
+ * Palette delle fasi, verificata sul fondo scuro dell'app: la coppia
+ * indaco/azzurro precedente era indistinguibile in deuteranopia e due tinte
+ * uscivano dalla banda di luminosità. Ogni fase porta comunque la sua
+ * etichetta con i minuti: il colore non è mai l'unico indizio.
+ */
 export const SLEEP_STAGE_COLORS: Record<string, string> = {
-  deep: "#6366f1",
-  light: "#38bdf8",
-  rem: "#a855f7",
-  awake: "#f97316",
-  asleep: "#22c55e",
+  deep: "#4f46e5",
+  light: "#0d9488",
+  rem: "#c026d3",
+  awake: "#ea580c",
+  // "asleep" è il sonno che la sorgente non ha classificato: stessa tinta del
+  // leggero perché è lo stesso bucket, e l'etichetta li distingue comunque.
+  asleep: "#0d9488",
   inBed: "#64748b",
 };
+
+/** Ordine di lettura delle fasi: dal sonno più profondo alla veglia. */
+export const SLEEP_STAGE_ORDER = ["deep", "light", "rem", "asleep", "inBed", "awake"];
+
+function stageRank(stage: string): number {
+  const i = SLEEP_STAGE_ORDER.indexOf(stage);
+  return i === -1 ? SLEEP_STAGE_ORDER.length : i;
+}
+
+// ── Derivate per la schermata ───────────────────────────────────────────
+
+/** True se la metrica ha almeno un campione nei dati caricati. */
+export function hasData(metrics: StoredMetric[], metricType: string): boolean {
+  return metrics.some((m) => m.metricType === metricType);
+}
+
+export type MetricDelta = {
+  /** Valore di oggi. */
+  value: number;
+  /** Termine di paragone. */
+  reference: number;
+  /** Su cosa è calcolato il confronto. */
+  basis: "yesterday" | "average";
+  /** Variazione percentuale rispetto al riferimento. */
+  pct: number;
+  direction: "up" | "down" | "flat";
+};
+
+/**
+ * Confronto della giornata con il passato recente: ieri se ha dati, altrimenti
+ * la media dei giorni con dati della settimana. Serve a dare una direzione al
+ * numero — «54 bpm» da solo non dice com'è andata.
+ *
+ * Restituisce null quando manca il valore di oggi o un riferimento: un delta
+ * inventato sarebbe peggio di nessun delta.
+ */
+export function computeDelta(
+  metrics: StoredMetric[],
+  metricType: string,
+  endDate: Date = new Date()
+): MetricDelta | null {
+  const daily = aggregateDaily(metrics, metricType);
+  const today = localDateKey(endDate);
+  const value = daily.get(today);
+  if (value === undefined) return null;
+
+  const previous: number[] = [];
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(endDate);
+    d.setDate(d.getDate() - i);
+    const v = daily.get(localDateKey(d));
+    if (v !== undefined) previous.push(v);
+  }
+  if (previous.length === 0) return null;
+
+  const yesterday = (() => {
+    const d = new Date(endDate);
+    d.setDate(d.getDate() - 1);
+    return daily.get(localDateKey(d));
+  })();
+
+  const basis: MetricDelta["basis"] = yesterday === undefined ? "average" : "yesterday";
+  const reference =
+    yesterday === undefined ? previous.reduce((a, b) => a + b, 0) / previous.length : yesterday;
+  if (!reference) return null;
+
+  const pct = ((value - reference) / reference) * 100;
+  // Sotto il 3% la differenza è rumore di misura, non una tendenza.
+  const direction: MetricDelta["direction"] = Math.abs(pct) < 3 ? "flat" : pct > 0 ? "up" : "down";
+
+  return { value, reference, basis, pct, direction };
+}
+
+export type SleepDay = {
+  date: string;
+  /** Minuti totali della notte. */
+  total: number;
+  /** Minuti per fase, in ordine di lettura. Vuoto se la sorgente non le espone. */
+  stages: { stage: string; minutes: number }[];
+};
+
+/**
+ * Andamento del sonno giorno per giorno, con la scomposizione in fasi.
+ *
+ * Le fasi arrivano solo da readSamples() — le query aggregate di Health
+ * Connect le perdono — e alcune notti ne sono prive: in quel caso `stages` è
+ * vuoto e resta il solo totale, che va disegnato come barra piena.
+ */
+export function sleepStageSeries(
+  metrics: StoredMetric[],
+  days: number,
+  endDate: Date = new Date()
+): SleepDay[] {
+  const totals = aggregateDaily(metrics, "sleep");
+
+  const byDate = new Map<string, Record<string, number>>();
+  for (const m of metrics) {
+    if (m.metricType !== "sleep") continue;
+    const byStage = (m.metadata as { byStage?: Record<string, number> } | null)?.byStage;
+    if (!byStage) continue;
+    const acc = byDate.get(m.date) ?? {};
+    for (const [stage, mins] of Object.entries(byStage)) {
+      acc[stage] = (acc[stage] ?? 0) + (Number(mins) || 0);
+    }
+    byDate.set(m.date, acc);
+  }
+
+  const out: SleepDay[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(endDate);
+    d.setDate(d.getDate() - i);
+    const date = localDateKey(d);
+    const stages = Object.entries(byDate.get(date) ?? {})
+      .filter(([, minutes]) => minutes > 0)
+      .map(([stage, minutes]) => ({ stage, minutes }))
+      .sort((a, b) => stageRank(a.stage) - stageRank(b.stage));
+    out.push({ date, total: totals.get(date) ?? 0, stages });
+  }
+  return out;
+}
+
+/** "2 minuti fa" — quanto è vecchia l'ultima sincronizzazione. */
+export function formatRelativeTime(input: string | Date, now: Date = new Date()): string {
+  const then = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(then.getTime())) return "";
+
+  const minutes = Math.floor((now.getTime() - then.getTime()) / 60_000);
+  if (minutes < 1) return "adesso";
+  if (minutes === 1) return "1 minuto fa";
+  if (minutes < 60) return `${minutes} minuti fa`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours === 1) return "1 ora fa";
+  if (hours < 24) return `${hours} ore fa`;
+
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "ieri" : `${days} giorni fa`;
+}

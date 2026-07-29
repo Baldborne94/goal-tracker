@@ -54,9 +54,29 @@ export async function GET(req: Request) {
     orderBy: { createdAt: "desc" },
   });
 
+  // Soglie delle missioni collegate a una metrica: la schermata le disegna
+  // come barra di avanzamento, così l'obiettivo mostrato è quello che l'utente
+  // ha davvero impostato e non un numero di default inventato qui.
+  let goals: { metric: string; target: number; title: string }[] = [];
+  try {
+    const rows = await prisma.$queryRawUnsafe<{ healthMetric: string; healthTarget: number; title: string }[]>(
+      `SELECT "healthMetric", "healthTarget", title FROM "Goal"
+       WHERE "userId" = $1 AND status = 'active'
+         AND "healthMetric" IS NOT NULL AND "healthTarget" IS NOT NULL`,
+      session.user.id
+    );
+    goals = rows
+      .filter((r) => isKnownMetric(r.healthMetric) && Number(r.healthTarget) > 0)
+      .map((r) => ({ metric: r.healthMetric, target: Number(r.healthTarget), title: r.title }));
+  } catch {
+    // Senza le colonne health sulle missioni la schermata resta utilizzabile,
+    // solo senza barra dell'obiettivo.
+  }
+
   return NextResponse.json({
     metrics,
     lastSync: last?.createdAt ?? null,
+    goals,
     registry: METRICS,
   });
 }

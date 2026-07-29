@@ -2,14 +2,18 @@ import { describe, it, expect } from "vitest";
 import {
   aggregateDaily,
   buildDedupKey,
+  computeDelta,
   dailySeries,
   dedupeBatch,
   formatDuration,
   formatMetricValue,
+  formatRelativeTime,
   getMetric,
+  hasData,
   isKnownMetric,
   localDateKey,
   normalizeSamples,
+  sleepStageSeries,
   sleepStageTotals,
   type RawSample,
   type StoredMetric,
@@ -263,5 +267,133 @@ describe("registry", () => {
     expect(getMetric("heartRateVariability")?.unreliable).toBe(true);
     expect(getMetric("restingHeartRate")?.unreliable).toBe(true);
     expect(getMetric("steps")?.unreliable).toBeUndefined();
+  });
+});
+
+describe("computeDelta", () => {
+  const day = (d: string, value: number): StoredMetric => ({
+    metricType: "steps",
+    value,
+    date: d,
+    recordedAt: `${d}T10:00:00.000Z`,
+  });
+
+  const today = new Date("2026-07-29T12:00:00");
+
+  it("compares today with yesterday when yesterday has data", () => {
+    const delta = computeDelta([day("2026-07-28", 10000), day("2026-07-29", 5000)], "steps", today);
+    expect(delta?.basis).toBe("yesterday");
+    expect(delta?.direction).toBe("down");
+    expect(Math.round(delta!.pct)).toBe(-50);
+  });
+
+  it("falls back to the average of the week when yesterday is missing", () => {
+    const delta = computeDelta(
+      [day("2026-07-26", 4000), day("2026-07-27", 6000), day("2026-07-29", 10000)],
+      "steps",
+      today
+    );
+    expect(delta?.basis).toBe("average");
+    expect(delta?.reference).toBe(5000);
+    expect(delta?.direction).toBe("up");
+  });
+
+  it("calls a change under 3% flat, because it is measurement noise", () => {
+    const delta = computeDelta([day("2026-07-28", 10000), day("2026-07-29", 10200)], "steps", today);
+    expect(delta?.direction).toBe("flat");
+  });
+
+  it("returns null without a reference to compare against", () => {
+    expect(computeDelta([day("2026-07-29", 5000)], "steps", today)).toBeNull();
+  });
+
+  it("returns null when today has no value at all", () => {
+    expect(computeDelta([day("2026-07-28", 5000)], "steps", today)).toBeNull();
+  });
+});
+
+describe("sleepStageSeries", () => {
+  const night = (date: string, total: number, byStage?: Record<string, number>): StoredMetric => ({
+    metricType: "sleep",
+    value: total,
+    date,
+    recordedAt: `${date}T23:00:00.000Z`,
+    metadata: byStage ? { byStage } : undefined,
+  });
+
+  const today = new Date("2026-07-29T12:00:00");
+
+  it("returns one entry per day, zero-filled", () => {
+    const series = sleepStageSeries([night("2026-07-29", 400, { deep: 60, light: 340 })], 3, today);
+    expect(series.map((d) => d.date)).toEqual(["2026-07-27", "2026-07-28", "2026-07-29"]);
+    expect(series[0].total).toBe(0);
+    expect(series[2].total).toBe(400);
+  });
+
+  it("orders the stages from deep sleep to awake", () => {
+    const series = sleepStageSeries(
+      [night("2026-07-29", 400, { awake: 20, rem: 70, light: 250, deep: 60 })],
+      1,
+      today
+    );
+    expect(series[0].stages.map((s) => s.stage)).toEqual(["deep", "light", "rem", "awake"]);
+  });
+
+  it("keeps the total when the source gives no stages", () => {
+    const series = sleepStageSeries([night("2026-07-29", 400)], 1, today);
+    expect(series[0]).toMatchObject({ total: 400, stages: [] });
+  });
+
+  it("sums stages across several sessions of the same night", () => {
+    const series = sleepStageSeries(
+      [night("2026-07-29", 200, { deep: 40 }), night("2026-07-29", 180, { deep: 20 })],
+      1,
+      today
+    );
+    expect(series[0].stages).toEqual([{ stage: "deep", minutes: 60 }]);
+    expect(series[0].total).toBe(380);
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const now = new Date("2026-07-29T12:00:00");
+
+  it("reads a fresh sync as 'adesso'", () => {
+    expect(formatRelativeTime(new Date("2026-07-29T11:59:40"), now)).toBe("adesso");
+  });
+
+  it("agrees in number", () => {
+    expect(formatRelativeTime(new Date("2026-07-29T11:59:00"), now)).toBe("1 minuto fa");
+    expect(formatRelativeTime(new Date("2026-07-29T11:38:00"), now)).toBe("22 minuti fa");
+    expect(formatRelativeTime(new Date("2026-07-29T11:00:00"), now)).toBe("1 ora fa");
+    expect(formatRelativeTime(new Date("2026-07-29T09:00:00"), now)).toBe("3 ore fa");
+    expect(formatRelativeTime(new Date("2026-07-28T09:00:00"), now)).toBe("ieri");
+    expect(formatRelativeTime(new Date("2026-07-25T09:00:00"), now)).toBe("4 giorni fa");
+  });
+});
+
+describe("hasData", () => {
+  const steps: StoredMetric = { metricType: "steps", value: 10, date: "2026-07-29", recordedAt: "" };
+
+  it("tells apart a metric with samples from one without", () => {
+    expect(hasData([steps], "steps")).toBe(true);
+    expect(hasData([steps], "bodyFat")).toBe(false);
+  });
+});
+
+describe("the tiles the screen always shows", () => {
+  it("marks as core only what the Fit3 really measures", () => {
+    expect(getMetric("steps")?.core).toBe(true);
+    expect(getMetric("sleep")?.core).toBe(true);
+    // Queste non arriveranno: niente riquadro finché non compare un dato.
+    expect(getMetric("heartRateVariability")?.core).toBeUndefined();
+    expect(getMetric("bodyFat")?.core).toBeUndefined();
+    expect(getMetric("flightsClimbed")?.core).toBeUndefined();
+  });
+
+  it("allows a coloured delta only where more is better", () => {
+    expect(getMetric("steps")?.moreIsBetter).toBe(true);
+    expect(getMetric("heartRate")?.moreIsBetter).toBeUndefined();
+    expect(getMetric("oxygenSaturation")?.moreIsBetter).toBeUndefined();
   });
 });
