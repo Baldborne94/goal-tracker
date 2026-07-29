@@ -235,6 +235,32 @@ Health Connect pretende che l'app mostri un'informativa sui dati sanitari.
 `npx cap sync`; il plugin la apre quando l'utente tocca «Informativa privacy»
 nel foglio dei permessi.
 
+## Icona dell'app
+
+L'icona del launcher deriva da **`public/icon-512.svg`**, la stessa che usava
+la PWA: corona e spada su fondo scuro. Il template di Capacitor ne installa una
+generica su sfondo bianco — se ricompare, è perché qualcuno ha rigenerato il
+progetto nativo.
+
+L'icona adattiva è costruita a due livelli, come vuole Android:
+
+- **sfondo** (`mipmap-*/ic_launcher_background.png`): solo i gradienti, il
+  bagliore della fucina, le stelle e l'anello runico, a pieno campo e **senza
+  angoli arrotondati** — al ritaglio pensa la maschera del launcher
+- **primo piano** (`mipmap-*/ic_launcher_foreground.png`): corona e spada su
+  trasparente, ridimensionate perché il loro ingombro reale riempia la zona
+  sicura (72dp su 108), non semplicemente rimpicciolendo tutta la tela
+
+Restano anche `ic_launcher.png` e `ic_launcher_round.png` in tutte le densità,
+usate dai launcher che non supportano le icone adattive; la seconda è la stessa
+arte ritagliata a cerchio.
+
+Per rigenerarle serve un rasterizzatore: le PNG attuali sono state prodotte
+dall'SVG con Chromium headless pilotato da Playwright, controllando la viewport
+in modo esatto. Attenzione se si usa `chrome --screenshot` a mano: la finestra
+headless riserva un centinaio di pixel al proprio ingombro e le immagini
+escono **tagliate in basso** senza alcun errore.
+
 ## File rigenerati
 
 `android/app/src/main/assets/public/` e i due `capacitor.*.json` accanto sono
