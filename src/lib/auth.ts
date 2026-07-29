@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { consumeLoginTicket } from "@/lib/mobile-auth";
 
 // Payload di https://oauth2.googleapis.com/tokeninfo — l'endpoint valida
 // firma e scadenza del token; a noi restano da controllare audience e issuer.
@@ -104,10 +105,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return { id: user.id, email: user.email, name: user.name, image: user.image };
       },
     }),
-    // Accesso con email e password. Nell'APK è l'unica via che non dipende dal
-    // Credential Manager di Google, che su alcuni dispositivi rifiuta l'accesso
-    // ("[16] Account reauth failed") a configurazione OAuth perfettamente
-    // corretta, senza che l'app possa farci nulla.
+    // Login Google dall'APK, seconda via: il guscio apre il browser di
+    // sistema (dove l'OAuth web di Google funziona sempre), il server conia
+    // un ticket monouso e il deep link lo riporta qui. Consumarlo trasforma
+    // la sessione nata nel browser in una sessione della WebView — è il
+    // percorso per i dispositivi dove il Credential Manager rifiuta il
+    // Sign-In nativo ("[16] Account reauth failed") senza rimedio possibile.
+    Credentials({
+      id: "ticket",
+      name: "Ticket di accesso (app Android)",
+      credentials: { ticket: {} },
+      async authorize(credentials) {
+        const ticket = typeof credentials?.ticket === "string" ? credentials.ticket : "";
+        if (!ticket) return null;
+
+        const userId = await consumeLoginTicket(ticket);
+        if (!userId) return null;
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) return null;
+        return { id: user.id, email: user.email, name: user.name, image: user.image };
+      },
+    }),
+    // Accesso con email e password: la via che non dipende né da Google né
+    // dal salto nel browser. Resta il paracadute quando tutto il resto è
+    // fuori uso.
     Credentials({
       id: "password",
       name: "Email e password",

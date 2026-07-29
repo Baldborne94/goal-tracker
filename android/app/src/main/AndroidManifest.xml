@@ -22,6 +22,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!--
+              Deep link di ritorno del login Google via browser di sistema:
+              /api/mobile-auth/finish rimbalza su goaltracker://login?ticket=…
+              e questo filtro riporta l'intent a MainActivity (launchMode
+              singleTask: l'istanza esistente riceve onNewIntent, niente
+              seconda copia dell'app). Il ticket è monouso e vive 2 minuti,
+              quindi lo schema custom — intercettabile in teoria da altre app
+              — non consegna nulla di durevole.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="goaltracker" android:host="login" />
+            </intent-filter>
+
         </activity>
 
         <provider

@@ -51,6 +51,7 @@ model User {
   svuotaFrigoRecipes SvuotaFrigoRecipe[]
   aiUsage           AiUsage[]
   healthMetrics     HealthMetric[]
+  loginTickets      LoginTicket[]
 }
 
 model Account {
@@ -589,4 +590,18 @@ model HealthMetric {
   @@unique([userId, dedupKey])
   @@index([userId, metricType, date])
   @@index([userId, metricType, recordedAt])
+}
+
+// Ticket monouso per il login Google dall'APK: traghettano la sessione dal
+// browser di sistema (dove l'OAuth web funziona) alla WebView del guscio
+// Android (dove il cookie deve nascere). Coniati da /api/mobile-auth/finish,
+// spesi dal provider "ticket" di NextAuth; vita di 2 minuti, cancellati alla
+// prima spesa. La chiave è l'hash SHA-256 del ticket, mai il valore in chiaro.
+model LoginTicket {
+  tokenHash String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

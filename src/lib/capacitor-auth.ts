@@ -14,6 +14,8 @@
 // Fuori dal nativo tutte le funzioni sono no-op: il browser usa il normale
 // flusso OAuth web.
 
+import { extractLoginTicket } from "./login-ticket";
+
 export async function isNativePlatform(): Promise<boolean> {
   if (typeof window === "undefined") return false;
   try {
@@ -22,6 +24,73 @@ export async function isNativePlatform(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ── Login via browser di sistema + ticket monouso ───────────────────────
+//
+// Percorso primario nell'APK: il Sign-In nativo dipende dal Credential
+// Manager di Google, che su alcuni dispositivi rifiuta l'accesso
+// ("[16] Account reauth failed") a configurazione perfettamente corretta.
+// Il browser di sistema invece fa l'OAuth web senza storie; la sessione
+// torna nella WebView tramite il deep link goaltracker://login?ticket=…
+// (vedi src/lib/login-ticket.ts per il disegno completo).
+
+/**
+ * True se il guscio ha i plugin nativi che servono al percorso browser.
+ *
+ * Il codice web è servito da Vercel e gira anche dentro APK installati prima
+ * di questa funzionalità: lì Browser e App non sono impacchettati, e il login
+ * deve ripiegare sul vecchio percorso nativo invece di rompersi.
+ */
+export async function canUseBrowserLogin(): Promise<boolean> {
+  if (!(await isNativePlatform())) return false;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    return Capacitor.isPluginAvailable("Browser") && Capacitor.isPluginAvailable("App");
+  } catch {
+    return false;
+  }
+}
+
+/** Apre il flusso Google nel browser di sistema (Custom Tab). */
+export async function openGoogleLoginInBrowser(): Promise<void> {
+  const { Browser } = await import("@capacitor/browser");
+  await Browser.open({ url: `${window.location.origin}/api/mobile-auth/start` });
+}
+
+/**
+ * Ascolta il deep link di ritorno e consegna il ticket una volta sola.
+ *
+ * Copre entrambi gli scenari: app già aperta in sottofondo (evento
+ * `appUrlOpen`) e app avviata a freddo proprio dal deep link (`getLaunchUrl`,
+ * perché in quel caso l'evento è già passato quando questo codice monta).
+ * Restituisce la funzione di smontaggio per l'useEffect chiamante.
+ */
+export async function watchLoginTicket(onTicket: (ticket: string) => void): Promise<() => void> {
+  if (!(await canUseBrowserLogin())) return () => {};
+
+  const { App } = await import("@capacitor/app");
+
+  let delivered = false;
+  const deliver = (url: string | undefined) => {
+    const ticket = extractLoginTicket(url);
+    if (!ticket || delivered) return;
+    delivered = true;
+    // La Custom Tab resta nello stack dietro l'app: chiuderla è cortesia.
+    // Su Android close() può non essere implementato: non è un errore.
+    void import("@capacitor/browser")
+      .then(({ Browser }) => Browser.close())
+      .catch(() => {});
+    onTicket(ticket);
+  };
+
+  const sub = await App.addListener("appUrlOpen", (event) => deliver(event.url));
+  const launch = await App.getLaunchUrl();
+  deliver(launch?.url);
+
+  return () => {
+    void sub.remove();
+  };
 }
 
 /**

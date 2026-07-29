@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { isNativePlatform, nativeGoogleIdToken } from "@/lib/capacitor-auth";
+import {
+  canUseBrowserLogin,
+  isNativePlatform,
+  nativeGoogleIdToken,
+  openGoogleLoginInBrowser,
+  watchLoginTicket,
+} from "@/lib/capacitor-auth";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -11,6 +17,41 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inBrowser, setInBrowser] = useState(false);
+
+  // Deep link di ritorno dal login nel browser di sistema: consuma il ticket
+  // monouso e fa nascere la sessione nella WebView. Montato sempre (fuori dal
+  // nativo è un no-op) perché l'app può anche essere avviata a freddo dal
+  // deep link stesso, prima di qualunque tocco sul pulsante.
+  useEffect(() => {
+    let cleanup = () => {};
+    let cancelled = false;
+
+    void watchLoginTicket(async (ticket) => {
+      setLoading(true);
+      setInBrowser(false);
+      setError(null);
+      setErrorDetail(null);
+
+      const res = await signIn("ticket", { ticket, redirect: false });
+      if (res?.ok) {
+        window.location.href = "/dashboard";
+        return;
+      }
+      // Il ticket vive 2 minuti e si spende una volta: chi arriva tardi
+      // (o ritocca un vecchio pulsante nel browser) riparte dall'inizio.
+      setError("Il collegamento è scaduto. Riprova l'accesso con Google.");
+      setLoading(false);
+    }).then((fn) => {
+      if (cancelled) fn();
+      else cleanup = fn;
+    });
+
+    return () => {
+      cancelled = true;
+      cleanup();
+    };
+  }, []);
 
   async function handlePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -34,10 +75,27 @@ export default function LoginPage() {
     setError(null);
     setErrorDetail(null);
 
-    // Dentro l'APK il flusso OAuth web è vietato da Google
-    // (disallowed_useragent): si passa dal Sign-In nativo. Niente fallback
-    // web sul nativo — fallirebbe comunque, meglio un errore chiaro.
+    // Dentro l'APK il flusso OAuth web è vietato da Google nella WebView
+    // (disallowed_useragent), ma non nel browser di sistema: il percorso
+    // primario apre il browser, e il deep link con il ticket monouso riporta
+    // la sessione qui dentro. Il Sign-In nativo resta come ripiego per i
+    // gusci installati prima dei plugin Browser/App — su alcuni dispositivi
+    // funziona, su altri il Credential Manager lo rifiuta senza rimedio.
     if (await isNativePlatform()) {
+      if (await canUseBrowserLogin()) {
+        try {
+          await openGoogleLoginInBrowser();
+          // Da qui in poi comanda il deep link: il listener montato
+          // all'avvio riceverà il ticket quando l'utente rientra.
+          setInBrowser(true);
+        } catch (e) {
+          setError("Non riesco ad aprire il browser per l'accesso.");
+          setErrorDetail((e as Error).message);
+        }
+        setLoading(false);
+        return;
+      }
+
       const native = await nativeGoogleIdToken();
       if (!native.ok) {
         if (native.reason === "cancelled") {
@@ -156,6 +214,12 @@ export default function LoginPage() {
               </div>
             </button>
 
+            {inBrowser && !error && (
+              <p className="text-center text-[12px] mt-4 leading-relaxed" style={{ color: "#9d8ac7" }}>
+                Completa l&apos;accesso nel browser che si è aperto: al rientro
+                penso a tutto io. Se non torna da solo, tocca «Apri Goal Tracker».
+              </p>
+            )}
             {error && (
               <p className="text-center text-[12px] mt-4" style={{ color: "#fca5a5" }}>
                 {error}

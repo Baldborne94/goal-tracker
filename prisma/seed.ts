@@ -208,6 +208,18 @@ const MIGRATIONS = [
   // (e.g. "10.000 passi" ticks itself once the Fit3 reports 10000 steps).
   `ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthMetric" TEXT`,
   `ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthTarget" DOUBLE PRECISION`,
+  // One-shot tickets that ferry a session from the system browser into the
+  // WebView during Google login from the APK (see src/lib/login-ticket.ts).
+  // Only the ticket's hash is stored, never the spendable value.
+  `CREATE TABLE IF NOT EXISTS "LoginTicket" (
+    "tokenHash" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "LoginTicket_pkey" PRIMARY KEY ("tokenHash"),
+    CONSTRAINT "LoginTicket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "LoginTicket" ENABLE ROW LEVEL SECURITY`,
 ];
 
 /**

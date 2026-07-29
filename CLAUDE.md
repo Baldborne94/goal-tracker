@@ -28,7 +28,7 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - **Server Actions** — `src/app/(app)/profile/actions.ts` exports `updateProfileName`, `updateTheme`, `updateReminder`
 - **ISYbank import** — `parseExcelFile()` in FinanceClient.tsx; dynamically imports SheetJS (`import("xlsx")`); finds header row by "Tipologia" column; only imports "Uscite" rows with negative Importo; converts dd/MM/yyyy → YYYY-MM-DD; maps Italian categories via `ISYBANK_CAT_MAP`
 - **Android shell** — Capacitor 8 WebView loading the deployed app from `server.url` (one deploy, no second codebase); bridges Health Connect and native Google Sign-In. See `docs/ANDROID.md`
-- **Native Google login** — Google forbids web OAuth inside embedded WebViews (`disallowed_useragent`); in the APK the login page uses `@capgo/capacitor-social-login` → ID token → `google-native` Credentials provider in `src/lib/auth.ts` (verifies aud/iss/email_verified via tokeninfo). Requires `NEXT_PUBLIC_GOOGLE_CLIENT_ID` env + an Android OAuth client (package + SHA-1) in Google Cloud + `ANDROID_DEBUG_KEYSTORE_B64` GitHub secret for a stable APK signature
+- **Google login in the APK** — Google forbids web OAuth inside embedded WebViews (`disallowed_useragent`). Primary path: system browser + one-time ticket — the login page opens a Custom Tab (`@capacitor/browser`) on `/api/mobile-auth/start`, web OAuth runs in the real browser, `/api/mobile-auth/finish` mints a 2-minute single-use ticket (hash-only in `LoginTicket`) and bounces to the `goaltracker://login?ticket=…` deep link; the app consumes it via the `ticket` Credentials provider (atomic `DELETE … RETURNING`), and the session cookie is born in the WebView. Fallback for shells built before the Browser/App plugins: native Sign-In (`@capgo/capacitor-social-login` → ID token → `google-native` provider, verifies aud/iss/email_verified via tokeninfo; needs `NEXT_PUBLIC_GOOGLE_CLIENT_ID` env + Android OAuth client with package + SHA-1 + `ANDROID_DEBUG_KEYSTORE_B64` GitHub secret). The fallback exists because Credential Manager fails with `[16] Account reauth failed` on some devices with a fully correct OAuth setup — unfixable app-side, which is why the browser path is primary
 
 ## Salute / Health Connect (Fase 2)
 - **Data chain** — Galaxy Fit3 → Samsung Health → Health Connect → Capacitor shell → `POST /api/health/sync` → Supabase
@@ -51,7 +51,11 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 |------|---------|
 | `prisma/schema.prisma` | DB schema; User has: `points`, `theme`, `reminderEnabled`, `reminderTime` |
 | `prisma/seed.ts` | Seeds default categories; MIGRATIONS array for idempotent `ALTER TABLE IF NOT EXISTS` schema updates |
-| `src/lib/auth.ts` | NextAuth v5 config (JWT, Google OAuth, PKCE disabled, trustHost) |
+| `src/lib/auth.ts` | NextAuth v5 config (JWT, Google OAuth, PKCE disabled, trustHost); providers: `google-native`, `ticket`, `password` |
+| `src/lib/login-ticket.ts` | Pure contract of the APK login deep link (scheme, ticket format, build/extract) — client-safe, no Node imports |
+| `src/lib/mobile-auth.ts` | Server side of one-time login tickets: mint (`issueLoginTicket`) and atomic consume (`consumeLoginTicket`) |
+| `src/app/api/mobile-auth/start/route.ts` | Opened in the system browser by the shell; starts web OAuth (or skips it if the browser already has a session) |
+| `src/app/api/mobile-auth/finish/route.ts` | Mints the ticket and serves the jump page to `goaltracker://login?ticket=…` (HTML with button, not a 302 — Chrome blocks gesture-less custom-scheme redirects) |
 | `src/lib/utils.ts` | `calculateStreak(dates)` |
 | `src/lib/rewards.ts` | XP awards + trophy unlock logic |
 | `src/app/(app)/layout.tsx` | Auth guard + BottomNav + ThemeProvider (passes DB theme) |
@@ -110,3 +114,6 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - Don't strip the Credential-Manager fallback — the native login tries `mode: online` first and falls back to `mode: offline` (`serverAuthCode` exchanged server-side); some devices fail online with `[16] Account reauth failed` on a fully correct OAuth setup
 - Don't let `npx cap add android` regenerate `MainActivity.java` — it implements `ModifiedMainActivityForSocialLoginPlugin` and forwards `startIntentSenderForResult` results, without which offline sign-in refuses to start
 - Don't let CI sign the APK with an ad-hoc keystore — the shared keystore (ANDROID_DEBUG_KEYSTORE_B64 secret) keeps the signature stable; without it updates require uninstall and native Google Sign-In breaks (SHA-1 mismatch)
+- Don't turn the `/api/mobile-auth/finish` jump page into a 302 to the deep link — Chrome silently blocks server redirects to custom schemes without a user gesture; the page with the button is the reliable form
+- Don't store login tickets in clear text or make them reusable — hash-only in `LoginTicket`, consumed with `DELETE … RETURNING` so a second spend finds nothing
+- Don't assume the shell has the Browser/App plugins — old APKs load the same Vercel code; gate the browser login path behind `canUseBrowserLogin()` and keep the native fallback

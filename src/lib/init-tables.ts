@@ -9,6 +9,7 @@ let aiUsageInitialized = false;
 let gymInitialized = false;
 let sentReminderInitialized = false;
 let healthMetricInitialized = false;
+let loginTicketInitialized = false;
 
 // Tracks which scheduled reminders have already been delivered today, so an
 // external cron running every few minutes never sends a duplicate push.
@@ -166,6 +167,22 @@ export async function initHealthMetricTable() {
   await prisma.$executeRawUnsafe(`ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthMetric" TEXT`);
   await prisma.$executeRawUnsafe(`ALTER TABLE "Goal" ADD COLUMN IF NOT EXISTS "healthTarget" DOUBLE PRECISION`);
   healthMetricInitialized = true;
+}
+
+// Ticket monouso che traghettano la sessione dal browser di sistema alla
+// WebView durante il login Google dall'APK (vedi src/lib/login-ticket.ts).
+// La chiave è l'hash del ticket, mai il ticket in chiaro.
+export async function initLoginTicketTable() {
+  if (loginTicketInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "LoginTicket" (
+    "tokenHash" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "LoginTicket_pkey" PRIMARY KEY ("tokenHash"),
+    CONSTRAINT "LoginTicket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  loginTicketInitialized = true;
 }
 
 export async function initAiUsageTable() {
