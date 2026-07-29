@@ -4,9 +4,10 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDate, calculateStreak, dayRange, serverDayKey } from "@/lib/utils";
 import { getLevelProgress } from "@/lib/levels";
-import { getClassDef } from "@/lib/classes";
 import LogoutButton from "@/components/LogoutButton";
 import TodayPanel from "@/components/TodayPanel";
+import BossCard from "@/components/BossCard";
+import { getBossProgress } from "@/lib/boss-server";
 import WeeklyLifeSummary from "@/components/WeeklyLifeSummary";
 import { formatDuration, formatMetricValue } from "@/lib/health";
 
@@ -14,18 +15,18 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  // Fetch user flags + redirect checks
-  let heroClass: string | null = null;
   let onboardingComplete = true;
   try {
-    const flags = await prisma.$queryRawUnsafe<{ heroClass: string | null; onboardingComplete: boolean | null }[]>(
-      `SELECT "heroClass", "onboardingComplete" FROM "User" WHERE id = $1`, userId
+    const flags = await prisma.$queryRawUnsafe<{ onboardingComplete: boolean | null }[]>(
+      `SELECT "onboardingComplete" FROM "User" WHERE id = $1`, userId
     );
-    heroClass = flags[0]?.heroClass ?? null;
     onboardingComplete = flags[0]?.onboardingComplete ?? false;
-  } catch { heroClass = "fighter"; onboardingComplete = true; }
+  } catch { onboardingComplete = true; }
 
-  if (!heroClass) redirect("/class-select");
+  // Nessun bivio prima di aver fatto qualcosa: la classe vera si guadagna
+  // con le azioni (Scheda dell'Eroe), e il titolo si sceglie dal profilo
+  // quando se ne ha voglia. Senza titolo scelto vale il primo, che serve
+  // solo a dare un nome ai livelli.
 
   const [earlyActive, earlyCompleted] = await Promise.all([
     prisma.goal.count({ where: { userId, status: "active" } }),
@@ -162,6 +163,8 @@ export default async function DashboardPage() {
     ).catch(() => [{ count: BigInt(0) }]),
   ]);
 
+  const bossProgress = await getBossProgress(userId);
+
   // Check-in quests scheduled for today
   const checkInGoalsRaw = await prisma.$queryRawUnsafe<{ id: string; title: string; checkInXP: number; checkInDays: string | null }[]>(
     `SELECT id, title, "checkInXP", "checkInDays" FROM "Goal" WHERE "userId" = $1 AND status = 'active' AND "dailyCheckIn" = true`,
@@ -217,8 +220,7 @@ export default async function DashboardPage() {
     ? (financeBudget.amount - financeSpent) / daysLeft
     : null;
 
-  const levelInfo = getLevelProgress(user?.points ?? 0, heroClass);
-  const classDef = getClassDef(heroClass);
+  const levelInfo = getLevelProgress(user?.points ?? 0);
 
   const CAT_ICONS: Record<string, string> = {
     groceries: "🛒", eating_out: "🍽️", transport: "🚗", housing: "🏠",
@@ -374,6 +376,9 @@ export default async function DashboardPage() {
       {/* Weekly life summary */}
       <WeeklyLifeSummary userId={userId} />
 
+      {/* Il Boss della settimana: l'arco lungo, sopra il quotidiano */}
+      <BossCard initial={JSON.parse(JSON.stringify(bossProgress))} />
+
       {/* Oggi: check-in delle missioni + sfide, un'unica lista */}
       <TodayPanel
         checkIns={checkInToday.map((g) => ({
@@ -492,7 +497,7 @@ export default async function DashboardPage() {
 
       {goals.length === 0 ? (
         <div className="rounded-2xl border p-8 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
-          <div className="text-4xl mb-3">{classDef.icon}</div>
+          <div className="text-4xl mb-3">📜</div>
           <p className="text-[#9d8ac7] text-sm mb-4">Nessuna missione ancora</p>
           <Link
             href="/goals/new"

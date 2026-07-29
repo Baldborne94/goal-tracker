@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import HeroSheet, { type HeroSheetEvent } from "@/components/HeroSheet";
-import { EMPTY_TOTALS, type StatTotals } from "@/lib/hero-stats";
+import { EMPTY_TOTALS, computeHeroClass, type StatTotals } from "@/lib/hero-stats";
 import { signOut } from "next-auth/react";
 import { useTheme, THEMES, type ThemeKey } from "@/components/ThemeProvider";
-import { updateProfileName, updateTheme, updateHeroClass, setPassword } from "@/app/(app)/profile/actions";
+import { updateProfileName, updateTheme, setPassword } from "@/app/(app)/profile/actions";
 import NotificationButton from "@/components/NotificationButton";
-import { getLevel, getLevelProgress, LEVEL_THRESHOLDS } from "@/lib/levels";
-import { CLASSES, CLASS_GROUPS, getClassDef } from "@/lib/classes";
+import { getLevel, getLevelProgress } from "@/lib/levels";
 
 type Reward = { id: string; name: string; description: string; icon: string; type: string };
 type UserReward = { id: string; reward: Reward; earnedAt: string };
@@ -25,12 +23,8 @@ type User = {
 type Stats = { total: number; completed: number; active: number };
 type CategoryStat = { name: string; color: string; total: number; completed: number };
 
-export default function ProfileClient({ user, stats, streak = 0, categoryStats = [], weeklyMilestones = [0, 0, 0, 0], heroClass: initialHeroClass = null, statTotals = EMPTY_TOTALS, statEvents = [] }: { user: User | null; stats: Stats; streak?: number; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; heroClass?: string | null; statTotals?: StatTotals; statEvents?: HeroSheetEvent[] }) {
-  const router = useRouter();
+export default function ProfileClient({ user, stats, streak = 0, categoryStats = [], weeklyMilestones = [0, 0, 0, 0], statTotals = EMPTY_TOTALS, statEvents = [] }: { user: User | null; stats: Stats; streak?: number; categoryStats?: CategoryStat[]; weeklyMilestones?: number[]; statTotals?: StatTotals; statEvents?: HeroSheetEvent[] }) {
   const { theme, colors, setTheme } = useTheme();
-  const [heroClass, setHeroClass] = useState<string | null>(initialHeroClass);
-  const [classExpanded, setClassExpanded] = useState(false);
-  const [savingClass, setSavingClass] = useState(false);
 
   const [pwd, setPwd] = useState("");
   const [pwdConfirm, setPwdConfirm] = useState("");
@@ -71,38 +65,22 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
     }
   }
 
-  async function saveClass(key: string) {
-    setSavingClass(true);
-    const cls = CLASSES.find((c) => c.key === key)!;
-    // Optimistic: update UI immediately
-    setHeroClass(key);
-    setTheme(cls.theme);
-    localStorage.setItem("hero-theme", cls.theme);
-    setClassExpanded(false);
-    try {
-      await updateHeroClass(key);
-      await updateTheme(cls.theme);
-      router.refresh(); // re-runs layout so BottomNav picks up the new heroClass
-    } catch {
-      setHeroClass(initialHeroClass); // revert on failure
-    }
-    setSavingClass(false);
-  }
-
   if (!user) return null;
 
-  const { current: level, next: nextLevel, progress: progressToNext, xpNeeded } = getLevelProgress(user.points, heroClass);
+  const { current: level, next: nextLevel, progress: progressToNext, xpNeeded } = getLevelProgress(user.points);
+  // L'identità che si vede in testata è quella guadagnata, non una scelta.
+  const hero = computeHeroClass(statTotals);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">{level.icon} Profilo Eroe</h1>
+      <h1 className="text-2xl font-bold text-[#ede9ff] mb-6">{hero.icon} Profilo Eroe</h1>
 
       {/* Hero card */}
       <div className="rounded-2xl p-5 text-white mb-6 relative overflow-hidden" style={{background: "var(--theme-gradient)", border: "1px solid var(--theme-border)"}}>
         <div className="absolute top-0 right-0 w-40 h-40 opacity-10" style={{background: "radial-gradient(circle, var(--theme-accent) 0%, transparent 70%)"}}/>
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold" style={{background: "linear-gradient(135deg, #3b2d6e, #1e1535)", border: "2px solid #f59e0b55"}}>
-            {displayName?.[0]?.toUpperCase() || "⚔"}
+            {hero.icon}
           </div>
           <div className="flex-1 min-w-0">
             {editingName ? (
@@ -148,6 +126,9 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
             )}
             <p className="text-[#9d8ac7] text-sm">{user.email}</p>
             <p className="text-sm font-semibold mt-0.5" style={{color: "var(--theme-accent)"}}>
+              {hero.name}
+            </p>
+            <p className="text-xs" style={{color: "var(--theme-text-muted)"}}>
               {level.icon} Lv. {level.level} — {level.label}
             </p>
           </div>
@@ -266,80 +247,7 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
         )}
       </div>
 
-      {/* Hero Class */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] uppercase tracking-wider">🧬 Classe Eroe</h2>
-          <button
-            onClick={() => setClassExpanded(!classExpanded)}
-            className="text-xs font-semibold px-3 py-1 rounded-lg border transition-colors"
-            style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)", background: "var(--theme-surface)" }}
-          >
-            {classExpanded ? "Annulla" : "Cambia"}
-          </button>
-        </div>
-
-        {/* Current class display */}
-        {heroClass && !classExpanded && (() => {
-          const cls = getClassDef(heroClass);
-          const currentTier = getLevel(user.points, heroClass);
-          return (
-            <div
-              className="rounded-2xl border p-4 flex items-center gap-4"
-              style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
-            >
-              <span className="text-3xl flex-shrink-0">{cls.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-[#ede9ff]">{cls.name}</p>
-                <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>{cls.description}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-lg">{currentTier.icon}</p>
-                <p className="text-xs font-semibold text-amber-400">{currentTier.label}</p>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Class picker grid */}
-        {classExpanded && (
-          <div className="space-y-4">
-            {CLASS_GROUPS.map((group) => {
-              const groupClasses = CLASSES.filter((c) => c.group === group.key);
-              return (
-                <div key={group.key}>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--theme-text-muted)" }}>
-                    {group.label}
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {groupClasses.map((cls) => {
-                      const isSelected = heroClass === cls.key;
-                      return (
-                        <button
-                          key={cls.key}
-                          onClick={() => !savingClass && saveClass(cls.key)}
-                          disabled={savingClass}
-                          className="rounded-2xl border p-3 text-center transition-all active:scale-95 disabled:opacity-50"
-                          style={{
-                            background: isSelected ? group.color + "18" : "var(--theme-surface)",
-                            borderColor: isSelected ? group.color : "var(--theme-surface-border)",
-                            boxShadow: isSelected ? `0 0 0 1px ${group.color}` : "none",
-                          }}
-                        >
-                          <div className="text-2xl mb-1">{cls.icon}</div>
-                          <p className="text-xs font-bold text-[#ede9ff] leading-tight">{cls.name}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Theme picker */}
+      {/* Theme picker */}      {/* Theme picker */}
       <div className="mb-6">
         <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">🎨 Tema Eroe</h2>
         <div className="grid grid-cols-2 gap-3">

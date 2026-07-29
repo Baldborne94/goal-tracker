@@ -3,46 +3,42 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { SessionProvider } from "next-auth/react";
 import BottomNav from "@/components/layout/BottomNav";
+import { getHeroIdentity } from "@/lib/hero-stats-server";
 import ThemeProvider from "@/components/ThemeProvider";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session) redirect("/login");
 
-  let dbUser: { points: number; theme: string; heroClass: string | null } | null = null;
+  let dbUser: { points: number; theme: string } | null = null;
 
   try {
-    const u = await prisma.$queryRawUnsafe<{ points: number; theme: string; heroClass: string | null }[]>(
-      `SELECT points, theme, "heroClass" FROM "User" WHERE id = $1`, session.user!.id!
+    const u = await prisma.$queryRawUnsafe<{ points: number; theme: string }[]>(
+      `SELECT points, theme FROM "User" WHERE id = $1`, session.user!.id!
     );
     if (u[0]) dbUser = u[0];
   } catch {
-    // heroClass column may not exist yet — add it and retry
     try {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "heroClass" TEXT`);
-      const u = await prisma.$queryRawUnsafe<{ points: number; theme: string; heroClass: string | null }[]>(
-        `SELECT points, theme, "heroClass" FROM "User" WHERE id = $1`, session.user!.id!
-      );
-      if (u[0]) dbUser = u[0];
+      const basic = await prisma.user.findUnique({
+        where: { id: session.user!.id! },
+        select: { points: true, theme: true },
+      });
+      if (basic) dbUser = { points: basic.points, theme: basic.theme ?? "warrior" };
     } catch {
-      try {
-        const basic = await prisma.user.findUnique({
-          where: { id: session.user!.id! },
-          select: { points: true, theme: true },
-        });
-        if (basic) dbUser = { points: basic.points, theme: basic.theme ?? "warrior", heroClass: null };
-      } catch {
-        // ignore
-      }
+      // la navigazione resta usabile con i valori predefiniti
     }
   }
+
+  // L'icona dell'Eroe nella navigazione è quella della classe guadagnata:
+  // cambia da sola man mano che le statistiche crescono.
+  const hero = await getHeroIdentity(session.user!.id!);
 
   return (
     <SessionProvider>
       <ThemeProvider initialTheme={(dbUser?.theme as import("@/components/ThemeProvider").ThemeKey) ?? "warrior"}>
         <div className="flex flex-col min-h-screen" style={{ background: "var(--theme-bg)" }}>
           <main className="flex-1 overflow-y-auto pb-20">{children}</main>
-          <BottomNav points={dbUser?.points ?? 0} heroClass={dbUser?.heroClass} />
+          <BottomNav icon={hero.icon} />
         </div>
       </ThemeProvider>
     </SessionProvider>

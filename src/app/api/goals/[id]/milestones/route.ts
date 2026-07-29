@@ -51,17 +51,6 @@ export async function PATCH(
       where: { id: session.user.id },
       data: { points: { increment: delta } },
     });
-    // La scheda cresce solo in avanti: una milestone despuntata riprende
-    // gli XP ma non cancella l'esperienza vissuta.
-    if (delta > 0) {
-      await awardStat(
-        session.user.id,
-        statForCategory(goal.category?.name),
-        statPointsFromXp(delta),
-        "milestone",
-        `Milestone di «${goal.title}»`
-      );
-    }
   }
 
   // Auto-clone recurring quests when completed
@@ -117,5 +106,17 @@ export async function PATCH(
 
   revalidatePath("/goals");
   revalidatePath("/dashboard");
+  // Il registro per ultimo. La scheda cresce solo in avanti: una milestone
+  // despuntata riprende gli XP ma non cancella l'esperienza vissuta.
+  if (delta > 0) {
+    await awardStat(
+      session.user.id,
+      statForCategory(goal.category?.name),
+      statPointsFromXp(delta),
+      "milestone",
+      `Milestone di «${goal.title}»`
+    );
+  }
+
   return NextResponse.json({ milestone, progress });
 }

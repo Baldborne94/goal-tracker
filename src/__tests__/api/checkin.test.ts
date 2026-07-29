@@ -28,6 +28,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(auth).mockResolvedValue(authedSession as never);
   prismaMock.$executeRawUnsafe.mockResolvedValue(undefined);
+  // Valore di ripiego: le catene `...Once` restano il contratto del test, ma
+  // una query interna in più (il registro della scheda) non le sfasa.
+  prismaMock.$queryRawUnsafe.mockResolvedValue([]);
 });
 
 describe("POST /api/goals/[id]/checkin", () => {

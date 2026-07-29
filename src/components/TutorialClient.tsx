@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { markOnboardingComplete } from "@/app/(app)/profile/actions";
-import { getClassDef } from "@/lib/classes";
+import { LEVEL_THRESHOLDS } from "@/lib/levels";
 
 type Slide = {
   kind?: "welcome" | "levels" | "final";
@@ -74,7 +74,7 @@ const SLIDES: Slide[] = [
     bullets: [
       "Ogni tappa completata vale XP (predefinito: 10 XP)",
       "Gli XP si accumulano e fanno salire di livello il tuo eroe",
-      "L'icona del livello nella barra cambia man mano che cresci",
+      "L'icona dell'Eroe nella barra è quella della classe che ti sei guadagnato",
     ],
   },
   {
@@ -173,7 +173,7 @@ const SLIDES: Slide[] = [
     tag: "Eroe",
     title: "Profilo, Temi e Trofei",
     bullets: [
-      "Personalizza nome e classe del tuo eroe",
+      "Personalizza il nome del tuo eroe",
       "Scegli tra 4 temi: Warrior, Ocean, Forest, Crimson",
       "Sblocca trofei completando obiettivi e traguardi",
       "Consulta le tue statistiche; puoi azzerare tutto se vuoi ricominciare",
@@ -193,18 +193,15 @@ const SLIDES: Slide[] = [
 export default function TutorialClient({
   name,
   isFirstTime,
-  heroClass,
 }: {
   name?: string | null;
   isFirstTime: boolean;
-  heroClass?: string | null;
 }) {
   const router = useRouter();
   const [i, setI] = useState(0);
   const [loading, setLoading] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  const cls = getClassDef(heroClass);
   const last = SLIDES.length - 1;
   const atFirst = i === 0;
   const atLast = i === last;
@@ -258,7 +255,7 @@ export default function TutorialClient({
         >
           {SLIDES.map((s, idx) => (
             <div key={idx} className="w-full flex-shrink-0 px-1">
-              <Slide slide={s} name={name} isFirstTime={isFirstTime} cls={cls} active={idx === i} />
+              <Slide slide={s} name={name} isFirstTime={isFirstTime} active={idx === i} />
             </div>
           ))}
         </div>
@@ -302,13 +299,11 @@ function Slide({
   slide,
   name,
   isFirstTime,
-  cls,
   active,
 }: {
   slide: Slide;
   name?: string | null;
   isFirstTime: boolean;
-  cls: ReturnType<typeof getClassDef>;
   active: boolean;
 }) {
   const title =
@@ -370,17 +365,14 @@ function Slide({
           className="w-full rounded-2xl border p-4 mt-5"
           style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
         >
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="text-lg">{cls.icon}</span>
-            <p
-              className="text-xs font-semibold uppercase tracking-wider"
-              style={{ color: "var(--theme-text-muted)" }}
-            >
-              Percorso livelli — {cls.name}
-            </p>
-          </div>
+          <p
+            className="text-xs font-semibold uppercase tracking-wider text-center mb-3"
+            style={{ color: "var(--theme-text-muted)" }}
+          >
+            Percorso livelli
+          </p>
           <div className="grid grid-cols-4 gap-2">
-            {cls.tiers.map((t) => (
+            {LEVEL_THRESHOLDS.map((t) => (
               <div key={t.label} className="text-center">
                 <div className="text-xl mb-0.5">{t.icon}</div>
                 <p className="text-[11px] font-semibold text-[#ede9ff] leading-tight">{t.label}</p>

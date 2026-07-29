@@ -78,18 +78,6 @@ export async function updateReminder(enabled: boolean, time: string): Promise<vo
   });
 }
 
-export async function updateHeroClass(heroClass: string): Promise<void> {
-  const session = await auth();
-  if (!session?.user?.id) return;
-  // Ensure column exists (seed may have been skipped on pgBouncer during build)
-  await prisma.$executeRawUnsafe(
-    `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "heroClass" TEXT`
-  ).catch(() => {});
-  await prisma.$executeRawUnsafe(
-    `UPDATE "User" SET "heroClass" = $1 WHERE id = $2`,
-    heroClass, session.user.id
-  );
-}
 
 export async function markOnboardingComplete(): Promise<void> {
   const session = await auth();

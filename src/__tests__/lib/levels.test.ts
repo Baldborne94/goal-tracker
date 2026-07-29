@@ -1,103 +1,94 @@
 import { describe, it, expect } from "vitest";
-import { getLevel, getLevelProgress, getTiers } from "@/lib/levels";
+import { LEVEL_THRESHOLDS, getLevel, getLevelProgress, getTiers } from "@/lib/levels";
 
-describe("getTiers", () => {
-  it("returns 8 tiers for fighter (default)", () => {
-    expect(getTiers("fighter")).toHaveLength(8);
+// Una sola scala per tutti: la classe non si sceglie più, e i livelli
+// tornano a misurare soltanto quanta strada è stata fatta.
+
+describe("la scala dei livelli", () => {
+  it("ha otto gradini, numerati da 1", () => {
+    const tiers = getTiers();
+    expect(tiers).toHaveLength(8);
+    expect(tiers.map((t) => t.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  it("returns 8 tiers for every hero class", () => {
-    const classes = ["fighter","paladin","barbarian","ranger","druid","rogue","wizard","sorcerer","necromancer","cleric","bard","monk"];
-    for (const cls of classes) {
-      expect(getTiers(cls), `${cls} should have 8 tiers`).toHaveLength(8);
+  it("ogni gradino ha etichetta, icona e confini", () => {
+    for (const tier of getTiers()) {
+      expect(tier.label).toBeTruthy();
+      expect(tier.icon).toBeTruthy();
+      expect(typeof tier.min).toBe("number");
+      expect(typeof tier.max).toBe("number");
     }
   });
 
-  it("falls back to fighter for unknown class", () => {
-    const unknown = getTiers("dragon");
-    const fighter = getTiers("fighter");
-    expect(unknown[0].label).toBe(fighter[0].label);
+  it("i confini sono contigui: nessun XP resta senza livello", () => {
+    const tiers = getTiers();
+    for (let i = 1; i < tiers.length; i++) {
+      expect(tiers[i].min).toBe(tiers[i - 1].max + 1);
+    }
+    expect(tiers[0].min).toBe(0);
+    expect(tiers[tiers.length - 1].max).toBe(Infinity);
   });
 
-  it("each tier has level, label, icon, min, max", () => {
-    const tiers = getTiers("fighter");
-    for (const tier of tiers) {
-      expect(tier).toHaveProperty("level");
-      expect(tier).toHaveProperty("label");
-      expect(tier).toHaveProperty("icon");
-      expect(tier).toHaveProperty("min");
-      expect(tier).toHaveProperty("max");
-    }
+  it("nessun nome allude a una classe: quelle si guadagnano", () => {
+    const classNames = [
+      "guerriero", "barbaro", "mago", "monaco", "mercante",
+      "paladino", "campione", "artefice", "druido",
+    ];
+    const labels = getTiers().map((t) => t.label.toLowerCase());
+    for (const name of classNames) expect(labels).not.toContain(name);
   });
 });
 
 describe("getLevel", () => {
-  it("returns tier 1 at 0 XP", () => {
-    expect(getLevel(0, "fighter").level).toBe(1);
+  it("parte dal primo gradino", () => {
+    expect(getLevel(0).level).toBe(1);
   });
 
-  it("returns tier 1 at 199 XP (just below threshold)", () => {
-    expect(getLevel(199, "fighter").level).toBe(1);
+  it("sale esattamente sulla soglia, non prima", () => {
+    expect(getLevel(199).level).toBe(1);
+    expect(getLevel(200).level).toBe(2);
+    expect(getLevel(599).level).toBe(2);
+    expect(getLevel(600).level).toBe(3);
   });
 
-  it("returns tier 2 at exactly 200 XP", () => {
-    expect(getLevel(200, "fighter").level).toBe(2);
+  it("oltre l'ultima soglia resta all'ultimo gradino", () => {
+    expect(getLevel(20000).level).toBe(8);
+    expect(getLevel(999999).level).toBe(8);
   });
 
-  it("returns tier 3 at 600 XP", () => {
-    expect(getLevel(600, "fighter").level).toBe(3);
-  });
-
-  it("returns tier 4 at 1500 XP", () => {
-    expect(getLevel(1500, "fighter").level).toBe(4);
-  });
-
-  it("returns tier 8 (max) at 20000+ XP", () => {
-    expect(getLevel(20000, "fighter").level).toBe(8);
-    expect(getLevel(99999, "fighter").level).toBe(8);
-  });
-
-  it("uses class-specific tier labels", () => {
-    const fighter = getLevel(0, "fighter");
-    const necromancer = getLevel(0, "necromancer");
-    expect(fighter.label).not.toBe(necromancer.label);
-    expect(necromancer.label).toBe("Raccoglitore di Ossa");
-  });
-
-  it("falls back to fighter tier when class is null", () => {
-    expect(getLevel(0, null).label).toBe(getLevel(0, "fighter").label);
+  it("XP negativi o assurdi valgono zero, non un errore", () => {
+    expect(getLevel(-100).level).toBe(1);
+    expect(getLevel(NaN).level).toBe(1);
   });
 });
 
 describe("getLevelProgress", () => {
-  it("returns progress 0 at the start of tier 1 (0 XP)", () => {
-    const { progress, current } = getLevelProgress(0, "fighter");
-    expect(current.level).toBe(1);
-    expect(progress).toBe(0);
+  it("a inizio gradino la barra è a zero", () => {
+    const p = getLevelProgress(200);
+    expect(p.current.level).toBe(2);
+    expect(p.progress).toBe(0);
+    expect(p.next?.level).toBe(3);
   });
 
-  it("returns progress 100 and xpNeeded 0 at max tier", () => {
-    const { progress, xpNeeded, next } = getLevelProgress(20000, "fighter");
-    expect(progress).toBe(100);
-    expect(xpNeeded).toBe(0);
-    expect(next).toBeNull();
+  it("a metà strada è a metà", () => {
+    // gradino 2: da 200 a 600, quindi 400 è il punto di mezzo
+    expect(getLevelProgress(400).progress).toBe(50);
   });
 
-  it("calculates correct progress within a tier", () => {
-    const { progress, xpNeeded } = getLevelProgress(100, "fighter");
-    expect(progress).toBe(50);
-    expect(xpNeeded).toBe(100);
+  it("dice quanti XP mancano al gradino dopo", () => {
+    expect(getLevelProgress(500).xpNeeded).toBe(100);
   });
 
-  it("returns next tier reference", () => {
-    const { current, next } = getLevelProgress(0, "fighter");
-    expect(next).not.toBeNull();
-    expect(next!.level).toBe(current.level + 1);
+  it("all'ultimo gradino non c'è un dopo", () => {
+    const p = getLevelProgress(50000);
+    expect(p.next).toBeNull();
+    expect(p.progress).toBe(100);
+    expect(p.xpNeeded).toBe(0);
   });
+});
 
-  it("progress is capped between 0 and 100", () => {
-    const { progress } = getLevelProgress(200, "fighter");
-    expect(progress).toBeGreaterThanOrEqual(0);
-    expect(progress).toBeLessThanOrEqual(100);
+describe("LEVEL_THRESHOLDS", () => {
+  it("è la stessa scala restituita da getTiers", () => {
+    expect(LEVEL_THRESHOLDS).toEqual(getTiers());
   });
 });

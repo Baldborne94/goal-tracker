@@ -9,11 +9,13 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - **Quests (Goals)** — create goals with milestones, priority, category, tags, target date; complete milestones to earn XP
 - **XP & Levelling** — earn XP completing milestones; level titles: Recruit → Warrior → Knight → Warlord → King (based on XP thresholds)
 - **Hero Sheet (Scheda dell'Eroe)** — permanent RPG stats (FOR/COS/INT/SAG/ORO) that start at 8 and grow to 20 only from real actions; every XP-awarding site also writes a `StatEvent` ledger row (stat, points, provenance label); the class is not chosen, it **emerges** from the dominant stat (Guerriero/Barbaro/Mago/Monaco/Mercante, hybrids like Paladino when two stats run within 80%); rendered in the profile as a radar pentagon + per-stat progress + ledger
+- **Boss della settimana** — weekly composite challenge (3 conditions of different natures, ISO-week rotation over 4 bosses); pays XP + stat points; `BossDefeat` unique on (userId, week, bossId) so a victory can't be claimed twice
 - **Streak counter** — consecutive days with ≥1 completed milestone; shown on dashboard and profile
 - **Weekly recap** — dashboard shows this-week milestones and completed goals
 - **Quest suggestions** — AI-style panel suggests quests with pre-filled milestones based on user lifestyle
 - **Share quest as template** — `btoa(JSON.stringify(data))` encoded in URL `?template=` param; decoded server-side
 - **Hero Profile** — editable name (Server Action), hero theme (4 presets), daily browser reminder, stats grid, trophies, wipe-everything reset
+- **Nessuna classe scelta, mai** — the hero starts neutral. `src/lib/classes.ts` (12 classes, each with its own tier ladder), `/class-select` and the profile picker are all gone. `levels.ts` is now **one neutral ladder** (Recluta → Mito, names chosen not to collide with any emergent class), and the hero's name + icon come from `computeHeroClass(statTotals)` — profile header, avatar, and the BottomNav "Eroe" icon all change on their own as the stats grow. The `heroClass` column stays in the DB, unread
 - **Hero themes** — warrior (amber/purple), ocean (cyan/navy), forest (emerald/green), crimson (rose/dark); saved to **DB** + localStorage
 - **Finance (Kakeebo)** — monthly budget, expense tracking by category, donut chart, **12-month** spending trend, **ISYbank Excel import** (parses "Lista Operazioni" sheet, maps Italian categories), category filter chips in daily log, clear-month button, close-month reward (25 XP + trophy)
 - **Daily reminder** — browser Notification API with permission flow; time + enabled state saved to **DB** + localStorage
@@ -61,9 +63,13 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 | `src/lib/quest-template.ts` | Share-a-quest link contract: UTF-8 + base64url, survives emoji and accents |
 | `src/lib/rewards.ts` | XP awards + trophy unlock logic |
 | `src/lib/hero-stats.ts` | Hero Sheet rules (pure, client-safe): stat defs, category/challenge → stat maps, 8→20 score curve, emergent class |
+| `src/lib/boss.ts` | Weekly boss rules (pure): bestiary, ISO week key, progress math |
+| `src/lib/boss-server.ts` | Boss queries (nine metrics in one pass), claim with unique-constraint guard |
+| `src/components/BossCard.tsx` | Boss card on the dashboard: three conditions, one bar, claim button |
 | `src/lib/hero-stats-server.ts` | StatEvent ledger: `awardStat` (never throws), totals, recent events |
 | `src/components/HeroSheet.tsx` | Radar pentagon + stat rows + ledger, rendered inside ProfileClient |
-| `src/app/(app)/layout.tsx` | Auth guard + BottomNav + ThemeProvider (passes DB theme) |
+| `src/app/(app)/layout.tsx` | Auth guard + BottomNav (emergent hero icon) + ThemeProvider (passes DB theme) |
+| `src/lib/levels.ts` | The single neutral XP ladder — no class parameter |
 | `src/app/(app)/dashboard/page.tsx` | XP card (CSS vars), streak card, Fit3 tiles (steps/sleep today), weekly recap, unified today panel, today's focus, finance widget |
 | `src/components/TodayPanel.tsx` | One list for quest check-ins + daily challenges with claim buttons; shows a "day complete" card when everything is done |
 | `src/app/(app)/finance/page.tsx` | Treasury server page; builds 12-month trend data |
@@ -115,6 +121,7 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - Don't list the unobtainable metrics anywhere in Salute — a catalogue of what will never arrive is noise, not information; a metric earns its tile by being `core` or by having data
 - Don't colour a delta green/red on a metric without `moreIsBetter` — a +8% heart rate is not a verdict we're qualified to give
 - Don't let `awardStat` failures break the real action — it must never throw; the ledger is a game layer on top of the truth, not a dependency of it
+- Don't write the StatEvent ledger before the real work — `awardStat` goes last in a route; it's a game layer on top of the action, and putting it first also makes mocked test sequences brittle
 - Don't award stat points on negative XP deltas (unchecking a milestone) — the Hero Sheet only grows; XP can go back, experience lived cannot
 - Don't compute a health sample's `date` on the server — the day boundary belongs to the phone's timezone, so the client normalises before POSTing
 - Don't put the sample's value in `dedupKey` — a corrected reading must update its row, not add one

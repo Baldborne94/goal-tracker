@@ -305,6 +305,49 @@ copie di `public/` prodotte da `npx cap sync android`, quindi sono in
 `.gitignore`. Dopo un clone pulito lancia `npx cap sync android` prima di
 `./gradlew`.
 
+## Notifiche push: perché nell'APK non arrivano
+
+Le notifiche dell'app usano il Web Push standard (VAPID + service worker).
+Funziona nel browser, **non dentro l'APK**: il WebView di Android non espone
+l'API Push del browser, quindi `PushSubscriber` trova `PushManager`
+mancante e si ferma senza registrarsi. Non è un guasto e non c'è flag da
+attivare: quel pezzo di piattaforma nel WebView non c'è.
+
+La via nativa è **Firebase Cloud Messaging**, che è anche il trasporto che
+Chrome usa sotto per il Web Push su Android — cambia solo chi tiene la
+connessione: il sistema operativo invece della pagina.
+
+### Cosa serve, prima di scrivere una riga di codice
+
+FCM richiede un file di configurazione legato al progetto Firebase e al
+nome del pacchetto. Senza, il plugin Gradle di Google fa fallire la build
+dell'APK — quindi il lavoro non si può nemmeno iniziare a metà.
+
+1. **console.firebase.google.com** → crea un progetto (o riusa quello del
+   client OAuth, se ne hai già uno).
+2. **Aggiungi un'app Android** con package name esatto:
+   `app.vercel.goaltracker`
+3. Aggiungi la **SHA-1 della keystore condivisa** (la stessa registrata su
+   Google Cloud per il Sign-In; vedi sopra).
+4. Scarica **`google-services.json`** e mettilo in `android/app/`.
+5. **Project settings → Cloud Messaging** → genera una chiave privata di
+   servizio: è quella che il server userà per inviare, al posto delle
+   chiavi VAPID.
+
+### Cosa cambierà nel codice, quando il file ci sarà
+
+- `@capacitor/push-notifications` nel guscio: chiede il permesso, ottiene
+  il token FCM del dispositivo e lo manda a `/api/push/subscribe` accanto
+  (non al posto) delle subscription web esistenti;
+- `PushSubscription` guadagna una colonna per distinguere le due sorti,
+  perché il browser continuerà a usare il Web Push;
+- l'invio si sdoppia: `web-push` per le subscription del browser, l'SDK
+  Firebase Admin per i token FCM. Il cron dei promemoria non cambia: cambia
+  solo il corriere.
+
+Finché il file non c'è, l'APK resta senza notifiche e il browser continua a
+riceverle normalmente.
+
 ## Problemi frequenti
 
 **«Health Connect non è installato»** — installalo dal Play Store; su Android
