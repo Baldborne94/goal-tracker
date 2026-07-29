@@ -40,7 +40,8 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
   - **PWAs cannot reach Health Connect** — that's the whole reason for Capacitor
   - **Health Connect misbehaves on emulators** — final testing happens on a real phone
   - **Sync is not realtime** — on screen open and on the refresh button, never streaming
-- **Metric registry** — `src/lib/health.ts` is the single place a metric is declared (label, unit, icon, aggregation, history window). Adding one needs **no migration**: `HealthMetric` is generic (`metricType`/`value`/`unit`/`metadata` jsonb)
+- **Metric registry** — `src/lib/health.ts` is the single place a metric is declared (label, unit, icon, aggregation, history window, `core`, `moreIsBetter`). Adding one needs **no migration**: `HealthMetric` is generic (`metricType`/`value`/`unit`/`metadata` jsonb)
+- **What the screen shows** — a tile appears if the metric is `core` (steps, sleep, calories, distance, heart rate — the Fit3 really measures them, so a dash there means "hasn't synced") **or** it has data. Nothing lists the metrics that will never arrive: HRV and resting HR aren't shared by Samsung Health, the Fit3 has no altimeter, body fat needs a smart scale. They reappear on their own the day a sample shows up
 - **Dedup** — re-reading the same day must not duplicate rows. `dedupKey` = Health Connect record id when available, else `type:start:end:source`. It deliberately excludes the value, so a corrected sample updates in place. Enforced by `UNIQUE(userId, dedupKey)` + `ON CONFLICT DO UPDATE`
 - **Local dates** — the client normalises samples before POSTing because the day boundary must use the *phone's* timezone, not the server's
 - **Quest auto-check** — `Goal.healthMetric` + `Goal.healthTarget`; on sync `applyHealthGoals()` inserts a `QuestCheckIn` and awards XP when the day's aggregate reaches the target. Idempotent via the existing `UNIQUE(goalId, userId, date)`
@@ -66,12 +67,12 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 | `src/components/ThemeProvider.tsx` | CSS vars on wrapper div; 4 themes; `initialTheme` prop |
 | `src/components/finance/FinanceClient.tsx` | Budget card, donut chart, 12-month trend, ISYbank Excel import, category filter chips, clear-month modal, close-month reward |
 | `src/components/goals/GoalDetailClient.tsx` | Milestone toggle, share-as-template button, delete |
-| `src/lib/health.ts` | Salute metric registry + pure helpers (normalise, dedup key, daily aggregation, it-IT formatting) |
+| `src/lib/health.ts` | Salute metric registry + pure helpers (normalise, dedup key, daily aggregation, delta vs yesterday, sleep-stage series, it-IT formatting) |
 | `src/lib/capacitor-health.ts` | Health Connect bridge; dynamic plugin import, no-op off native |
 | `src/lib/health-goals.ts` | `applyHealthGoals()` — auto check-in when a quest's metric hits its target |
 | `src/app/api/health/sync/route.ts` | POST — chunked `ON CONFLICT` upsert of wearable samples, then auto check-ins |
 | `src/app/api/health/route.ts` | GET series by type/range; DELETE one metric's history |
-| `src/components/salute/SaluteClient.tsx` | Salute screen: metric tiles, bar chart, sleep stages, sync button |
+| `src/components/salute/SaluteClient.tsx` | Salute screen: steps hero + goal bar, sleep card with stage trend, compact tiles with delta + sparkline, sync button |
 | `capacitor.config.ts` | WebView shell config; `CAPACITOR_SERVER_URL` overrides the Vercel URL |
 | `docs/ANDROID.md` | APK build/install, phone prerequisites, plugin research, troubleshooting |
 | `src/components/layout/BottomNav.tsx` | `heroIcon(points)` → 🗡️/⚔️/🛡️/🏰/👑; nav: Realm/Quests/Treasury 💎/Alchemy ⚗️/Hero |
@@ -97,6 +98,8 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - Don't add `prisma db push` to the build script — it hangs on Supabase pgBouncer (port 6543) advisory locks
 - Don't re-enable PKCE for Google OAuth — `checks: ["state"]` is intentional; disabling PKCE fixes Android PWA double-login (CCT vs PWA webview cookie isolation)
 - Don't add a column per health metric — declare it in the `METRICS` registry in `src/lib/health.ts`; the table is generic on purpose
+- Don't list the unobtainable metrics anywhere in Salute — a catalogue of what will never arrive is noise, not information; a metric earns its tile by being `core` or by having data
+- Don't colour a delta green/red on a metric without `moreIsBetter` — a +8% heart rate is not a verdict we're qualified to give
 - Don't compute a health sample's `date` on the server — the day boundary belongs to the phone's timezone, so the client normalises before POSTing
 - Don't put the sample's value in `dedupKey` — a corrected reading must update its row, not add one
 - Don't use Health Connect's aggregate queries for sleep — they drop the stages; always `readSamples()`
