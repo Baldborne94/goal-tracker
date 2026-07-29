@@ -7,22 +7,22 @@ const CHALLENGE_POOL = [
   // Group 0
   { id: "ch_g0_milestone", title: "Primo Passo",           description: "Completa almeno 1 milestone oggi",              xp: 15, type: "complete_milestone",    group: 0 },
   { id: "ch_g0_gym",       title: "Guerriero della Palestra", description: "Registra una sessione in palestra oggi",      xp: 25, type: "log_gym",               group: 0 },
-  { id: "ch_g0_meals",     title: "Piano Nutrizionista",   description: "Spunta tutti e 4 i pasti del piano oggi",        xp: 15, type: "complete_meals",         group: 0 },
+  { id: "ch_g0_meals",     title: "Diario Alimentare",     description: "Registra almeno un pasto nella dieta oggi",      xp: 15, type: "complete_meals",         group: 0 },
   { id: "ch_g0_expense",   title: "Budget Tracker",        description: "Registra almeno 1 spesa oggi",                   xp: 10, type: "log_expense",            group: 0 },
   // Group 1
   { id: "ch_g1_miles3",    title: "Tre Conquiste",         description: "Completa 3 milestone oggi",                      xp: 30, type: "complete_3_milestones",  group: 1 },
   { id: "ch_g1_gym",       title: "Sessione Intensa",      description: "Registra una sessione in palestra oggi",          xp: 25, type: "log_gym",               group: 1 },
-  { id: "ch_g1_meals",     title: "Nutri il Corpo",        description: "Spunta tutti e 4 i pasti del piano oggi",        xp: 15, type: "complete_meals",         group: 1 },
+  { id: "ch_g1_meals",     title: "Nutri il Corpo",        description: "Registra almeno un pasto nella dieta oggi",      xp: 15, type: "complete_meals",         group: 1 },
   { id: "ch_g1_shopping",  title: "Cacciatore di Provviste", description: "Spunta almeno 3 prodotti dalla lista spesa",   xp: 10, type: "check_shopping",         group: 1 },
   // Group 2
   { id: "ch_g2_milestone", title: "Avanzamento",           description: "Completa almeno 1 milestone oggi",              xp: 15, type: "complete_milestone",    group: 2 },
   { id: "ch_g2_gym",       title: "Corpo in Forma",        description: "Registra una sessione in palestra oggi",          xp: 25, type: "log_gym",               group: 2 },
-  { id: "ch_g2_meals",     title: "Piano Pasti Rispettato", description: "Spunta tutti e 4 i pasti del piano oggi",       xp: 15, type: "complete_meals",         group: 2 },
+  { id: "ch_g2_meals",     title: "Pasto Tracciato",       description: "Registra almeno un pasto nella dieta oggi",      xp: 15, type: "complete_meals",         group: 2 },
   { id: "ch_g2_quest",     title: "Missione Completata",   description: "Completa una missione oggi",                     xp: 40, type: "complete_quest",         group: 2 },
   // Group 3
   { id: "ch_g3_checkin",   title: "Impegno Costante",      description: "Fai il check-in giornaliero su una missione",    xp: 15, type: "daily_checkin",          group: 3 },
   { id: "ch_g3_gym",       title: "Allenamento del Giorno", description: "Registra una sessione in palestra oggi",        xp: 25, type: "log_gym",               group: 3 },
-  { id: "ch_g3_meals",     title: "Cibo Consapevole",      description: "Spunta tutti e 4 i pasti del piano oggi",        xp: 15, type: "complete_meals",         group: 3 },
+  { id: "ch_g3_meals",     title: "Cibo Consapevole",      description: "Registra almeno un pasto nella dieta oggi",      xp: 15, type: "complete_meals",         group: 3 },
   { id: "ch_g3_weight",    title: "Iron Scale",            description: "Registra il tuo peso oggi",                      xp: 10, type: "log_weight",             group: 3 },
 ];
 
@@ -128,8 +128,10 @@ export async function GET() {
       userId, today
     ).catch(() => [{ count: BigInt(0) }]);
 
+    // Il diario alimentare (FoodEntry) è l'unica fonte: il piano del
+    // nutrizionista e le sue MealCompletion non esistono più.
     const mealCount = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM "MealCompletion" WHERE "userId" = $1 AND date = $2`,
+      `SELECT COUNT(*) as count FROM "FoodEntry" WHERE "userId" = $1 AND date = $2`,
       userId, today
     ).catch(() => [{ count: BigInt(0) }]);
 
@@ -146,7 +148,7 @@ export async function GET() {
       log_weight:            weightCount >= 1,
       daily_checkin:         Number(questCheckin[0]?.count ?? 0) >= 1,
       log_gym:               Number(gymCount[0]?.count ?? 0) >= 1,
-      complete_meals:        Number(mealCount[0]?.count ?? 0) >= 4,
+      complete_meals:        Number(mealCount[0]?.count ?? 0) >= 1,
       check_shopping:        Number(shoppingChecked[0]?.count ?? 0) >= 3,
     };
   } catch { /* challenges show as locked if condition checks fail */ }

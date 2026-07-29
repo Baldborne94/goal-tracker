@@ -10,6 +10,7 @@ let gymInitialized = false;
 let sentReminderInitialized = false;
 let healthMetricInitialized = false;
 let loginTicketInitialized = false;
+let mealLogInitialized = false;
 
 // Tracks which scheduled reminders have already been delivered today, so an
 // external cron running every few minutes never sends a duplicate push.
@@ -85,18 +86,11 @@ export async function initGymTables() {
   gymInitialized = true;
 }
 
-export async function initNutrizionistaTables() {
+// Lista della spesa. (Un tempo qui nascevano anche le tabelle del piano
+// nutrizionista, rimosso: le tabelle fisiche eventualmente presenti nel DB
+// restano, ma il codice non le tocca più.)
+export async function initSpesaTables() {
   if (initialized) return;
-  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "MealCompletion" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "date" TEXT NOT NULL,
-    "meal" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "MealCompletion_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "MealCompletion_userId_date_meal_key" UNIQUE ("userId","date","meal"),
-    CONSTRAINT "MealCompletion_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-  )`);
   await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "ShoppingItem" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -108,18 +102,29 @@ export async function initNutrizionistaTables() {
     CONSTRAINT "ShoppingItem_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "ShoppingItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
-  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "NutrizionistaDoc" (
+  initialized = true;
+}
+
+// Note testuali per pasto nella Dieta. La tabella era dichiarata in
+// schema.prisma ma non è mai stata creata nel DB (il vecchio ciclo di seed
+// abortiva prima di arrivarci): ogni salvataggio delle note falliva in
+// silenzio. Da qui in poi nasce al primo uso, come le altre.
+export async function initMealLogTable() {
+  if (mealLogInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "MealLog" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "mimeType" TEXT NOT NULL DEFAULT 'application/pdf',
-    "data" TEXT NOT NULL,
-    "size" INTEGER NOT NULL DEFAULT 0,
+    "date" TEXT NOT NULL,
+    "mealType" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "NutrizionistaDoc_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "NutrizionistaDoc_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "MealLog_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "MealLog_userId_date_mealType_key" UNIQUE ("userId","date","mealType"),
+    CONSTRAINT "MealLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
-  initialized = true;
+  mealLogInitialized = true;
 }
 
 export async function initSvuotaFrigoTable() {
