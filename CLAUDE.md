@@ -59,7 +59,8 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 | `src/lib/utils.ts` | `calculateStreak(dates)` |
 | `src/lib/rewards.ts` | XP awards + trophy unlock logic |
 | `src/app/(app)/layout.tsx` | Auth guard + BottomNav + ThemeProvider (passes DB theme) |
-| `src/app/(app)/dashboard/page.tsx` | XP card (CSS vars), streak card, weekly recap, today's focus, finance widget |
+| `src/app/(app)/dashboard/page.tsx` | XP card (CSS vars), streak card, Fit3 tiles (steps/sleep today), weekly recap, unified today panel, today's focus, finance widget |
+| `src/components/TodayPanel.tsx` | One list for quest check-ins + daily challenges with claim buttons; shows a "day complete" card when everything is done |
 | `src/app/(app)/finance/page.tsx` | Treasury server page; builds 12-month trend data |
 | `src/app/(app)/profile/page.tsx` | Loads user, streak, reminder prefs from DB |
 | `src/app/(app)/profile/actions.ts` | Server Actions: name, theme, reminder |

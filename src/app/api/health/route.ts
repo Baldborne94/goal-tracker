@@ -48,6 +48,36 @@ export async function GET(req: Request) {
     orderBy: { recordedAt: "asc" },
   });
 
+  // Peso a fonte unica: finché non c'è una bilancia smart che scrive su
+  // Health Connect, le pesate arrivano dal registro manuale di /peso. Le
+  // righe vengono presentate nella stessa forma delle altre metriche, così
+  // la schermata Salute non sa (né deve sapere) da dove vengono. Se un
+  // giorno arriveranno campioni veri di tipo weight, vinceranno loro.
+  const hasWearableWeight = metrics.some((m) => m.metricType === "weight");
+  if (!hasWearableWeight && (!type || type === "weight")) {
+    try {
+      const entries = await prisma.weightEntry.findMany({
+        where: { userId: session.user.id, date: { gte: from } },
+        select: { id: true, weight: true, date: true },
+        orderBy: { date: "asc" },
+      });
+      for (const e of entries) {
+        metrics.push({
+          id: `we_${e.id}`,
+          metricType: "weight",
+          value: e.weight,
+          unit: "kilogram",
+          date: localDateKey(e.date),
+          recordedAt: e.date,
+          sourceName: "Registro peso",
+          metadata: null,
+        });
+      }
+    } catch {
+      // senza il registro manuale la tile Peso resta semplicemente vuota
+    }
+  }
+
   const last = await prisma.healthMetric.findFirst({
     where: { userId: session.user.id },
     select: { createdAt: true },
