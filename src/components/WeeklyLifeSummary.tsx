@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { formatDuration } from "@/lib/health";
+import { serverDayKey } from "@/lib/utils";
 
 // Riepilogo settimanale della sezione Vita, calcolato sul server insieme al
 // resto della dashboard: niente fetch dal client, niente flash di caricamento.
@@ -10,20 +11,16 @@ import { formatDuration } from "@/lib/health";
 // — il diario del sonno compilato a mano non esiste più — le abitudini da
 // HabitLog e le kcal dal diario alimentare.
 
-function toDateKey(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-
 function weekStartKey(): string {
   const d = new Date();
   const dow = d.getDay();
   d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-  return toDateKey(d);
+  return serverDayKey(d);
 }
 
 export default async function WeeklyLifeSummary({ userId }: { userId: string }) {
   const ws = weekStartKey();
-  const today = toDateKey(new Date());
+  const today = serverDayKey();
 
   const [gym, sleep, habitDays, kcalToday] = await Promise.all([
     prisma.$queryRawUnsafe<{ count: bigint; minutes: number | null }[]>(

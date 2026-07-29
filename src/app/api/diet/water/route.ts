@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { serverDayKey } from "@/lib/utils";
 
 let tableReady = false;
 
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const date = new URL(req.url).searchParams.get("date") || new Date().toISOString().slice(0, 10);
+  const date = new URL(req.url).searchParams.get("date") || serverDayKey();
 
   if (!tableReady) { await ensureTable().catch(() => {}); tableReady = true; }
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({})) as { date?: string; glasses?: number };
   if (typeof body.glasses !== "number") return NextResponse.json({ error: "glasses required" }, { status: 400 });
 
-  const d = body.date || new Date().toISOString().slice(0, 10);
+  const d = body.date || serverDayKey();
   const glasses = Math.max(0, Math.min(12, body.glasses));
 
   if (!tableReady) { await ensureTable(); tableReady = true; }

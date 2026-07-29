@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { encodeQuestTemplate } from "@/lib/quest-template";
+import { dayKey } from "@/lib/utils";
 
 type Milestone = { id: string; title: string; completed: boolean; order: number };
 type Tag = { id: string; name: string };
@@ -43,11 +45,11 @@ function calcStreak(checkIns: CheckIn[], checkInDays: string | null): number {
   if (checkIns.length === 0) return 0;
   const checked = new Set(checkIns.map((c) => c.date));
   const scheduledDays = checkInDays ? checkInDays.split(",").map(Number) : [0, 1, 2, 3, 4, 5, 6];
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = dayKey();
   let streak = 0;
   const cursor = new Date(todayStr + "T12:00:00");
   for (let i = 0; i < 365; i++) {
-    const dateStr = cursor.toISOString().slice(0, 10);
+    const dateStr = dayKey(cursor);
     if (scheduledDays.includes(cursor.getDay())) {
       if (checked.has(dateStr)) {
         streak++;
@@ -83,7 +85,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
   const [todayNote, setTodayNote] = useState("");
   const [checkingIn, setCheckingIn] = useState(false);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = dayKey();
   const todayCheckedIn = checkIns.some((c) => c.date === todayStr);
   const streak = calcStreak(checkIns, goal.checkInDays);
   const scheduledToday = isTodayScheduled(goal.checkInDays);
@@ -91,7 +93,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
   const last14 = Array.from({ length: 14 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - 13 + i);
-    return d.toISOString().slice(0, 10);
+    return dayKey(d);
   });
 
   async function handleCheckIn() {
@@ -120,7 +122,7 @@ export default function GoalDetailClient({ goal: initial, priorityLabel, priorit
       priority: goal.priority,
       milestones: goal.milestones.map((m) => m.title),
     };
-    const encoded = btoa(JSON.stringify(data));
+    const encoded = encodeQuestTemplate(data);
     const url = `${window.location.origin}/goals/new?template=${encoded}`;
     try {
       await navigator.clipboard.writeText(url);

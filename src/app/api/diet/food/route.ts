@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { serverDayKey } from "@/lib/utils";
 
 type FoodEntryRow = {
   id: string; mealType: string; foodName: string; grams: number;
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const date = new URL(req.url).searchParams.get("date") || new Date().toISOString().slice(0, 10);
+  const date = new URL(req.url).searchParams.get("date") || serverDayKey();
 
   if (!tableReady) { await ensureTable().catch(() => {}); tableReady = true; }
 
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
   const fa = Number(fat ?? 0);
   const kcal = Math.round((g * kp) / 100);
   const id = `fe_${Math.random().toString(36).slice(2, 11)}`;
-  const d = String(date || new Date().toISOString().slice(0, 10));
+  const d = String(date || serverDayKey());
 
   await prisma.$executeRawUnsafe(
     `INSERT INTO "FoodEntry" (id, "userId", date, "mealType", "foodName", grams, "kcalPer100g", kcal, proteins, carbs, fat)

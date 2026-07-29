@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { serverDayKey } from "@/lib/utils";
 import { initMealLogTable } from "@/lib/init-tables";
 
 export async function GET(req: Request) {
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
   await initMealLogTable();
 
   const { searchParams } = new URL(req.url);
-  const date = searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
+  const date = searchParams.get("date") ?? serverDayKey();
 
   const logs = await prisma.mealLog.findMany({
     where: { userId: session.user.id, date },

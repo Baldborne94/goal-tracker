@@ -57,7 +57,8 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 | `src/lib/mobile-auth.ts` | Server side of one-time login tickets: mint (`issueLoginTicket`) and atomic consume (`consumeLoginTicket`) |
 | `src/app/api/mobile-auth/start/route.ts` | Opened in the system browser by the shell; starts web OAuth (or skips it if the browser already has a session) |
 | `src/app/api/mobile-auth/finish/route.ts` | Mints the ticket and serves the jump page to `goaltracker://login?ticket=…` (HTML with button, not a 302 — Chrome blocks gesture-less custom-scheme redirects) |
-| `src/lib/utils.ts` | `calculateStreak(dates)` |
+| `src/lib/utils.ts` | `dayKey` / `serverDayKey` / `dayRange` (il giorno dell'utente, non UTC), `calculateStreak(dates)` |
+| `src/lib/quest-template.ts` | Share-a-quest link contract: UTF-8 + base64url, survives emoji and accents |
 | `src/lib/rewards.ts` | XP awards + trophy unlock logic |
 | `src/lib/hero-stats.ts` | Hero Sheet rules (pure, client-safe): stat defs, category/challenge → stat maps, 8→20 score curve, emergent class |
 | `src/lib/hero-stats-server.ts` | StatEvent ledger: `awardStat` (never throws), totals, recent events |
@@ -97,12 +98,16 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - **Milestone completion**: PATCH `/api/goals/[id]/milestones/[mid]` → awards XP, checks rewards
 - **Finance close-month**: POST `/api/kakeebo/close-month` → awards 25 XP + trophy; button disabled when `isOver` (spent > budget)
 - **Clear month**: DELETE `/api/kakeebo/expenses?month=YYYY-MM` → deletes all expenses for that month
+- **Il giorno dell'utente**: use `dayKey()` / `serverDayKey()` / `dayRange()` from `src/lib/utils.ts` — never `toISOString().slice(0,10)`, which is UTC and lands on the wrong day between midnight and 02:00 Italian time. Client = device timezone, server = `APP_TIMEZONE` (default Europe/Rome)
 - **Schema migrations**: Add new columns via `prisma.$executeRawUnsafe('ALTER TABLE "X" ADD COLUMN IF NOT EXISTS ...')` in the MIGRATIONS array in `prisma/seed.ts`
 - **ISYbank category map**: `ISYBANK_CAT_MAP` at top of FinanceClient.tsx maps Italian category strings (lowercase) to app category keys; extend it for new mappings
 
 ## What NOT to do
 - Don't use `fetch("/api/profile", PATCH)` for name save — use the Server Action
 - Don't use `.toFixed(0)` for money amounts — use `.toFixed(2)`
+- Don't compute "today" with `toISOString().slice(0,10)` — it's the UTC day, not the user's; use the helpers in `src/lib/utils.ts`
+- Don't award XP without a once-per-day guard on anything the user can repeat (weight, gym log, habit re-check) — uncheck never refunds, so an unguarded award is an infinite XP tap
+- Don't encode share links with bare `btoa` — it throws on emoji and its `+` becomes a space in a URL; use `encodeQuestTemplate` / `decodeQuestTemplate`
 - Don't push to `main` directly — use `fix/*` or `feat/*` branches, create PR, wait for Vercel CI green, then merge
 - Don't add `prisma db push` to the build script — it hangs on Supabase pgBouncer (port 6543) advisory locks
 - Don't re-enable PKCE for Google OAuth — `checks: ["state"]` is intentional; disabling PKCE fixes Android PWA double-login (CCT vs PWA webview cookie isolation)

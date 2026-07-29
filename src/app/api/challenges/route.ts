@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { dayRange, serverDayKey } from "@/lib/utils";
 
 // 4 rotation groups, each shown for 14 days before cycling
 const CHALLENGE_POOL = [
@@ -79,7 +80,7 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = session.user.id;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = serverDayKey();
 
   if (!tablesReady) {
     try {
@@ -104,8 +105,7 @@ export async function GET() {
   );
 
   const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayEnd = new Date(dayStart.getTime() + 86400000);
+  const { start: dayStart, end: dayEnd } = dayRange(now);
 
   let conditionMap: Record<string, boolean> = {};
 
@@ -136,8 +136,9 @@ export async function GET() {
     ).catch(() => [{ count: BigInt(0) }]);
 
     const shoppingChecked = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM "ShoppingItem" WHERE "userId" = $1 AND "checked" = true`,
-      userId
+      `SELECT COUNT(*) as count FROM "ShoppingItem"
+       WHERE "userId" = $1 AND "checked" = true AND "checkedAt" >= $2 AND "checkedAt" < $3`,
+      userId, dayStart, dayEnd
     ).catch(() => [{ count: BigInt(0) }]);
 
     conditionMap = {

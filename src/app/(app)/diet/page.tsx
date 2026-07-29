@@ -1,6 +1,7 @@
 import DietClient from "@/components/diet/DietClient";
+import { serverDayKey } from "@/lib/utils";
 
 export default function DietPage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = serverDayKey();
   return <DietClient initialDate={today} />;
 }

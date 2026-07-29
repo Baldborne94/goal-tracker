@@ -501,6 +501,9 @@ export default function SaluteClient() {
     [metrics]
   );
 
+  // La lista segue l'ordine fisso del registro e la prima voce è sempre una
+  // metrica `core` (le calorie attive), quindi il riquadro predefinito non si
+  // sposta quando un sync ne fa comparire di nuove.
   const detail = selected && secondary.some((m) => m.key === selected) ? selected : secondary[0]?.key;
   const detailDef = detail ? getMetric(detail) : undefined;
 

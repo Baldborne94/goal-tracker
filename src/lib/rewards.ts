@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { dayKey, serverDayKey } from "@/lib/utils";
 
 const REWARDS = [
   {
@@ -129,13 +130,15 @@ const ROUTINE_REWARDS = [
 function calcStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const set = new Set(dates);
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const today = serverDayKey();
+  const yesterday = serverDayKey(new Date(Date.now() - 86400000));
   const start = set.has(today) ? today : set.has(yesterday) ? yesterday : null;
   if (!start) return 0;
   let streak = 0;
-  const d = new Date(start);
-  while (set.has(d.toISOString().slice(0, 10))) {
+  // Mezzogiorno: contando a ritroso di 24h in 24h, partire da mezzanotte
+  // farebbe inciampare la serie sul cambio di ora legale.
+  const d = new Date(`${start}T12:00:00`);
+  while (set.has(dayKey(d))) {
     streak++;
     d.setDate(d.getDate() - 1);
   }
@@ -278,7 +281,7 @@ export async function checkAndAwardRoutineRewards(userId: string) {
     if (s > maxStreak) maxStreak = s;
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = serverDayKey();
   const allDoneToday =
     habitCount > 0 &&
     habits.every((h) => h.logs.some((l: { date: string }) => l.date === today));

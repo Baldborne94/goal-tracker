@@ -590,7 +590,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                   </div>
                 ) : (
                   <button onClick={() => { setEditingBudget(true); setBudgetInput(String(budget.amount)); }} className="text-2xl font-bold text-[#ede9ff] hover:text-amber-400 transition-colors">
-                    €{budget.amount.toFixed(0)}
+                    €{budget.amount.toFixed(2)}
                   </button>
                 )}
               </div>
@@ -623,7 +623,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                 {insights?.projected !== undefined && insights.projected !== null && (
                   <div className="text-right">
                     <p className={`text-xs font-semibold ${insights.projected > budget.amount ? "text-red-400" : "text-green-400"}`}>
-                      ~€{insights.projected.toFixed(0)} previsto
+                      ~€{insights.projected.toFixed(2)} previsto
                     </p>
                     <p className="text-xs" style={{ color: "var(--theme-text-muted)" }}>stima fine mese</p>
                   </div>
@@ -786,7 +786,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
                       <div className="flex items-center gap-1.5">
                         {catLimit && (
                           <span className={`text-xs font-medium ${overCatBudget ? "text-red-400" : "text-green-400"}`}>
-                            {overCatBudget ? "⚠️" : ""} €{amount.toFixed(0)}/€{catLimit.amount.toFixed(0)}
+                            {overCatBudget ? "⚠️" : ""} €{amount.toFixed(2)}/€{catLimit.amount.toFixed(2)}
                           </span>
                         )}
                         {!catLimit && <span className="font-semibold text-xs" style={{ color: s.color }}>€{amount.toFixed(2)}</span>}
@@ -873,7 +873,7 @@ export default function FinanceClient({ initialMonth, initialBudget, initialExpe
         <div className="flex justify-between text-[10px]" style={{ color: "var(--theme-text-muted)" }}>
           <span>€0</span>
           <span style={{ fontSize: "9px" }}>— linea budget</span>
-          <span>€{maxTrend.toFixed(0)}</span>
+          <span>€{maxTrend.toFixed(2)}</span>
         </div>
       </div>
 

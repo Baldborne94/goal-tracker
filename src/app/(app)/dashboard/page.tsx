@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { formatDate, calculateStreak } from "@/lib/utils";
+import { formatDate, calculateStreak, dayRange, serverDayKey } from "@/lib/utils";
 import { getLevelProgress } from "@/lib/levels";
 import { getClassDef } from "@/lib/classes";
 import LogoutButton from "@/components/LogoutButton";
@@ -38,10 +38,13 @@ export default async function DashboardPage() {
   const monthStart = new Date(yr, mo - 1, 1);
   const monthEnd = new Date(yr, mo, 1);
 
-  const weekStart = new Date();
-  weekStart.setHours(0, 0, 0, 0);
-  const dow = weekStart.getDay();
-  weekStart.setDate(weekStart.getDate() - (dow === 0 ? 6 : dow - 1));
+  // La settimana comincia a mezzanotte italiana del lunedì, non a mezzanotte UTC.
+  const weekStart = (() => {
+    const d = dayRange().start;
+    const dow = new Date().getDay();
+    d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+    return d;
+  })();
 
   const [user, goals, financeBudget, financeAgg, streakMilestones, weekMilestones, weekGoals, todayFocusRaw] = await Promise.all([
     prisma.user.findUnique({
@@ -93,10 +96,9 @@ export default async function DashboardPage() {
     }).catch(() => []),
   ]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = serverDayKey();
   const todayDayIdx = new Date().getDay();
-  const dayStart = new Date(); dayStart.setHours(0,0,0,0);
-  const dayEnd = new Date(dayStart.getTime() + 86400000);
+  const { start: dayStart, end: dayEnd } = dayRange();
 
   const active = earlyActive;
   const completed = earlyCompleted;
@@ -154,8 +156,9 @@ export default async function DashboardPage() {
       userId, today
     ).catch(() => [{ count: BigInt(0) }]),
     prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM "ShoppingItem" WHERE "userId" = $1 AND "checked" = true`,
-      userId
+      `SELECT COUNT(*) as count FROM "ShoppingItem"
+       WHERE "userId" = $1 AND "checked" = true AND "checkedAt" >= $2 AND "checkedAt" < $3`,
+      userId, dayStart, dayEnd
     ).catch(() => [{ count: BigInt(0) }]),
   ]);
 

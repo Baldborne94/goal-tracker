@@ -2,6 +2,7 @@
 // Le regole (mappe, curva dei punteggi, classe) stanno in hero-stats.ts.
 
 import { prisma } from "./db";
+import { serverDayKey } from "./utils";
 import { initStatEventTable } from "./init-tables";
 import { EMPTY_TOTALS, type StatKey, type StatTotals } from "./hero-stats";
 
@@ -34,7 +35,7 @@ export async function awardStat(
   try {
     await initStatEventTable();
     const id = `se_${Math.random().toString(36).slice(2, 11)}`;
-    const date = new Date().toISOString().slice(0, 10);
+    const date = serverDayKey();
     await prisma.$executeRawUnsafe(
       `INSERT INTO "StatEvent" ("id","userId","stat","points","source","label","date")
        VALUES ($1,$2,$3,$4,$5,$6,$7)`,

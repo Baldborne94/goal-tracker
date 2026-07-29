@@ -17,9 +17,11 @@ export async function PATCH(
   const body = await req.json();
 
   if (typeof body.checked === "boolean") {
+    // checkedAt è ciò che rende la sfida "spunta 3 prodotti" una sfida di
+    // oggi: senza, contava le spunte di sempre e si regalava ogni mattina.
     await prisma.$executeRawUnsafe(
-      `UPDATE "ShoppingItem" SET "checked" = $1 WHERE "id" = $2 AND "userId" = $3`,
-      body.checked, id, session.user.id
+      `UPDATE "ShoppingItem" SET "checked" = $1, "checkedAt" = $2 WHERE "id" = $3 AND "userId" = $4`,
+      body.checked, body.checked ? new Date() : null, id, session.user.id
     );
   } else if (body.name !== undefined) {
     await prisma.$executeRawUnsafe(

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import GoalForm from "@/components/goals/GoalForm";
+import { decodeQuestTemplate } from "@/lib/quest-template";
 
 function fmt(d: Date): string {
   return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
@@ -62,21 +63,17 @@ export default async function NewGoalPage({
   const today = new Date();
   let prefill: { title: string; description: string; priority: string; targetDate: string; categoryId: string; tags: string[]; milestones: string[] } | undefined;
 
-  if (template) {
-    try {
-      const data = JSON.parse(Buffer.from(template, "base64").toString("utf-8"));
-      prefill = {
-        title: data.title ?? "",
-        description: data.description ?? "",
-        priority: data.priority ?? "medium",
-        targetDate: "",
-        categoryId: "",
-        tags: [],
-        milestones: Array.isArray(data.milestones) ? data.milestones : [],
-      };
-    } catch {
-      // invalid template — ignore
-    }
+  const shared = decodeQuestTemplate(template);
+  if (shared) {
+    prefill = {
+      title: shared.title,
+      description: shared.description,
+      priority: shared.priority,
+      targetDate: "",
+      categoryId: "",
+      tags: [],
+      milestones: shared.milestones,
+    };
   }
 
   if (!prefill && title) {

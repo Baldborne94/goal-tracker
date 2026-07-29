@@ -453,7 +453,7 @@ export default function ProfileClient({ user, stats, streak = 0, categoryStats =
         ) : (
           <div>
             <p className="text-sm text-[#c4b5fd] mb-3">
-              Questo eliminerà definitivamente tutte le tue missioni, milestone e dati. Sei sicuro?
+              Questo eliminerà definitivamente tutte le missioni e le loro tappe. Restano XP, livello, statistiche dell&apos;Eroe, peso, spese e dati di salute. Sei sicuro?
             </p>
             <div className="flex gap-3">
               <button

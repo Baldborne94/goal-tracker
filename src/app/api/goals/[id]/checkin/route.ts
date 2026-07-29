@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { serverDayKey } from "@/lib/utils";
 import { statPointsFromXp } from "@/lib/hero-stats";
 import { awardStat } from "@/lib/hero-stats-server";
 
@@ -59,7 +60,7 @@ export async function POST(
   const { id: goalId } = await params;
   const body = await req.json().catch(() => ({}));
   const { note } = body as { note?: string };
-  const today = new Date().toISOString().slice(0, 10);
+  const today = serverDayKey();
 
   if (!tableReady) {
     try { await ensureTable(); tableReady = true; }
