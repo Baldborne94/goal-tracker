@@ -147,13 +147,6 @@ export async function PATCH(
       where: { id: session.user.id },
       data: { points: { increment: existing.points } },
     });
-    await awardStat(
-      session.user.id,
-      statForCategory(existing.category?.name),
-      statPointsFromXp(existing.points),
-      "quest",
-      `Missione «${existing.title}» completata`
-    );
     await checkAndAwardRewards(session.user.id);
 
     // Auto-clone recurring quests on manual completion
@@ -204,6 +197,18 @@ export async function PATCH(
         );
       }
     }
+  }
+
+  // Il registro della scheda per ultimo: è un livello di gioco sopra il
+  // completamento, non un passo del completamento.
+  if (isNowComplete && !wasCompleted) {
+    await awardStat(
+      session.user.id,
+      statForCategory(existing.category?.name),
+      statPointsFromXp(existing.points),
+      "quest",
+      `Missione «${existing.title}» completata`
+    );
   }
 
   return NextResponse.json(goal);

@@ -20,6 +20,10 @@ export type HeroSheetEvent = {
   points: number;
   label: string;
   date: string;
+  /** Punteggio raggiunto; se è salito, questa riga è un traguardo. */
+  scoreAfter?: number | null;
+  /** Punteggio della riga precedente per la stessa stat (calcolato a monte). */
+  leveledUp?: boolean;
 };
 
 function shortDate(date: string): string {
@@ -159,7 +163,17 @@ export default function HeroSheet({ totals, events }: { totals: StatTotals; even
                   >
                     +{e.points} {def?.short ?? e.stat.toUpperCase()}
                   </span>
-                  <span className="flex-1 truncate text-[#ede9ff]">{e.label}</span>
+                  <span className="flex-1 truncate text-[#ede9ff]">
+                    {e.label}
+                    {e.leveledUp && e.scoreAfter != null && (
+                      <span
+                        className="ml-1.5 px-1.5 py-0.5 rounded font-bold text-[10px] whitespace-nowrap"
+                        style={{ background: "var(--theme-glow)", color: "var(--theme-accent)" }}
+                      >
+                        ▲ {def?.short} {e.scoreAfter}
+                      </span>
+                    )}
+                  </span>
                   <span className="flex-none" style={{ color: "var(--theme-text-muted)" }}>{shortDate(e.date)}</span>
                 </div>
               );

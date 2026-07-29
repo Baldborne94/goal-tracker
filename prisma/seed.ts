@@ -221,6 +221,21 @@ const MIGRATIONS = [
   )`,
   `CREATE INDEX IF NOT EXISTS "StatEvent_userId_createdAt_idx" ON "StatEvent" ("userId","createdAt")`,
   `ALTER TABLE "StatEvent" ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE "StatEvent" ADD COLUMN IF NOT EXISTS "scoreAfter" INTEGER`,
+  // Weekly bosses defeated. The unique constraint is what stops a victory
+  // from being claimed twice.
+  `CREATE TABLE IF NOT EXISTS "BossDefeat" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "week" TEXT NOT NULL,
+    "bossId" TEXT NOT NULL,
+    "xpAwarded" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "BossDefeat_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "BossDefeat_userId_week_bossId_key" UNIQUE ("userId","week","bossId"),
+    CONSTRAINT "BossDefeat_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `ALTER TABLE "BossDefeat" ENABLE ROW LEVEL SECURITY`,
   // One-shot tickets that ferry a session from the system browser into the
   // WebView during Google login from the APK (see src/lib/login-ticket.ts).
   // Only the ticket's hash is stored, never the spendable value.

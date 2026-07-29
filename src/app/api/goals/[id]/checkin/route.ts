@@ -87,7 +87,6 @@ export async function POST(
     id, goalId, session.user.id, today, note ?? null, xp
   );
 
-  await awardStat(session.user.id, "sag", statPointsFromXp(xp), "quest_checkin", "Check-in giornaliero della missione");
   await prisma.user.update({
     where: { id: session.user.id },
     data: { points: { increment: xp } },
@@ -120,6 +119,10 @@ export async function POST(
     newProgress = expected > 0 ? Math.min(100, Math.round((done / expected) * 100)) : 0;
     await prisma.$executeRawUnsafe(`UPDATE "Goal" SET progress = $1 WHERE id = $2`, newProgress, goalId);
   }
+
+  // Il registro della scheda si scrive per ultimo: è un livello di gioco
+  // sopra il check-in, non un passo del check-in.
+  await awardStat(session.user.id, "sag", statPointsFromXp(xp), "quest_checkin", "Check-in giornaliero della missione");
 
   return NextResponse.json({ id, date: today, xp, ...(newProgress !== undefined && { progress: newProgress }) });
 }

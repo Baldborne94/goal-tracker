@@ -49,6 +49,7 @@ model User {
   healthMetrics     HealthMetric[]
   loginTickets      LoginTicket[]
   statEvents        StatEvent[]
+  bossDefeats       BossDefeat[]
 }
 
 model Account {
@@ -547,9 +548,25 @@ model StatEvent {
   source    String   // slug del punto di aggancio (gym_log, milestone, …)
   label     String   // riga leggibile del registro
   date      String   // "YYYY-MM-DD"
+  scoreAfter Int?    // punteggio 8-20 raggiunto dopo questo evento
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+// Boss settimanali abbattuti: uno per settimana, il vincolo di unicità
+// impedisce di riscuotere due volte la stessa vittoria.
+model BossDefeat {
+  id        String   @id
+  userId    String
+  week      String   // "2026-W31"
+  bossId    String
+  xpAwarded Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, week, bossId])
 }

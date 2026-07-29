@@ -12,6 +12,7 @@ let healthMetricInitialized = false;
 let loginTicketInitialized = false;
 let mealLogInitialized = false;
 let statEventInitialized = false;
+let bossInitialized = false;
 
 // Tracks which scheduled reminders have already been delivered today, so an
 // external cron running every few minutes never sends a duplicate push.
@@ -214,7 +215,28 @@ export async function initStatEventTable() {
   await prisma.$executeRawUnsafe(
     `CREATE INDEX IF NOT EXISTS "StatEvent_userId_createdAt_idx" ON "StatEvent" ("userId","createdAt")`
   );
+  // Punteggio raggiunto dopo l'evento: se è più alto del precedente, quella
+  // riga è il momento in cui la statistica è salita di gradino.
+  await prisma.$executeRawUnsafe(`ALTER TABLE "StatEvent" ADD COLUMN IF NOT EXISTS "scoreAfter" INTEGER`);
   statEventInitialized = true;
+}
+
+// Boss settimanali abbattuti. Il vincolo di unicità è ciò che impedisce di
+// riscuotere due volte la stessa vittoria.
+export async function initBossTable() {
+  if (bossInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "BossDefeat" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "week" TEXT NOT NULL,
+    "bossId" TEXT NOT NULL,
+    "xpAwarded" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "BossDefeat_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "BossDefeat_userId_week_bossId_key" UNIQUE ("userId","week","bossId"),
+    CONSTRAINT "BossDefeat_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  bossInitialized = true;
 }
 
 export async function initAiUsageTable() {

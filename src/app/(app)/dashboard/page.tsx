@@ -7,6 +7,8 @@ import { getLevelProgress } from "@/lib/levels";
 import { getClassDef } from "@/lib/classes";
 import LogoutButton from "@/components/LogoutButton";
 import TodayPanel from "@/components/TodayPanel";
+import BossCard from "@/components/BossCard";
+import { getBossProgress } from "@/lib/boss-server";
 import WeeklyLifeSummary from "@/components/WeeklyLifeSummary";
 import { formatDuration, formatMetricValue } from "@/lib/health";
 
@@ -161,6 +163,8 @@ export default async function DashboardPage() {
       userId, dayStart, dayEnd
     ).catch(() => [{ count: BigInt(0) }]),
   ]);
+
+  const bossProgress = await getBossProgress(userId);
 
   // Check-in quests scheduled for today
   const checkInGoalsRaw = await prisma.$queryRawUnsafe<{ id: string; title: string; checkInXP: number; checkInDays: string | null }[]>(
@@ -373,6 +377,9 @@ export default async function DashboardPage() {
 
       {/* Weekly life summary */}
       <WeeklyLifeSummary userId={userId} />
+
+      {/* Il Boss della settimana: l'arco lungo, sopra il quotidiano */}
+      <BossCard initial={JSON.parse(JSON.stringify(bossProgress))} />
 
       {/* Oggi: check-in delle missioni + sfide, un'unica lista */}
       <TodayPanel
