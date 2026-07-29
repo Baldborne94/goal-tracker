@@ -4,7 +4,7 @@
 import { prisma } from "./db";
 import { serverDayKey } from "./utils";
 import { initStatEventTable } from "./init-tables";
-import { BASE_SCORE, EMPTY_TOTALS, STAT_BY_KEY, scoreFromPoints, type StatKey, type StatTotals } from "./hero-stats";
+import { BASE_SCORE, EMPTY_TOTALS, STAT_BY_KEY, computeHeroClass, scoreFromPoints, type StatKey, type StatTotals } from "./hero-stats";
 
 export type StatEventRow = {
   id: string;
@@ -143,4 +143,16 @@ export async function getRecentStatEvents(userId: string, limit = 12): Promise<S
   } catch {
     return [];
   }
+}
+
+/**
+ * L'identità dell'eroe: nome e icona della classe emergente.
+ *
+ * Finché non ci sono abbastanza punti è l'Avventuriero senza nome, ed è
+ * giusto così — è l'unica cosa che l'app può dire onestamente di chi non ha
+ * ancora fatto niente. Serve alla navigazione e alle testate, che prima
+ * mostravano la classe scelta a freddo.
+ */
+export async function getHeroIdentity(userId: string) {
+  return computeHeroClass(await getStatTotals(userId));
 }

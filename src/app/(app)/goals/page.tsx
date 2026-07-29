@@ -7,7 +7,7 @@ export default async function GoalsPage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  const [goals, categories, heroClassRow] = await Promise.all([
+  const [goals, categories] = await Promise.all([
     prisma.goal.findMany({
       where: { userId },
       include: {
@@ -18,11 +18,7 @@ export default async function GoalsPage() {
       orderBy: { createdAt: "desc" },
     }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
-    prisma.$queryRawUnsafe<{ heroClass: string | null }[]>(
-      `SELECT "heroClass" FROM "User" WHERE id = $1`, userId
-    ).catch(() => [{ heroClass: null }]),
   ]);
-  const heroClass = heroClassRow[0]?.heroClass ?? null;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -36,7 +32,7 @@ export default async function GoalsPage() {
         </Link>
       </div>
 
-      <GoalsList goals={JSON.parse(JSON.stringify(goals))} categories={categories} heroClass={heroClass} />
+      <GoalsList goals={JSON.parse(JSON.stringify(goals))} categories={categories} />
     </div>
   );
 }

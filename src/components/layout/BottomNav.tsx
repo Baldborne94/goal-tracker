@@ -3,18 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { getLevel } from "@/lib/levels";
 
-export default function BottomNav({ points = 0, heroClass }: { points?: number; heroClass?: string | null }) {
+export default function BottomNav({ icon = "🎒" }: { icon?: string }) {
   const path = usePathname();
-  const tier = getLevel(points, heroClass);
 
   const NAV_ITEMS = [
     { href: "/dashboard", icon: "🏰", label: "Reame" },
     { href: "/goals",     icon: "📜", label: "Missioni" },
     { href: "/finance",   icon: "💎", label: "Finanze" },
     { href: "/vita",      icon: "🌿", label: "Vita" },
-    { href: "/profile",   icon: tier.icon, label: "Eroe" },
+    { href: "/profile",   icon, label: "Eroe" },
   ];
 
   return (

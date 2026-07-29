@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { formatDate, calculateStreak, dayRange, serverDayKey } from "@/lib/utils";
 import { getLevelProgress } from "@/lib/levels";
-import { getClassDef } from "@/lib/classes";
 import LogoutButton from "@/components/LogoutButton";
 import TodayPanel from "@/components/TodayPanel";
 import BossCard from "@/components/BossCard";
@@ -16,16 +15,13 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user!.id!;
 
-  // Fetch user flags + redirect checks
-  let heroClass: string | null = null;
   let onboardingComplete = true;
   try {
-    const flags = await prisma.$queryRawUnsafe<{ heroClass: string | null; onboardingComplete: boolean | null }[]>(
-      `SELECT "heroClass", "onboardingComplete" FROM "User" WHERE id = $1`, userId
+    const flags = await prisma.$queryRawUnsafe<{ onboardingComplete: boolean | null }[]>(
+      `SELECT "onboardingComplete" FROM "User" WHERE id = $1`, userId
     );
-    heroClass = flags[0]?.heroClass ?? null;
     onboardingComplete = flags[0]?.onboardingComplete ?? false;
-  } catch { heroClass = "fighter"; onboardingComplete = true; }
+  } catch { onboardingComplete = true; }
 
   // Nessun bivio prima di aver fatto qualcosa: la classe vera si guadagna
   // con le azioni (Scheda dell'Eroe), e il titolo si sceglie dal profilo
@@ -224,8 +220,7 @@ export default async function DashboardPage() {
     ? (financeBudget.amount - financeSpent) / daysLeft
     : null;
 
-  const levelInfo = getLevelProgress(user?.points ?? 0, heroClass);
-  const classDef = getClassDef(heroClass);
+  const levelInfo = getLevelProgress(user?.points ?? 0);
 
   const CAT_ICONS: Record<string, string> = {
     groceries: "🛒", eating_out: "🍽️", transport: "🚗", housing: "🏠",
@@ -502,7 +497,7 @@ export default async function DashboardPage() {
 
       {goals.length === 0 ? (
         <div className="rounded-2xl border p-8 text-center" style={{background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)"}}>
-          <div className="text-4xl mb-3">{classDef.icon}</div>
+          <div className="text-4xl mb-3">📜</div>
           <p className="text-[#9d8ac7] text-sm mb-4">Nessuna missione ancora</p>
           <Link
             href="/goals/new"

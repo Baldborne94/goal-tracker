@@ -15,7 +15,7 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 - **Quest suggestions** — AI-style panel suggests quests with pre-filled milestones based on user lifestyle
 - **Share quest as template** — `btoa(JSON.stringify(data))` encoded in URL `?template=` param; decoded server-side
 - **Hero Profile** — editable name (Server Action), hero theme (4 presets), daily browser reminder, stats grid, trophies, wipe-everything reset
-- **Titolo vs Classe** — the picker in the profile is the **titolo**: cosmetic, it only names the XP tiers (`getTiers(heroClass)`). The **classe** is not chosen, it emerges from the Hero Sheet. No forced `/class-select` at first launch any more; `getClassDef(null)` falls back to the first entry so tier names always work
+- **Nessuna classe scelta, mai** — the hero starts neutral. `src/lib/classes.ts` (12 classes, each with its own tier ladder), `/class-select` and the profile picker are all gone. `levels.ts` is now **one neutral ladder** (Recluta → Mito, names chosen not to collide with any emergent class), and the hero's name + icon come from `computeHeroClass(statTotals)` — profile header, avatar, and the BottomNav "Eroe" icon all change on their own as the stats grow. The `heroClass` column stays in the DB, unread
 - **Hero themes** — warrior (amber/purple), ocean (cyan/navy), forest (emerald/green), crimson (rose/dark); saved to **DB** + localStorage
 - **Finance (Kakeebo)** — monthly budget, expense tracking by category, donut chart, **12-month** spending trend, **ISYbank Excel import** (parses "Lista Operazioni" sheet, maps Italian categories), category filter chips in daily log, clear-month button, close-month reward (25 XP + trophy)
 - **Daily reminder** — browser Notification API with permission flow; time + enabled state saved to **DB** + localStorage
@@ -68,7 +68,8 @@ A gamified goal/habit tracker built with Next.js 16 App Router, Prisma 7, Supaba
 | `src/components/BossCard.tsx` | Boss card on the dashboard: three conditions, one bar, claim button |
 | `src/lib/hero-stats-server.ts` | StatEvent ledger: `awardStat` (never throws), totals, recent events |
 | `src/components/HeroSheet.tsx` | Radar pentagon + stat rows + ledger, rendered inside ProfileClient |
-| `src/app/(app)/layout.tsx` | Auth guard + BottomNav + ThemeProvider (passes DB theme) |
+| `src/app/(app)/layout.tsx` | Auth guard + BottomNav (emergent hero icon) + ThemeProvider (passes DB theme) |
+| `src/lib/levels.ts` | The single neutral XP ladder — no class parameter |
 | `src/app/(app)/dashboard/page.tsx` | XP card (CSS vars), streak card, Fit3 tiles (steps/sleep today), weekly recap, unified today panel, today's focus, finance widget |
 | `src/components/TodayPanel.tsx` | One list for quest check-ins + daily challenges with claim buttons; shows a "day complete" card when everything is done |
 | `src/app/(app)/finance/page.tsx` | Treasury server page; builds 12-month trend data |
