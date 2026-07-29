@@ -277,12 +277,17 @@ model MealLog {
   @@unique([userId, date, mealType])
 }
 
+// Un'iscrizione alle notifiche. Due sorti diverse sotto lo stesso tetto:
+// "web" è il Web Push del browser (endpoint + chiavi di cifratura), "fcm" è
+// il token che Firebase assegna al dispositivo dentro l'APK — lì le chiavi
+// non esistono, perché la cifratura la gestisce il sistema operativo.
 model PushSubscription {
   id        String   @id @default(cuid())
   userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
+  kind      String   @default("web") // web | fcm
+  endpoint  String   @unique // web: URL del servizio push · fcm: il token
+  p256dh    String?
+  auth      String?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

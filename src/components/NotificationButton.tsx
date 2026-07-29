@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { canUseNativePush, registerNativePush, saveNativePushToken } from "@/lib/capacitor-push";
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -17,7 +18,20 @@ export default function NotificationButton() {
   const [status, setStatus] = useState<Status>("loading");
   const [testResult, setTestResult] = useState<string | null>(null);
 
+  const [native, setNative] = useState(false);
+
   useEffect(() => {
+    // Dentro l'APK il Web Push non esiste (il WebView non espone PushManager)
+    // e la via è FCM: lo si scopre prima di dichiarare "non supportate".
+    void canUseNativePush().then((isNative) => {
+      if (!isNative) return;
+      setNative(true);
+      setStatus("default");
+    });
+  }, []);
+
+  useEffect(() => {
+    if (native) return;
     if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       setStatus("unsupported");
       return;
@@ -39,7 +53,7 @@ export default function NotificationButton() {
     };
     document.addEventListener("visibilitychange", refresh);
     return () => document.removeEventListener("visibilitychange", refresh);
-  }, []);
+  }, [native]);
 
   async function ensureSubscribed() {
     const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -62,6 +76,28 @@ export default function NotificationButton() {
   }
 
   async function enableNotifications() {
+    if (native) {
+      setStatus("loading");
+      const result = await registerNativePush();
+      if (!result.ok) {
+        setStatus(result.reason === "denied" ? "denied" : "default");
+        setTestResult(
+          result.reason === "denied"
+            ? "🚫 Permesso negato. Puoi concederlo dalle impostazioni di Android."
+            : `⚠️ Registrazione non riuscita.${result.detail ? ` ${result.detail}` : ""}`
+        );
+        return;
+      }
+      const saved = await saveNativePushToken(result.token);
+      setStatus(saved ? "granted" : "default");
+      setTestResult(
+        saved
+          ? "✅ Notifiche attivate! Arriveranno anche ad app chiusa."
+          : "⚠️ Token ottenuto ma non salvato sul server. Riprova."
+      );
+      return;
+    }
+
     if (!("Notification" in window)) return;
     setStatus("loading");
     try {
@@ -108,7 +144,10 @@ export default function NotificationButton() {
 
       {status === "denied" && (
         <div className="rounded-xl border border-red-800/40 bg-red-950/20 p-3 text-xs text-red-400">
-          🚫 Notifiche bloccate. Vai su Chrome → Impostazioni sito → Notifiche → Consenti per questo sito.
+          🚫 Notifiche bloccate.{" "}
+          {native
+            ? "Riattivale da Impostazioni Android → App → Goal Tracker → Notifiche."
+            : "Vai su Chrome → Impostazioni sito → Notifiche → Consenti per questo sito."}
         </div>
       )}
 

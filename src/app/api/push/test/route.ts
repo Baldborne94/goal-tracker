@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getWebPush } from "@/lib/vapid";
+import { isFcmReady, sendPush } from "@/lib/push";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -15,23 +15,21 @@ export async function POST(req: Request) {
   if (subs.length === 0)
     return NextResponse.json({ error: "No subscription found — enable notifications first" }, { status: 404 });
 
-  const webpush = getWebPush();
-  let sent = 0;
+  const sent = await sendPush(subs, {
+    title: "✅ Goal Tracker",
+    body: "Le notifiche funzionano!",
+    tag: "test",
+  });
 
-  for (const sub of subs) {
-    try {
-      await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        JSON.stringify({ title: "✅ Goal Tracker", body: "Notifications are working!", tag: "test" })
-      );
-      sent++;
-    } catch (err: unknown) {
-      const status = err && typeof err === "object" && "statusCode" in err ? (err as { statusCode: number }).statusCode : 0;
-      if (status === 404 || status === 410) {
-        await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {});
-      }
-    }
-  }
-
-  return NextResponse.json({ ok: true, sent });
+  // Distinguere le due sorti aiuta a capire perché una notifica non arriva:
+  // "0 su 1 con un token FCM e Firebase non configurato" è una diagnosi,
+  // "0 inviate" no.
+  const fcmCount = subs.filter((s) => s.kind === "fcm").length;
+  return NextResponse.json({
+    ok: true,
+    sent,
+    total: subs.length,
+    fcm: fcmCount,
+    fcmReady: fcmCount > 0 ? await isFcmReady() : undefined,
+  });
 }

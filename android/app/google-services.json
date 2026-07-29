@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "989581227377",
+    "project_id": "goal-tracker-16222",
+    "storage_bucket": "goal-tracker-16222.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:989581227377:android:473d16df303a4a7ad2b2d0",
+        "android_client_info": {
+          "package_name": "app.vercel.goaltracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDs_J8lo1HSO4wkgY-VLhjMFrNOJ3Ddc0Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

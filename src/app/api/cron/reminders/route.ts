@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getWebPush } from "@/lib/vapid";
+import { sendPush } from "@/lib/push";
 import { initSentReminderTable } from "@/lib/init-tables";
 
 export const runtime = "nodejs";
@@ -29,31 +29,6 @@ async function claim(userId: string, key: string, date: string) {
   return inserted === 1;
 }
 
-async function sendPush(
-  webpush: ReturnType<typeof getWebPush>,
-  subs: { endpoint: string; p256dh: string; auth: string }[],
-  payload: { title: string; body: string; tag: string }
-) {
-  let sent = 0;
-  for (const sub of subs) {
-    try {
-      await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        JSON.stringify(payload)
-      );
-      sent++;
-    } catch (err: unknown) {
-      const status = err && typeof err === "object" && "statusCode" in err ? (err as { statusCode: number }).statusCode : 0;
-      console.error(`[push] send failed endpoint=${sub.endpoint.slice(-20)} status=${status}`, err);
-      // 404/410 mean the subscription is dead — remove it so it stops wasting sends
-      if (status === 404 || status === 410) {
-        await prisma.pushSubscription.delete({ where: { endpoint: sub.endpoint } }).catch(() => {});
-      }
-    }
-  }
-  return sent;
-}
-
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const querySecret = url.searchParams.get("secret");
@@ -64,7 +39,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const webpush = getWebPush();
   await initSentReminderTable();
 
   const users = await prisma.user.findMany({
@@ -72,7 +46,7 @@ export async function GET(req: Request) {
     select: {
       id: true,
       timezone: true,
-      pushSubscriptions: { select: { endpoint: true, p256dh: true, auth: true } },
+      pushSubscriptions: { select: { kind: true, endpoint: true, p256dh: true, auth: true } },
       goals: {
         where: { status: "active" },
         select: { id: true, title: true, reminderTime: true, reminderFrequency: true, reminderDay: true, reminderDays: true, targetDate: true },
@@ -120,7 +94,7 @@ export async function GET(req: Request) {
       if (!claimed) continue;
 
       const freqLabel = freq === "weekly" ? "weekly" : freq === "monthly" ? "monthly" : "daily";
-      sent += await sendPush(webpush, user.pushSubscriptions, {
+      sent += await sendPush(user.pushSubscriptions, {
         title: `⚔️ Quest reminder: ${goal.title}`,
         body: `Your ${freqLabel} reminder — time to work on your quest!`,
         tag: `goal-${goal.id}`,
@@ -139,7 +113,7 @@ export async function GET(req: Request) {
           const goalDate = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(goal.targetDate!));
           if (goalDate === targetStr) {
             if (!(await claim(user.id, `deadline-${daysLeft}d-${goal.id}`, todayLocal))) continue;
-            sent += await sendPush(webpush, user.pushSubscriptions, {
+            sent += await sendPush(user.pushSubscriptions, {
               title: `⏰ Quest expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}: ${goal.title}`,
               body: daysLeft === 1 ? "Last chance — finish strong today!" : `Only ${daysLeft} days left. Push through!`,
               tag: `deadline-${daysLeft}d-${goal.id}`,
@@ -165,7 +139,7 @@ export async function GET(req: Request) {
           if (daysUntilDue === bill.notifyDaysBefore) {
             if (!(await claim(user.id, `bill-${bill.id}-${todayLocal.slice(0, 7)}`, todayLocal))) continue;
             const suffix = bill.dueDay === 1 ? "st" : bill.dueDay === 2 ? "nd" : bill.dueDay === 3 ? "rd" : "th";
-            sent += await sendPush(webpush, user.pushSubscriptions, {
+            sent += await sendPush(user.pushSubscriptions, {
               title: `💳 Payment in ${bill.notifyDaysBefore} day${bill.notifyDaysBefore === 1 ? "" : "s"}: ${bill.title}`,
               body: `€${bill.amount.toFixed(2)} due on the ${bill.dueDay}${suffix} — make sure funds are ready!`,
               tag: `bill-${bill.id}-${todayLocal.slice(0, 7)}`,

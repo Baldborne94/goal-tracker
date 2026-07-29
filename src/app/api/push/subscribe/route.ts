@@ -9,8 +9,7 @@ export async function POST(req: Request) {
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { subscription, timezone } = await req.json();
-  const { endpoint, keys } = subscription;
+  const { subscription, fcmToken, timezone } = await req.json();
 
   // Always persist timezone so the cron fires at the right local time
   if (timezone) {
@@ -20,10 +19,28 @@ export async function POST(req: Request) {
     }).catch(() => {});
   }
 
+  // Dall'APK arriva un token FCM, dal browser una subscription Web Push. Le
+  // due convivono: chi usa entrambi riceve su entrambi, ed è giusto così.
+  if (typeof fcmToken === "string" && fcmToken.length > 0) {
+    await prisma.pushSubscription.upsert({
+      where: { endpoint: fcmToken },
+      create: { userId: session.user.id, kind: "fcm", endpoint: fcmToken, p256dh: null, auth: null },
+      update: { userId: session.user.id, kind: "fcm" },
+    });
+    return NextResponse.json({ ok: true, kind: "fcm" });
+  }
+
+  if (!subscription?.endpoint || !subscription?.keys) {
+    return NextResponse.json({ error: "Serve una subscription o un token FCM" }, { status: 400 });
+  }
+
+  const { endpoint, keys } = subscription;
+
   await prisma.pushSubscription.upsert({
     where: { endpoint },
     create: {
       userId: session.user.id,
+      kind: "web",
       endpoint,
       p256dh: keys.p256dh,
       auth: keys.auth,
