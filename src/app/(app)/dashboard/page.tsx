@@ -6,8 +6,9 @@ import { formatDate, calculateStreak } from "@/lib/utils";
 import { getLevelProgress } from "@/lib/levels";
 import { getClassDef } from "@/lib/classes";
 import LogoutButton from "@/components/LogoutButton";
-import DailyChallenges from "@/components/DailyChallenges";
+import TodayPanel from "@/components/TodayPanel";
 import WeeklyLifeSummary from "@/components/WeeklyLifeSummary";
+import { formatDuration, formatMetricValue } from "@/lib/health";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -101,7 +102,7 @@ export default async function DashboardPage() {
   const completed = earlyCompleted;
 
   // Rotation: challenges change every 14 days (4 groups)
-  const currentChallengeGroup = Math.floor(Math.floor(Date.now() / 86400000) / 7) % 4;
+  const currentChallengeGroup = Math.floor(Math.floor(new Date().getTime() / 86400000) / 7) % 4;
 
   const [topCatAgg, rawChallenges, challengeCompletions, milestoneCount, expenseCount, questCheckinTodayRaw, completedQuestCount] = await Promise.all([
     prisma.expense.groupBy({
@@ -126,6 +127,22 @@ export default async function DashboardPage() {
     ).catch(() => [{ count: BigInt(0) }]),
     prisma.goal.count({ where: { userId, status: "completed", completedAt: { gte: dayStart, lt: dayEnd } } }).catch(() => 0),
   ]);
+
+  // I numeri del braccialetto per la testata del Reame: passi di oggi e
+  // sonno di stanotte. HealthMetric.date è nel fuso del telefono, coerente
+  // con il resto delle query "di oggi".
+  const [stepsTodayRaw, sleepTodayRaw] = await Promise.all([
+    prisma.$queryRawUnsafe<{ total: number | null }[]>(
+      `SELECT SUM(value) as total FROM "HealthMetric" WHERE "userId" = $1 AND "metricType" = 'steps' AND date = $2`,
+      userId, today
+    ).catch(() => [{ total: null }]),
+    prisma.$queryRawUnsafe<{ total: number | null }[]>(
+      `SELECT SUM(value) as total FROM "HealthMetric" WHERE "userId" = $1 AND "metricType" = 'sleep' AND date = $2`,
+      userId, today
+    ).catch(() => [{ total: null }]),
+  ]);
+  const stepsToday = stepsTodayRaw[0]?.total != null ? Number(stepsTodayRaw[0].total) : null;
+  const sleepToday = sleepTodayRaw[0]?.total != null ? Number(sleepTodayRaw[0].total) : null;
 
   const [gymLogCount, mealLogCount, shoppingCheckedCount] = await Promise.all([
     prisma.$queryRawUnsafe<{ count: bigint }[]>(
@@ -319,45 +336,51 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Weekly life summary */}
-      <WeeklyLifeSummary userId={userId} />
-
-      {/* Today's check-ins */}
-      {checkInToday.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-[#9d8ac7] mb-3 uppercase tracking-wider">📅 Check-in di oggi</h2>
-          <div className="space-y-2">
-            {checkInToday.map((g) => {
-              const done = checkedInTodayIds.has(g.id);
-              return (
-                <a
-                  key={g.id}
-                  href={`/goals/${g.id}`}
-                  className="flex items-center gap-3 rounded-2xl border p-3 transition-colors"
-                  style={{ background: done ? "var(--theme-surface)" : "var(--theme-surface)", borderColor: done ? "rgba(146,64,14,0.4)" : "var(--theme-surface-border)" }}
-                >
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold border-2 transition-colors ${
-                      done ? "bg-amber-500 border-amber-500 text-black" : "border-[#3b2d6e] text-transparent"
-                    }`}
-                  >
-                    ✓
-                  </div>
-                  <p className={`flex-1 text-sm font-medium truncate ${done ? "line-through" : "text-[#ede9ff]"}`} style={done ? { color: "var(--theme-text-muted)" } : {}}>
-                    {g.title}
-                  </p>
-                  {!done && (
-                    <span className="text-xs font-bold text-amber-400 flex-shrink-0">+{g.checkInXP} XP</span>
-                  )}
-                </a>
-              );
-            })}
-          </div>
+      {/* Il braccialetto nel Reame: passi di oggi e sonno di stanotte */}
+      {(stepsToday != null || sleepToday != null) && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <Link
+            href="/salute"
+            className="rounded-2xl border p-3 flex items-center gap-3 active:scale-95 transition-transform"
+            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+          >
+            <span className="text-2xl">👟</span>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-[#ede9ff] tabular-nums leading-tight">
+                {stepsToday != null ? formatMetricValue("steps", stepsToday) : "—"}
+              </p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>passi oggi</p>
+            </div>
+          </Link>
+          <Link
+            href="/salute"
+            className="rounded-2xl border p-3 flex items-center gap-3 active:scale-95 transition-transform"
+            style={{ background: "var(--theme-surface)", borderColor: "var(--theme-surface-border)" }}
+          >
+            <span className="text-2xl">😴</span>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-[#ede9ff] tabular-nums leading-tight">
+                {sleepToday != null ? formatDuration(sleepToday) : "—"}
+              </p>
+              <p className="text-[10px]" style={{ color: "var(--theme-text-muted)" }}>sonno stanotte</p>
+            </div>
+          </Link>
         </div>
       )}
 
-      {/* Daily challenges */}
-      <DailyChallenges initialChallenges={initialChallenges} />
+      {/* Weekly life summary */}
+      <WeeklyLifeSummary userId={userId} />
+
+      {/* Oggi: check-in delle missioni + sfide, un'unica lista */}
+      <TodayPanel
+        checkIns={checkInToday.map((g) => ({
+          id: g.id,
+          title: g.title,
+          xp: g.checkInXP,
+          done: checkedInTodayIds.has(g.id),
+        }))}
+        initialChallenges={initialChallenges}
+      />
 
       {/* Today's focus */}
       {todayFocus.length > 0 && (
