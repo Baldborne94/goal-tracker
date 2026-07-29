@@ -167,13 +167,50 @@ Connect non restituiscono le fasi.
 ## Login Google nell'APK
 
 Google **rifiuta l'OAuth web dentro le WebView incorporate**
-(`disallowed_useragent`), quindi dentro l'APK non si usa il redirect di
-NextAuth: la pagina di login rileva il nativo e apre il **Sign-In nativo di
-Google** (`@capgo/capacitor-social-login`). L'ID token risultante viene
-verificato server-side dal provider `google-native` in `src/lib/auth.ts`
-(audience, issuer, email verificata) e la sessione nasce da una fetch
-same-origin, quindi il cookie finisce nella WebView senza problemi di
-isolamento delle Custom Tab.
+(`disallowed_useragent`), quindi dentro l'APK il redirect di NextAuth nella
+WebView non è percorribile. I percorsi sono due, e la pagina di login sceglie
+da sola.
+
+### Percorso primario: browser di sistema + ticket monouso
+
+Il Sign-In nativo dipende dal Credential Manager di Google, che su alcuni
+dispositivi rifiuta l'accesso con `[16] Account reauth failed` a
+configurazione OAuth perfettamente corretta — è stato di Play Services sul
+telefono, non un bug dell'app. Il browser di sistema invece fa l'OAuth web
+di Google senza eccezioni. Il problema da risolvere è solo il trasloco della
+sessione: i cookie del browser non sono quelli della WebView.
+
+La catena (`src/lib/login-ticket.ts` ha il disegno, `src/lib/mobile-auth.ts`
+il lato server):
+
+1. Il pulsante Google apre una **Custom Tab** (`@capacitor/browser`) su
+   `/api/mobile-auth/start`.
+2. Nel browser parte il normale OAuth web di Google (se il browser ha già
+   una sessione del sito, Google si salta del tutto); si atterra su
+   `/api/mobile-auth/finish`.
+3. `finish` conia un **ticket monouso** (32 byte casuali, vita 2 minuti, in
+   DB solo l'hash — tabella `LoginTicket`) e rimbalza sul deep link
+   `goaltracker://login?ticket=…`. Il salto è una pagina con pulsante, non
+   un 302: Chrome blocca in silenzio i redirect server-side verso schemi
+   custom senza un gesto dell'utente.
+4. L'intent-filter di `MainActivity` (schema `goaltracker`, host `login`)
+   riporta l'app in primo piano; la pagina di login riceve il deep link
+   (`@capacitor/app`: evento `appUrlOpen`, o `getLaunchUrl()` a freddo) e
+   spende il ticket sul provider `ticket` di NextAuth con una fetch
+   same-origin: il cookie di sessione nasce nella WebView.
+
+Il consumo del ticket è un `DELETE … RETURNING`: atomico, il secondo
+tentativo con lo stesso ticket trova la riga già sparita. Lo schema custom è
+in teoria intercettabile da altre app, ma consegna solo un token spendibile
+una volta entro due minuti, mai credenziali durevoli.
+
+### Percorso di ripiego: Sign-In nativo
+
+Il codice web è servito da Vercel e gira anche dentro APK installati prima
+dei plugin `@capacitor/browser` / `@capacitor/app`: lì la pagina di login
+ripiega sul Sign-In nativo (`@capgo/capacitor-social-login`). L'ID token
+viene verificato server-side dal provider `google-native` in
+`src/lib/auth.ts` (audience, issuer, email verificata).
 
 **Due percorsi nativi, provati in quest'ordine.** La modalità *online* passa
 dal Credential Manager e restituisce direttamente un ID token. Su alcuni
