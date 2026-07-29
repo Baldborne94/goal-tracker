@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { awardStat } from "@/lib/hero-stats-server";
 import { checkAndAwardPesoRewards } from "@/lib/rewards";
 
 export async function GET() {
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
     },
   });
 
+  await awardStat(session.user.id, "cos", 5, "weight", "Peso registrato");
   await prisma.user.update({
     where: { id: session.user.id },
     data: { points: { increment: 10 } },

@@ -48,6 +48,7 @@ model User {
   aiUsage           AiUsage[]
   healthMetrics     HealthMetric[]
   loginTickets      LoginTicket[]
+  statEvents        StatEvent[]
 }
 
 model Account {
@@ -532,4 +533,22 @@ model LoginTicket {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Registro della Scheda dell'Eroe: ogni guadagno di punti-stat con la sua
+// provenienza. I punteggi (8→20) e la classe emergente si calcolano da
+// SUM(points) per stat — vedi src/lib/hero-stats.ts.
+model StatEvent {
+  id        String   @id
+  userId    String
+  stat      String   // for | cos | int | sag | oro
+  points    Int
+  source    String   // slug del punto di aggancio (gym_log, milestone, …)
+  label     String   // riga leggibile del registro
+  date      String   // "YYYY-MM-DD"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

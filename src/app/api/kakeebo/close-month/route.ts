@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { statPointsFromXp } from "@/lib/hero-stats";
+import { awardStat } from "@/lib/hero-stats-server";
 import { checkAndAwardKakeeboRewards } from "@/lib/rewards";
 
 export async function POST(req: Request) {
@@ -51,6 +53,7 @@ export async function POST(req: Request) {
   }
 
   const XP = 25;
+  await awardStat(userId, "oro", statPointsFromXp(XP), "close_month", "Mese chiuso sotto budget");
   await prisma.user.update({
     where: { id: userId },
     data: { points: { increment: XP } },

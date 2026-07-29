@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import ProfileClient from "@/components/ProfileClient";
 import { calculateStreak } from "@/lib/utils";
+import { getRecentStatEvents, getStatTotals } from "@/lib/hero-stats-server";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -81,6 +82,12 @@ export default async function ProfilePage() {
     active,
   };
 
+  // La Scheda dell'Eroe: totali per stat e ultime righe del registro.
+  const [statTotals, statEvents] = await Promise.all([
+    getStatTotals(userId),
+    getRecentStatEvents(userId, 12),
+  ]);
+
   return (
     <ProfileClient
       user={JSON.parse(JSON.stringify(user))}
@@ -89,6 +96,8 @@ export default async function ProfilePage() {
 categoryStats={categoryStats}
       weeklyMilestones={weeklyMilestones}
       heroClass={heroClass}
+      statTotals={statTotals}
+      statEvents={JSON.parse(JSON.stringify(statEvents))}
     />
   );
 }

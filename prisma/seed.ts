@@ -202,6 +202,22 @@ const MIGRATIONS = [
     CONSTRAINT "MealLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
   `ALTER TABLE "MealLog" ENABLE ROW LEVEL SECURITY`,
+  // Hero-sheet ledger: every stat-point gain with its provenance. Totals
+  // per stat are a SUM over this table — no counters to keep in sync.
+  `CREATE TABLE IF NOT EXISTS "StatEvent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "stat" TEXT NOT NULL,
+    "points" INTEGER NOT NULL,
+    "source" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "StatEvent_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "StatEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`,
+  `CREATE INDEX IF NOT EXISTS "StatEvent_userId_createdAt_idx" ON "StatEvent" ("userId","createdAt")`,
+  `ALTER TABLE "StatEvent" ENABLE ROW LEVEL SECURITY`,
   // One-shot tickets that ferry a session from the system browser into the
   // WebView during Google login from the APK (see src/lib/login-ticket.ts).
   // Only the ticket's hash is stored, never the spendable value.

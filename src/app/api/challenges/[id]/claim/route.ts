@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { statForChallengeType, statPointsFromXp } from "@/lib/hero-stats";
+import { awardStat } from "@/lib/hero-stats-server";
 
 export const runtime = "nodejs";
 
@@ -11,8 +13,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id: challengeId } = await params;
   const today = new Date().toISOString().slice(0, 10);
 
-  const challenges = await prisma.$queryRawUnsafe<{ id: string; xp: number; type: string }[]>(
-    `SELECT id, xp, type FROM "DailyChallenge" WHERE id = $1 LIMIT 1`,
+  const challenges = await prisma.$queryRawUnsafe<{ id: string; xp: number; type: string; title: string | null }[]>(
+    `SELECT id, xp, type, title FROM "DailyChallenge" WHERE id = $1 LIMIT 1`,
     challengeId
   );
   if (challenges.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -88,6 +90,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
+  await awardStat(
+    userId,
+    statForChallengeType(challenge.type),
+    statPointsFromXp(challenge.xp),
+    "challenge",
+    `Sfida «${challenge.title ?? challenge.id}» riscossa`
+  );
   await prisma.user.update({ where: { id: userId }, data: { points: { increment: challenge.xp } } });
 
   return NextResponse.json({ ok: true, xp: challenge.xp });

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { statPointsFromXp } from "@/lib/hero-stats";
+import { awardStat } from "@/lib/hero-stats-server";
 
 let tableReady = false;
 
@@ -84,6 +86,7 @@ export async function POST(
     id, goalId, session.user.id, today, note ?? null, xp
   );
 
+  await awardStat(session.user.id, "sag", statPointsFromXp(xp), "quest_checkin", "Check-in giornaliero della missione");
   await prisma.user.update({
     where: { id: session.user.id },
     data: { points: { increment: xp } },

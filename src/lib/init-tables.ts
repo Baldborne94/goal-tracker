@@ -11,6 +11,7 @@ let sentReminderInitialized = false;
 let healthMetricInitialized = false;
 let loginTicketInitialized = false;
 let mealLogInitialized = false;
+let statEventInitialized = false;
 
 // Tracks which scheduled reminders have already been delivered today, so an
 // external cron running every few minutes never sends a duplicate push.
@@ -188,6 +189,29 @@ export async function initLoginTicketTable() {
     CONSTRAINT "LoginTicket_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`);
   loginTicketInitialized = true;
+}
+
+// Registro della Scheda dell'Eroe: ogni riga è un guadagno di punti-stat
+// con la sua provenienza («+5 FOR · Allenamento Push»). I totali per stat
+// sono SUM su questo registro: niente contatori da tenere allineati.
+export async function initStatEventTable() {
+  if (statEventInitialized) return;
+  await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS "StatEvent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "stat" TEXT NOT NULL,
+    "points" INTEGER NOT NULL,
+    "source" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "date" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "StatEvent_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "StatEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+  )`);
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "StatEvent_userId_createdAt_idx" ON "StatEvent" ("userId","createdAt")`
+  );
+  statEventInitialized = true;
 }
 
 export async function initAiUsageTable() {

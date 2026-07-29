@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { statForCategory, statPointsFromXp } from "@/lib/hero-stats";
+import { awardStat } from "@/lib/hero-stats-server";
 import { checkAndAwardRewards } from "@/lib/rewards";
 
 export async function GET(
@@ -41,7 +43,7 @@ export async function PATCH(
 
   const existing = await prisma.goal.findFirst({
     where: { id, userId: session.user.id },
-    include: { milestones: { orderBy: { order: "asc" } } },
+    include: { milestones: { orderBy: { order: "asc" } }, category: true },
   });
   if (!existing)
     return NextResponse.json({ error: "Goal not found" }, { status: 404 });
@@ -145,6 +147,13 @@ export async function PATCH(
       where: { id: session.user.id },
       data: { points: { increment: existing.points } },
     });
+    await awardStat(
+      session.user.id,
+      statForCategory(existing.category?.name),
+      statPointsFromXp(existing.points),
+      "quest",
+      `Missione «${existing.title}» completata`
+    );
     await checkAndAwardRewards(session.user.id);
 
     // Auto-clone recurring quests on manual completion

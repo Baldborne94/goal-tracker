@@ -1,5 +1,7 @@
 import { prisma } from "./db";
 import { getMetric } from "./health";
+import { statPointsFromXp } from "./hero-stats";
+import { awardStat } from "./hero-stats-server";
 
 // Collega i dati del braccialetto alle missioni: una quest con
 // `healthMetric` + `healthTarget` (es. passi ≥ 10000) si spunta da sola
@@ -91,6 +93,16 @@ export async function applyHealthGoals(userId: string, dates: string[]): Promise
         where: { id: userId },
         data: { points: { increment: xp } },
       });
+
+      // Il corpo che raggiunge la soglia nutre la Costituzione; se la
+      // metrica è l'allenamento, la Forza.
+      await awardStat(
+        userId,
+        goal.healthMetric === "workouts" ? "for" : "cos",
+        statPointsFromXp(xp),
+        "health_goal",
+        `«${goal.title}» certificata dal braccialetto`
+      );
 
       awarded.push({ goalId: goal.id, goalTitle: goal.title, date, value, target, xp });
     }
