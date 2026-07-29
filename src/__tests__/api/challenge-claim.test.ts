@@ -35,11 +35,11 @@ describe("POST /api/challenges/[id]/claim — complete_meals condition", () => {
     expect(res.status).toBe(401);
   });
 
-  it("awards XP when at least one meal/food is logged today", async () => {
+  it("awards XP when at least one food entry is logged today", async () => {
     prismaMock.$queryRawUnsafe
       .mockResolvedValueOnce([{ id: "ch_g0_meals", xp: 20, type: "complete_meals" }]) // challenge lookup
       .mockResolvedValueOnce([])                                                       // existing UserDailyChallenge (none)
-      .mockResolvedValueOnce([{ count: BigInt(1) }]);                                  // combined meal/food count
+      .mockResolvedValueOnce([{ count: BigInt(1) }]);                                  // FoodEntry count
 
     const { POST } = await import("@/app/api/challenges/[id]/claim/route");
     const res = await POST(claimReq(), { params: Promise.resolve({ id: "ch_g0_meals" }) });
@@ -52,7 +52,7 @@ describe("POST /api/challenges/[id]/claim — complete_meals condition", () => {
     );
   });
 
-  it("rejects the claim when no meal/food is logged today", async () => {
+  it("rejects the claim when no food entry is logged today", async () => {
     prismaMock.$queryRawUnsafe
       .mockResolvedValueOnce([{ id: "ch_g0_meals", xp: 20, type: "complete_meals" }])
       .mockResolvedValueOnce([])
@@ -65,7 +65,7 @@ describe("POST /api/challenges/[id]/claim — complete_meals condition", () => {
     expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 
-  it("counts FoodEntry and MealCompletion together in one query", async () => {
+  it("counts only FoodEntry — the nutritionist's MealCompletion is gone", async () => {
     prismaMock.$queryRawUnsafe
       .mockResolvedValueOnce([{ id: "ch_g0_meals", xp: 20, type: "complete_meals" }])
       .mockResolvedValueOnce([])
@@ -76,7 +76,7 @@ describe("POST /api/challenges/[id]/claim — complete_meals condition", () => {
 
     const countCall = prismaMock.$queryRawUnsafe.mock.calls[2];
     expect(countCall[0]).toContain('"FoodEntry"');
-    expect(countCall[0]).toContain('"MealCompletion"');
+    expect(countCall[0]).not.toContain('"MealCompletion"');
   });
 
   it("rejects an already-claimed challenge", async () => {

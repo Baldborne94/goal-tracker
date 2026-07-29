@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { initNutrizionistaTables } from "@/lib/init-tables";
+import { initSpesaTables } from "@/lib/init-tables";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ type Row = { id: string; name: string; quantity: string | null; checked: boolean
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  await initNutrizionistaTables();
+  await initSpesaTables();
 
   const items = await prisma.$queryRawUnsafe<Row[]>(
     `SELECT id, name, quantity, checked, category, "createdAt" FROM "ShoppingItem" WHERE "userId" = $1 ORDER BY "createdAt" ASC`,
@@ -23,7 +23,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  await initNutrizionistaTables();
+  await initSpesaTables();
 
   const { name, quantity, category } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });

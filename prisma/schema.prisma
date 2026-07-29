@@ -37,9 +37,7 @@ model User {
   dailyChallenges   UserDailyChallenge[]
   questCheckIns     QuestCheckIn[]
   recurringBills    RecurringBill[]
-  mealCompletions   MealCompletion[]
   shoppingItems     ShoppingItem[]
-  nutrizionistaDocs NutrizionistaDoc[]
   gymDays           GymDay[]
   gymExercises      GymExercise[]
   gymLogs           GymLog[]
@@ -342,30 +340,6 @@ model RecurringBill {
   createdAt        DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model NutrizionistaDoc {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  mimeType  String   @default("application/pdf")
-  data      String   // base64-encoded file
-  size      Int      @default(0)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model MealCompletion {
-  id        String   @id @default(cuid())
-  userId    String
-  date      String   // "YYYY-MM-DD"
-  meal      String   // "colazione" | "spuntino" | "pranzo" | "merenda"
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date, meal])
 }
 
 model ShoppingItem {

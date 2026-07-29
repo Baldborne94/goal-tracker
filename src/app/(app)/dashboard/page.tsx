@@ -133,11 +133,7 @@ export default async function DashboardPage() {
       userId, today
     ).catch(() => [{ count: BigInt(0) }]),
     prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM (
-         SELECT 1 FROM "MealCompletion" WHERE "userId" = $1 AND date = $2
-         UNION ALL
-         SELECT 1 FROM "FoodEntry" WHERE "userId" = $1 AND date = $2
-       ) t`,
+      `SELECT COUNT(*) as count FROM "FoodEntry" WHERE "userId" = $1 AND date = $2`,
       userId, today
     ).catch(() => [{ count: BigInt(0) }]),
     prisma.$queryRawUnsafe<{ count: bigint }[]>(

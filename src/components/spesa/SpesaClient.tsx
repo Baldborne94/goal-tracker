@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
-import { WEEKLY_PLAN } from "@/lib/meal-plan";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 type ShoppingItem = {
@@ -24,32 +23,6 @@ const CATEGORIES = [
 
 const catIcon = (key: string) => CATEGORIES.find(c => c.key === key)?.icon ?? "🛒";
 
-function guessCategory(name: string): string {
-  const n = name.toLowerCase();
-  if (/fragole|mela|lamponi|ciliegie|albicocche|pesca|pomodori|rucola|lattuga|finocchi|zucchine|melanzane|peperone|cipolla|carote|avocado|spinaci|insalata|succo|arancia|spremuta/.test(n)) return "frutta-verdura";
-  if (/tonno|salmone|uovo|tacchino|pollo|sgombro|albume|prosciutto|hamburger|carne|merluzzo/.test(n)) return "proteine";
-  if (/yogurt|latte|mozzarella|parmigiano|asiago|sottilette|burro|formaggio|ricotta/.test(n)) return "latticini";
-  if (/pasta|riso|pane|fagioli|lenticchie|gnocchi|gallette|biscotti|patate|cereali|avena/.test(n)) return "cereali";
-  if (/olio|aceto|marmellata|crema|basilico|sale|pepe|spezie/.test(n)) return "condimenti";
-  return "altro";
-}
-
-function getAllMealPlanFoods(): { name: string; category: string }[] {
-  const seen = new Set<string>();
-  const result: { name: string; category: string }[] = [];
-  for (const day of WEEKLY_PLAN) {
-    for (const meal of day.meals) {
-      for (const food of meal.foods) {
-        const key = food.name.toLowerCase();
-        if (!seen.has(key)) {
-          seen.add(key);
-          result.push({ name: food.name, category: guessCategory(food.name) });
-        }
-      }
-    }
-  }
-  return result.sort((a, b) => a.name.localeCompare(b.name, "it"));
-}
 
 export default function SpesaClient() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
@@ -60,7 +33,6 @@ export default function SpesaClient() {
   const [adding, setAdding] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [filterCat, setFilterCat] = useState<string | null>(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     fetch("/api/spesa")
@@ -68,13 +40,6 @@ export default function SpesaClient() {
       .then(data => setItems(data.items || []))
       .finally(() => setLoading(false));
   }, []);
-
-  const allPlanFoods = useMemo(() => getAllMealPlanFoods(), []);
-
-  const suggestions = useMemo(() => {
-    const existingNames = new Set(items.map(i => i.name.toLowerCase()));
-    return allPlanFoods.filter(f => !existingNames.has(f.name.toLowerCase()));
-  }, [allPlanFoods, items]);
 
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,28 +56,6 @@ export default function SpesaClient() {
     setQuantity("");
     setShowForm(false);
     setAdding(false);
-  };
-
-  const addSuggestion = async (food: { name: string; category: string }) => {
-    const tempId = `tmp_${Date.now()}`;
-    // Show item immediately, reset filter so it's visible, collapse suggestions
-    setItems(prev => [...prev, { id: tempId, name: food.name, quantity: null, checked: false, category: food.category }]);
-    setFilterCat(null);
-    setShowSuggestions(false);
-    try {
-      const res = await fetch("/api/spesa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: food.name, quantity: null, category: food.category }),
-      });
-      if (res.ok) {
-        const item = await res.json();
-        if (item.id) setItems(prev => prev.map(i => i.id === tempId ? item : i));
-      }
-      // On API error: item stays in list for this session (won't persist on refresh)
-    } catch {
-      // Network error: item stays in list for this session
-    }
   };
 
   const editItem = async (id: string, name: string, quantity: string | null) => {
@@ -273,56 +216,6 @@ export default function SpesaClient() {
           + Aggiungi prodotto
         </button>
       )}
-
-      {/* Suggestions from meal plan */}
-      <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--theme-surface-border)" }}>
-        <button
-          onClick={() => setShowSuggestions(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3"
-          style={{ background: "var(--theme-surface)" }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-base">🥗</span>
-            <span className="text-sm font-medium text-white">Suggerimenti dalla scheda</span>
-            {suggestions.length > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-medium">
-                {suggestions.length}
-              </span>
-            )}
-          </div>
-          <span className="text-gray-500 text-sm">{showSuggestions ? "▲" : "▼"}</span>
-        </button>
-
-        {showSuggestions && (
-          <div style={{ background: "var(--theme-bg)" }}>
-            {suggestions.length === 0 ? (
-              <p className="px-4 py-3 text-xs text-gray-500">
-                Tutti gli ingredienti della scheda sono già in lista. ✓
-              </p>
-            ) : (
-              <div className="divide-y" style={{ borderColor: "var(--theme-surface-border)" }}>
-                {suggestions.map(food => (
-                  <div
-                    key={food.name}
-                    className="flex items-center justify-between px-4 py-2.5"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{catIcon(food.category)}</span>
-                      <span className="text-sm" style={{ color: "var(--theme-text)" }}>{food.name}</span>
-                    </div>
-                    <button
-                      onClick={() => addSuggestion(food)}
-                      className="text-xs px-3 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-medium active:scale-95 transition-all"
-                    >
-                      + Aggiungi
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       {loading && (
         <p className="text-center py-8 text-sm text-gray-500">Caricamento…</p>

@@ -58,12 +58,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     ).catch(() => [{ count: BigInt(0) }]);
     conditionMet = Number(rows[0]?.count ?? 0) >= 1;
   } else if (challenge.type === "complete_meals") {
+    // Conta solo il diario alimentare: il piano del nutrizionista e le sue
+    // MealCompletion non esistono più.
     const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-      `SELECT COUNT(*) as count FROM (
-         SELECT 1 FROM "MealCompletion" WHERE "userId" = $1 AND date = $2
-         UNION ALL
-         SELECT 1 FROM "FoodEntry" WHERE "userId" = $1 AND date = $2
-       ) t`,
+      `SELECT COUNT(*) as count FROM "FoodEntry" WHERE "userId" = $1 AND date = $2`,
       userId, today
     ).catch(() => [{ count: BigInt(0) }]);
     conditionMet = Number(rows[0]?.count ?? 0) >= 1;

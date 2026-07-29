@@ -25,7 +25,7 @@ possono essere automatizzati. Falli prima di aprire l'app a utenti esterni.
 - [ ] Elimina una ricetta → sparisce
 
 ## 3. Sfide giornaliere
-- [ ] Logga un pasto (dieta o piano nutrizionista) → la sfida "meals" diventa
+- [ ] Logga un pasto nella dieta → la sfida "meals" diventa
   riscattabile e l'XP viene assegnato
 - [ ] Le sfide ruotano (gruppo nuovo ogni 7 giorni)
 
@@ -35,7 +35,6 @@ ogni sezione funzioni da DB pulito:
 - [ ] Peso: aggiungi una misurazione → salvata
 - [ ] Dieta: aggiungi un alimento → salvato + kcal aggiornate
 - [ ] Palestra: aggiungi/rimuovi un esercizio nel Programma → persistono
-- [ ] Nutrizionista: spunta/despunta un pasto → niente duplicati nella dieta
 - [ ] Spesa: aggiungi, metti in carrello, rimetti in lista → coerente
 
 ## 5. Robustezza / errori

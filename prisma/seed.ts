@@ -132,17 +132,6 @@ const MIGRATIONS = [
     CONSTRAINT "FoodEntry_pkey" PRIMARY KEY (id),
     CONSTRAINT "FoodEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
-  `CREATE TABLE IF NOT EXISTS "MealCompletion" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "date" TEXT NOT NULL,
-    "meal" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "MealCompletion_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "MealCompletion_userId_date_meal_key" UNIQUE ("userId","date","meal"),
-    CONSTRAINT "MealCompletion_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-  )`,
-  `ALTER TABLE "MealCompletion" ENABLE ROW LEVEL SECURITY`,
   `CREATE TABLE IF NOT EXISTS "ShoppingItem" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -155,18 +144,6 @@ const MIGRATIONS = [
     CONSTRAINT "ShoppingItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
   )`,
   `ALTER TABLE "ShoppingItem" ENABLE ROW LEVEL SECURITY`,
-  `CREATE TABLE IF NOT EXISTS "NutrizionistaDoc" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "mimeType" TEXT NOT NULL DEFAULT 'application/pdf',
-    "data" TEXT NOT NULL,
-    "size" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "NutrizionistaDoc_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "NutrizionistaDoc_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-  )`,
-  `ALTER TABLE "NutrizionistaDoc" ENABLE ROW LEVEL SECURITY`,
   // Tracks which scheduled reminders have already been sent today, so an
   // external cron that runs every few minutes never delivers a duplicate push.
   `CREATE TABLE IF NOT EXISTS "SentReminder" (
