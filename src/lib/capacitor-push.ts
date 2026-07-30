@@ -33,6 +33,23 @@ export async function canUseNativePush(): Promise<boolean> {
 }
 
 /**
+ * Siamo dentro l'app Android, qualunque versione? Serve a distinguere due
+ * situazioni che si somigliano ma vogliono due risposte diverse: un browser
+ * senza API Push (niente da fare) e un guscio vecchio che il plugin non ce
+ * l'ha ancora (basta aggiornare l'app). `@capacitor/core` c'è in ogni
+ * guscio, anche in quelli costruiti prima delle notifiche.
+ */
+export async function isNativeShell(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Chiede il permesso, registra il dispositivo e restituisce il token FCM.
  *
  * Va chiamata da un gesto dell'utente: da Android 13 il permesso per le

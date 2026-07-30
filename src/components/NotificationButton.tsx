@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { canUseNativePush, registerNativePush, saveNativePushToken } from "@/lib/capacitor-push";
+import { canUseNativePush, isNativeShell, registerNativePush, saveNativePushToken } from "@/lib/capacitor-push";
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -19,15 +19,20 @@ export default function NotificationButton() {
   const [testResult, setTestResult] = useState<string | null>(null);
 
   const [native, setNative] = useState(false);
+  // Guscio Android senza il plugin: non è "non supportato", è "da aggiornare".
+  const [staleShell, setStaleShell] = useState(false);
 
   useEffect(() => {
     // Dentro l'APK il Web Push non esiste (il WebView non espone PushManager)
     // e la via è FCM: lo si scopre prima di dichiarare "non supportate".
-    void canUseNativePush().then((isNative) => {
-      if (!isNative) return;
-      setNative(true);
-      setStatus("default");
-    });
+    void (async () => {
+      if (await canUseNativePush()) {
+        setNative(true);
+        setStatus("default");
+        return;
+      }
+      if (await isNativeShell()) setStaleShell(true);
+    })();
   }, []);
 
   useEffect(() => {
@@ -128,8 +133,20 @@ export default function NotificationButton() {
 
   if (status === "unsupported") {
     return (
-      <div className="rounded-xl border p-3 text-xs" style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}>
-        🔕 Notifiche push non supportate in questo browser.
+      <div
+        className="rounded-xl border p-3 text-xs leading-relaxed"
+        style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
+      >
+        {staleShell ? (
+          <>
+            📲 Questa versione dell&apos;app non sa ancora ricevere le notifiche: il
+            pezzo che serve è codice nativo e arriva solo con un APK nuovo.
+            Scarica l&apos;ultima versione e installala sopra a questa — non serve
+            disinstallare nulla.
+          </>
+        ) : (
+          <>🔕 Notifiche push non supportate in questo browser.</>
+        )}
       </div>
     );
   }
