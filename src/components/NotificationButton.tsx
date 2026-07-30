@@ -18,25 +18,24 @@ export default function NotificationButton() {
   const [status, setStatus] = useState<Status>("loading");
   const [testResult, setTestResult] = useState<string | null>(null);
 
-  const [native, setNative] = useState(false);
-  // Guscio Android senza il plugin: non è "non supportato", è "da aggiornare".
-  const [staleShell, setStaleShell] = useState(false);
+  // Cosa vede davvero l'app: un solo accertamento, invece di due stati che
+  // devono mettersi d'accordo fra loro. Quando qualcosa non funziona, questi
+  // tre valori sono la diagnosi — e vengono mostrati, perché "non supportate"
+  // non dice a nessuno dove guardare.
+  const [env, setEnv] = useState<{ native: boolean; plugin: boolean } | null>(null);
+  const native = env?.plugin === true;
+  const staleShell = env?.native === true && env.plugin === false;
 
   useEffect(() => {
-    // Dentro l'APK il Web Push non esiste (il WebView non espone PushManager)
-    // e la via è FCM: lo si scopre prima di dichiarare "non supportate".
     void (async () => {
-      if (await canUseNativePush()) {
-        setNative(true);
-        setStatus("default");
-        return;
-      }
-      if (await isNativeShell()) setStaleShell(true);
+      const [plugin, shell] = await Promise.all([canUseNativePush(), isNativeShell()]);
+      setEnv({ native: shell, plugin });
+      if (plugin) setStatus("default");
     })();
   }, []);
 
   useEffect(() => {
-    if (native) return;
+    if (env === null || native) return;
     if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       setStatus("unsupported");
       return;
@@ -58,7 +57,7 @@ export default function NotificationButton() {
     };
     document.addEventListener("visibilitychange", refresh);
     return () => document.removeEventListener("visibilitychange", refresh);
-  }, [native]);
+  }, [env, native]);
 
   async function ensureSubscribed() {
     const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -134,19 +133,25 @@ export default function NotificationButton() {
   if (status === "unsupported") {
     return (
       <div
-        className="rounded-xl border p-3 text-xs leading-relaxed"
+        className="rounded-xl border p-3 text-xs leading-relaxed space-y-2"
         style={{ borderColor: "var(--theme-surface-border)", color: "var(--theme-text-muted)" }}
       >
         {staleShell ? (
-          <>
+          <p>
             📲 Questa versione dell&apos;app non sa ancora ricevere le notifiche: il
             pezzo che serve è codice nativo e arriva solo con un APK nuovo.
-            Scarica l&apos;ultima versione e installala sopra a questa — non serve
-            disinstallare nulla.
-          </>
+            Installa l&apos;ultima versione sopra a questa — non serve disinstallare nulla.
+          </p>
         ) : (
-          <>🔕 Notifiche push non supportate in questo browser.</>
+          <p>🔕 Notifiche push non disponibili qui.</p>
         )}
+        {/* La diagnosi, non l'esito: così un problema si legge in un colpo
+            d'occhio invece di doverlo indovinare da fuori. */}
+        <p className="font-mono text-[10px] opacity-70">
+          app nativa: {env?.native ? "sì" : "no"} · plugin push:{" "}
+          {env?.plugin ? "sì" : "no"} · web push:{" "}
+          {typeof window !== "undefined" && "PushManager" in window ? "sì" : "no"}
+        </p>
       </div>
     );
   }
