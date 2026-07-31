@@ -22,16 +22,37 @@ export default function NotificationButton() {
   // devono mettersi d'accordo fra loro. Quando qualcosa non funziona, questi
   // tre valori sono la diagnosi — e vengono mostrati, perché "non supportate"
   // non dice a nessuno dove guardare.
-  const [env, setEnv] = useState<{ native: boolean; plugin: boolean } | null>(null);
+  const [env, setEnv] = useState<{ native: boolean; plugin: boolean; timedOut?: boolean } | null>(null);
   const native = env?.plugin === true;
   const staleShell = env?.native === true && env.plugin === false;
 
   useEffect(() => {
+    let settled = false;
+    const settle = (value: { native: boolean; plugin: boolean; timedOut?: boolean }) => {
+      if (settled) return;
+      settled = true;
+      setEnv(value);
+      if (value.plugin) setStatus("default");
+    };
+
+    // Il rilevamento interroga il ponte nativo, e un ponte che non risponde
+    // non risponde per sempre: senza questo tetto la schermata restava a
+    // "Verifica stato notifiche…" e non si poteva toccare niente. Meglio una
+    // risposta incerta ma detta, che una certezza che non arriva mai.
+    const timer = setTimeout(() => settle({ native: false, plugin: false, timedOut: true }), 3000);
+
     void (async () => {
-      const [plugin, shell] = await Promise.all([canUseNativePush(), isNativeShell()]);
-      setEnv({ native: shell, plugin });
-      if (plugin) setStatus("default");
+      try {
+        const [plugin, shell] = await Promise.all([canUseNativePush(), isNativeShell()]);
+        settle({ native: shell, plugin });
+      } catch {
+        settle({ native: false, plugin: false });
+      } finally {
+        clearTimeout(timer);
+      }
     })();
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -80,7 +101,10 @@ export default function NotificationButton() {
   }
 
   async function enableNotifications() {
-    if (native) {
+    // Anche quando il rilevamento dice di no: se il plugin c'è davvero, la
+    // registrazione riesce; se non c'è, torna un motivo leggibile invece del
+    // silenzio.
+    if (native || env?.native || env?.timedOut) {
       setStatus("loading");
       const result = await registerNativePush();
       if (!result.ok) {
@@ -145,12 +169,23 @@ export default function NotificationButton() {
         ) : (
           <p>🔕 Notifiche push non disponibili qui.</p>
         )}
+        {/* Un pulsante c'è comunque: il rilevamento può sbagliarsi o non
+            rispondere, e un tentativo vero produce un errore vero — che vale
+            più di una diagnosi fatta da fuori. */}
+        <button
+          onClick={enableNotifications}
+          className="w-full py-2.5 rounded-xl font-semibold text-xs border border-amber-500/40 text-amber-400 active:scale-95 transition-all"
+        >
+          Prova comunque ad attivarle
+        </button>
+
         {/* La diagnosi, non l'esito: così un problema si legge in un colpo
             d'occhio invece di doverlo indovinare da fuori. */}
         <p className="font-mono text-[10px] opacity-70">
           app nativa: {env?.native ? "sì" : "no"} · plugin push:{" "}
           {env?.plugin ? "sì" : "no"} · web push:{" "}
           {typeof window !== "undefined" && "PushManager" in window ? "sì" : "no"}
+          {env?.timedOut ? " · ponte nativo: nessuna risposta" : ""}
         </p>
       </div>
     );
